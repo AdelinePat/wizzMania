@@ -2,7 +2,7 @@
 Second year IT Bachelor group project : create a chat application with C++ and Qt
 
 
-## Sequence diagram
+## 🔁 Flow : Sequence diagram
 Flow of login to sending a message. Only one server, one DB and possible multiple clients
 ```mermaid
 sequenceDiagram
@@ -29,4 +29,47 @@ sequenceDiagram
         DB->>Server: Send all message from channel id
         Server->>Client: send all messages from channel
         Note over Client: display channel's messages
+```
+
+##  🗄️ Database : Physical Data Model
+
+```mermaid
+erDiagram
+    USERS {
+        bigint id_user PK
+        varchar username
+        varchar email
+        varchar password
+    }
+
+    CHANNELS {
+        bigint id_channel PK
+        varchar title
+    }
+
+    USER_CHANNEL {
+        bigint id_userChannel PK
+        bigint id_user FK
+        bigint id_channel FK
+    }
+
+    MESSAGES {
+        bigint id_message PK
+        bigint id_user FK
+        bigint id_channel FK
+        datetime timestamp
+        text body
+    }
+
+    %% Users -> User_Channel (0..* per user)
+    USERS ||--o{ USER_CHANNEL : "accesses"
+
+    %% Channels -> User_Channel (1..* per channel)
+    CHANNELS ||--|{ USER_CHANNEL : "lists"
+
+    %% Users -> Messages (0..* per user)
+    USERS ||--o{ MESSAGES : "writes"
+
+    %% Channels -> Messages (0..* per channel)
+    CHANNELS ||--o{ MESSAGES : "contains"
 ```
