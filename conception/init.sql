@@ -21,6 +21,7 @@ CREATE TABLE userChannel (
     id_userChannel BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
+    accepted BOOLEAN,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
         ON DELETE NO ACTION
