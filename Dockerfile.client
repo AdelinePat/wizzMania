@@ -26,9 +26,8 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install aqtinstall
 
 # Install Qt 6.8.1 for Windows (GUI components)
-RUN aqt install-qt linux desktop ${QT_VERSION} win64_mingw \
-    -m qtnetworking \
-    --outputdir /opt/qt-windows
+RUN aqt install-qt windows desktop ${QT_VERSION} win64_mingw \
+--outputdir /opt/qt-windows
 
 # Create MinGW toolchain file
 RUN echo 'set(CMAKE_SYSTEM_NAME Windows)' > /toolchain-windows.cmake && \
