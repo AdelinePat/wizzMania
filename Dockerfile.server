@@ -1,0 +1,27 @@
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install build tools + runtime dependencies (all in one)
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++ \
+    cmake \
+    make \
+    wget \
+    pkg-config \    
+    libmysqlclient-dev \
+    mysql-client \
+    nlohmann-json3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install doctest for testing
+RUN wget -O /usr/local/include/doctest.h \
+    https://raw.githubusercontent.com/doctest/doctest/master/doctest/doctest.h
+
+WORKDIR /app
+
+COPY ./server/build-server.sh ./build-server.sh
+RUN chmod +x ./build-server.sh
+
+CMD ["/bin/bash"]

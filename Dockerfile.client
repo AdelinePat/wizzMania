@@ -1,0 +1,50 @@
+# ============================================
+# Qt Client Cross-Compiler for Windows
+# ============================================
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+ENV QT_VERSION=6.8.1
+
+# Install build essentials
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++ \
+    cmake \
+    make \
+    wget \
+    git \
+    python3 \
+    python3-pip \
+    mingw-w64 \
+    gcc-mingw-w64-x86-64-posix \
+    g++-mingw-w64-x86-64-posix \
+    libgl1-mesa-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install aqt (Qt installer)
+RUN pip3 install aqtinstall
+
+# Install Qt 6.8.1 for Windows (GUI components)
+RUN aqt install-qt linux desktop ${QT_VERSION} win64_mingw \
+    -m qtnetworking \
+    --outputdir /opt/qt-windows
+
+# Create MinGW toolchain file
+RUN echo 'set(CMAKE_SYSTEM_NAME Windows)' > /toolchain-windows.cmake && \
+    echo 'set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)' >> /toolchain-windows.cmake && \
+    echo 'set(Qt6_DIR "/opt/qt-windows/'${QT_VERSION}'/mingw_64/lib/cmake/Qt6")' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_PREFIX_PATH "/opt/qt-windows/'${QT_VERSION}'/mingw_64")' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32 /opt/qt-windows/'${QT_VERSION}'/mingw_64)' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)' >> /toolchain-windows.cmake && \
+    echo 'set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)' >> /toolchain-windows.cmake
+
+WORKDIR /app
+
+COPY ./client/build-client.sh ./build-client.sh
+RUN chmod +x ./build-client.sh
+
+CMD ["/bin/bash"]
