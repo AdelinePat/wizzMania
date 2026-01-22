@@ -84,3 +84,38 @@ erDiagram
     %% Channels -> Messages (0..* per channel)
     CHANNELS ||--o{ MESSAGES : "contains"
 ```
+
+
+## Creation of environment
+The environment consist on 3 part :
+- Server (headless) : combile build and run in a container
+- Database : run in a container, communicate directly with server through docker network using container name to get IP adress
+- Client : tests run in container if passed, cross compiled to build a .exe for windows
+
+## Dependencies
+### 1. Crow -  [ https://github.com/CrowCpp/Crow](https://github.com/CrowCpp/Crow)
+Use of `Crow v1.3.0` for WebSocket (server side) 
+In order to get crow working, got it as a vendor inside project directly using this command
+```bash
+curl -L https://github.com/CrowCpp/Crow/archive/refs/tags/v1.3.0.tar.gz \
+  | tar -xz
+```
+### 2. Asio - [https://github.com/chriskohlhoff/asio](https://github.com/chriskohlhoff/asio)
+As Crow depends on `Asio 1.28.0`  the same was done for it too 
+```bash
+curl -L https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz \
+  | tar -xz --strip-components=1 -C server/vendor/asio
+```
+
+All unecesary files where deleted to keep repository as clean as possible
+
+
+later decided to use submodule: 
+```bash
+git submodule add https://github.com/crowcpp/crow.git server/vendor/crow
+git submodule add https://github.com/chriskohlhoff/asio.git server/vendor/asio
+```
+if we keep it that way, we'll need to do this command to init submodules
+```bash
+git submodule update --init --recursive
+```

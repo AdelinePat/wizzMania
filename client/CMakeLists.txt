@@ -14,7 +14,7 @@ if(NOT BUILD_TESTS)
     set(CMAKE_AUTORCC ON)
     set(CMAKE_AUTOUIC ON)
     
-    # Find Qt6
+    # Find Qt6 (toolchain file specifies which Qt to use)
     find_package(Qt6 REQUIRED COMPONENTS 
         Core 
         Gui 
@@ -23,25 +23,12 @@ if(NOT BUILD_TESTS)
     )
 endif()
 
-# Common source files (pure C++ - no Qt!)
-# set(COMMON_SOURCES
-#     ../common/protocol.cpp
-#     ../common/message.cpp
-# )
-
 # ============================================
 # Client Executable
 # ============================================
 if(NOT BUILD_TESTS)
     set(CLIENT_SOURCES
         client.cpp
-        # mainwindow.cpp
-        # mainwindow.ui
-        # login_dialog.cpp
-        # login_dialog.ui
-        # chat_widget.cpp
-        # network_manager.cpp
-        # ${COMMON_SOURCES}
     )
 
     add_executable(wizzmania-client WIN32 ${CLIENT_SOURCES})
@@ -67,30 +54,5 @@ if(NOT BUILD_TESTS)
 
     target_compile_options(wizzmania-client PRIVATE
         -Wall -Wextra
-    )
-endif()
-
-# ============================================
-# Tests Target (Linux native - no Qt)
-# ============================================
-if(BUILD_TESTS)
-    # Find JSON for tests
-    find_package(nlohmann_json 3.2.0 REQUIRED)
-    
-    add_executable(tests
-        ../tests/test_main.cpp
-        ../tests/test_protocol.cpp
-        ../tests/test_message.cpp
-        ${COMMON_SOURCES}
-    )
-    
-    target_include_directories(tests PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../common
-    )
-    
-    target_link_libraries(tests PRIVATE
-        nlohmann_json::nlohmann_json
-        pthread
     )
 endif()

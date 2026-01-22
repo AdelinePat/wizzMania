@@ -21,6 +21,9 @@ RUN wget -O /usr/local/include/doctest.h \
 
 WORKDIR /app
 
+COPY server ./server
+COPY common ./common
+
 COPY ./server/build-server.sh ./build-server.sh
 RUN chmod +x ./build-server.sh
 

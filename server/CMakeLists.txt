@@ -15,11 +15,9 @@ pkg_check_modules(MYSQL REQUIRED mysqlclient)
 # Find JSON library (nlohmann-json)
 find_package(nlohmann_json 3.2.0 REQUIRED)
 
-# Common source files (shared with client)
-# set(COMMON_SOURCES
-#     ../common/protocol.cpp
-#     ../common/message.cpp
-# )
+# Find Crow dependencies
+find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
 
 # ============================================
 # Server Executable
@@ -27,15 +25,14 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
         server.cpp
-        # database.cpp
-        # client_handler.cpp
-        # ${COMMON_SOURCES}
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})
 
     target_include_directories(wizzmania-server PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/vendor/asio/include
+        ${CMAKE_SOURCE_DIR}/vendor/crow/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
         ${MYSQL_INCLUDE_DIRS}
     )
@@ -43,6 +40,9 @@ if(NOT BUILD_TESTS)
     target_link_libraries(wizzmania-server PRIVATE
         ${MYSQL_LIBRARIES}
         nlohmann_json::nlohmann_json
+        Threads::Threads
+        OpenSSL::SSL
+        OpenSSL::Crypto
         pthread
     )
 
@@ -56,14 +56,14 @@ endif()
 # ============================================
 if(BUILD_TESTS)
     add_executable(tests
-        ../tests/test_main.cpp
-        ../tests/test_protocol.cpp
-        ../tests/test_message.cpp
-        ${COMMON_SOURCES}
+        ../tests/server/test_main.cpp
+        # Add your test files here
     )
     
     target_include_directories(tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/vendor/asio
+        ${CMAKE_SOURCE_DIR}/vendor/crow
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
     )
     
