@@ -8,16 +8,19 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # Build options
 option(BUILD_TESTS "Build tests" OFF)
 
-# Find MySQL
+# Find system packages
+find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
+
+# Find Boost (for Beast, if you switch later)
+find_package(Boost REQUIRED COMPONENTS system)
+
+# MySQL
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MYSQL REQUIRED mysqlclient)
 
-# Find JSON library (nlohmann-json)
+# nlohmann-json
 find_package(nlohmann_json 3.2.0 REQUIRED)
-
-# Find Crow dependencies
-find_package(Threads REQUIRED)
-find_package(OpenSSL REQUIRED)
 
 # ============================================
 # Server Executable
@@ -31,23 +34,27 @@ if(NOT BUILD_TESTS)
 
     target_include_directories(wizzmania-server PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/vendor/asio/include
-        ${CMAKE_SOURCE_DIR}/vendor/crow/include
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
         ${MYSQL_INCLUDE_DIRS}
+        ${Boost_INCLUDE_DIRS}
     )
 
     target_link_libraries(wizzmania-server PRIVATE
-        ${MYSQL_LIBRARIES}
         nlohmann_json::nlohmann_json
         Threads::Threads
         OpenSSL::SSL
         OpenSSL::Crypto
-        pthread
+        ${MYSQL_LIBRARIES}
+        ${Boost_LIBRARIES}
     )
 
     target_compile_options(wizzmania-server PRIVATE
         -Wall -Wextra -Wpedantic
+    )
+    
+    target_compile_definitions(wizzmania-server PRIVATE
+        CROW_ENABLE_SSL
+        CROW_USE_BOOST
     )
 endif()
 
@@ -62,13 +69,13 @@ if(BUILD_TESTS)
     
     target_include_directories(tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/vendor/asio
-        ${CMAKE_SOURCE_DIR}/vendor/crow
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
+        ${Boost_INCLUDE_DIRS}
     )
     
     target_link_libraries(tests PRIVATE
         nlohmann_json::nlohmann_json
-        pthread
+        Threads::Threads
+        ${Boost_LIBRARIES}
     )
 endif()

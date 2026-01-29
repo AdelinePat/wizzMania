@@ -2,18 +2,31 @@ FROM ubuntu:22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install build tools + runtime dependencies (all in one)
+# Install build tools and system dependencies
 RUN apt-get update && apt-get install -y \
     build-essential \
     g++ \
     cmake \
     make \
+    git \
     wget \
-    pkg-config \    
+    pkg-config \
     libmysqlclient-dev \
     mysql-client \
     nlohmann-json3-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Boost (includes Beast + ASIO)
+RUN apt-get update && apt-get install -y \
+    libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Crow (header-only library)
+RUN git clone --depth 1 https://github.com/CrowCpp/Crow.git /tmp/crow && \
+    mkdir -p /usr/local/include && \
+    cp -r /tmp/crow/include/* /usr/local/include/ && \
+    rm -rf /tmp/crow
 
 # Install doctest for testing
 RUN wget -O /usr/local/include/doctest.h \
@@ -21,10 +34,13 @@ RUN wget -O /usr/local/include/doctest.h \
 
 WORKDIR /app
 
+# Copy source code
 COPY server ./server
 COPY common ./common
+COPY tests ./tests
 
-COPY ./server/build-server.sh ./build-server.sh
-RUN chmod +x ./build-server.sh
+# Copy and prepare build script
+# COPY build-server.sh ./build-server.sh
+RUN chmod +x ./server/build-server.sh
 
 CMD ["/bin/bash"]

@@ -16,6 +16,8 @@ int main() {
 
   CROW_ROUTE(app, "/")([]() { return "Hello from Crow! \n"; });
 
+  CROW_ROUTE(app, "/florence")([]() { return "Hello to Florence from Crow! \n"; });
+
   const char* portStr = std::getenv("SERVER_PORT");
   uint16_t port = 8888;  // default port
 
