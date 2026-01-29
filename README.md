@@ -62,6 +62,7 @@ erDiagram
         bigint id_user FK
         bigint id_channel FK
         boolean accepted
+        int read_messages
     }
 
     MESSAGES {
@@ -112,10 +113,17 @@ All unecesary files where deleted to keep repository as clean as possible
 
 later decided to use submodule: 
 ```bash
-git submodule add https://github.com/crowcpp/crow.git server/vendor/crow
-git submodule add https://github.com/chriskohlhoff/asio.git server/vendor/asio
+git submodule add --force https://github.com/crowcpp/crow.git server/vendor/crow
+git submodule add --force https://github.com/chriskohlhoff/asio.git server/vendor/asio
 ```
 if we keep it that way, we'll need to do this command to init submodules
 ```bash
 git submodule update --init --recursive
+```
+
+if you want to delete a submodule you do this command : 
+```bash
+git submodule deinit -f PATH/TO/SUBMODULE
+rm -rf .git/modules/PATH/TO/SUBMODULE
+
 ```
