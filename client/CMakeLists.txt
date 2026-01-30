@@ -34,21 +34,35 @@ endif()
 # ============================================
 if(NOT BUILD_TESTS)
     set(CLIENT_SOURCES
-        client.cpp
-        # mainwindow.cpp
-        # mainwindow.ui
-        # login_dialog.cpp
-        # login_dialog.ui
-        # chat_widget.cpp
-        # network_manager.cpp
-        # ${COMMON_SOURCES}
+        Sources/client.cpp
+        Sources/mainwindow.cpp
+        Sources/loginwidget.cpp
     )
 
-    add_executable(wizzmania-client WIN32 ${CLIENT_SOURCES})
+    set(CLIENT_HEADERS
+        Headers/mainwindow.h
+        Headers/loginwidget.h
+    )
+
+    set(CLIENT_FORMS
+        Forms/mainwindow.ui
+        Forms/loginwidget.ui
+    )
+
+    add_executable(wizzmania-client WIN32 
+        ${CLIENT_SOURCES}
+        ${CLIENT_HEADERS}
+        ${CLIENT_FORMS}
+    )
+
+    # Tell AUTOUIC where to find .ui files
+    set_target_properties(wizzmania-client PROPERTIES
+        AUTOUIC_SEARCH_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/Forms"
+    )
 
     target_include_directories(wizzmania-client PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/../common
+        ${CMAKE_CURRENT_BINARY_DIR}
     )
 
     target_link_libraries(wizzmania-client PRIVATE

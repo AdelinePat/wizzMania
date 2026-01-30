@@ -1,0 +1,261 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>900</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>700</width>
+    <height>500</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>WizzMania</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">background-color: rgb(0, 17, 26);</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QVBoxLayout" name="mainLayout">
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <item>
+     <widget class="QStackedWidget" name="stackedWidget">
+      <property name="currentIndex">
+       <number>0</number>
+      </property>
+      <widget class="QWidget" name="loginPage"/>
+      <widget class="QWidget" name="chatPage">
+       <layout class="QHBoxLayout" name="chatLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QSplitter" name="chatSplitter">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <widget class="QWidget" name="leftPanel">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="maximumSize">
+            <size>
+             <width>350</width>
+             <height>16777215</height>
+            </size>
+           </property>
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 22, 33);</string>
+           </property>
+           <layout class="QVBoxLayout" name="leftPanelLayout">
+            <property name="spacing">
+             <number>10</number>
+            </property>
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="chatsLabel">
+              <property name="font">
+               <font>
+                <pointsize>14</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(82, 134, 77); padding: 5px;</string>
+              </property>
+              <property name="text">
+               <string>Chats</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QListWidget" name="chatGroupsList">
+              <property name="styleSheet">
+               <string notr="true">QListWidget {
+    background-color: rgb(0, 27, 41);
+    color: rgb(200, 200, 200);
+    border: none;
+    border-radius: 4px;
+}
+QListWidget::item {
+    padding: 12px;
+    border-bottom: 1px solid rgb(0, 35, 50);
+}
+QListWidget::item:selected {
+    background-color: rgb(82, 134, 77);
+}
+QListWidget::item:hover {
+    background-color: rgb(0, 35, 50);
+}</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="rightPanel">
+           <property name="styleSheet">
+            <string notr="true">background-color: rgb(0, 17, 26);</string>
+           </property>
+           <layout class="QVBoxLayout" name="rightPanelLayout">
+            <property name="spacing">
+             <number>10</number>
+            </property>
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
+            <item>
+             <widget class="QLabel" name="chatTitleLabel">
+              <property name="font">
+               <font>
+                <pointsize>12</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">color: rgb(200, 200, 200); padding: 5px; background-color: rgb(0, 22, 33); border-radius: 4px;</string>
+              </property>
+              <property name="text">
+               <string>Select a chat to start messaging</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QListWidget" name="messagesList">
+              <property name="styleSheet">
+               <string notr="true">QListWidget {
+    background-color: rgb(0, 22, 33);
+    color: rgb(200, 200, 200);
+    border: none;
+    border-radius: 4px;
+}
+QListWidget::item {
+    padding: 10px;
+    margin: 2px;
+}</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="messageInputLayout">
+              <item>
+               <widget class="QLineEdit" name="messageInput">
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>40</height>
+                 </size>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QLineEdit {
+    background-color: rgb(0, 27, 41);
+    color: rgb(200, 200, 200);
+    border: 1px solid rgb(66, 126, 157);
+    border-radius: 4px;
+    padding: 8px;
+}</string>
+                </property>
+                <property name="placeholderText">
+                 <string>Type a message...</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="sendButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>80</width>
+                  <height>40</height>
+                 </size>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QPushButton {
+    background-color: rgb(82, 134, 77);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+}
+QPushButton:hover {
+    background-color: rgb(92, 144, 87);
+}
+QPushButton:pressed {
+    background-color: rgb(72, 124, 67);
+}</string>
+                </property>
+                <property name="text">
+                 <string>Send</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
