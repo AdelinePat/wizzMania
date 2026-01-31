@@ -185,7 +185,12 @@ curl http://localhost:8888/PATH
 ```
 
 
-test queries 
+## test queries 
+Get inside mysql-db container
+```bash
+docker compose exec mysql-db sh -c 'mysql -h localhost -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE"'
+```
+Or directly test your query in terminal
 ```bash
 docker compose exec mysql-db sh -c 'mysql -h localhost -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /queries.sql' 
 ```
