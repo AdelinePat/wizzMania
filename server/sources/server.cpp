@@ -1,10 +1,4 @@
-// #include <chrono>
-#include <cstdlib>
-#include <iostream>
-#include <thread>
-
-#include "crow.h"
-
+#include "server.hpp"
 // Structure de donnée pour contenir la liste des websockets actuellement connectée au serveur
 
 int main() {

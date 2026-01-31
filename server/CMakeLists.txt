@@ -27,13 +27,19 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 # ============================================
 if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
-        server.cpp
+        sources/server.cpp
+    )
+
+    set(SERVER_HEADERS
+        headers/server.hpp
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})
 
     target_include_directories(wizzmania-server PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/sources 
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
         ${MYSQL_INCLUDE_DIRS}
         ${Boost_INCLUDE_DIRS}
