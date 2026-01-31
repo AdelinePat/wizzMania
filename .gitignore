@@ -74,3 +74,6 @@ qrc_*.cpp
 ui_*.h
 *.qm
 .qmake.stash
+
+# handle CRLF vs LF issues
+.gitattributes
