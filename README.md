@@ -138,7 +138,12 @@ rm -rf .git/modules/PATH/TO/SUBMODULE
 
 
 ## Build client
-On windows
+On windows, install Qt 6.10.?? , install it with gcc, g++ and cmake
+add those to your path
+```
+C:\Qt\Tools\QtCreator\bin
+C:\Qt\6.10.1\mingw_64\bin
+```
 ### git bash
 ```bash
 powershell.exe -NoProfile -Command "& '$(cygpath -w ./client/build-client.bat)'"
