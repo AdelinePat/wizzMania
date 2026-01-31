@@ -61,25 +61,5 @@ services:
     command: ["./server/build-server.sh"]
     restart: unless-stopped
 
-  # ============================================
-  # Qt Client Builder (Windows Cross-Compile)
-  # ============================================
-  client-builder:
-    build:
-      context: .
-      dockerfile: Dockerfile.client
-    container_name: wizzmania-client-builder
-    volumes:
-      - type: bind
-        source: ./client
-        target: /app/client
-      - type: bind
-        source: ./common
-        target: /app/common
-    # Only run when explicitly called
-    # command: ["./build-client.sh"]
-    profiles:
-      - build
-
 volumes:
   mysql-data:

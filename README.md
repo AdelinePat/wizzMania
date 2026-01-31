@@ -125,5 +125,34 @@ if you want to delete a submodule you do this command :
 ```bash
 git submodule deinit -f PATH/TO/SUBMODULE
 rm -rf .git/modules/PATH/TO/SUBMODULE
+```
 
+
+## Build client
+On windows
+### git bash
+```bash
+powershell.exe -NoProfile -Command "& '$(cygpath -w ./client/build-client.bat)'"
+```
+start client
+```bash
+./client/build/wizzmania-client
+```
+
+### Powershell
+```powershell
+.\client\build-client.bat
+```
+start client
+```powershell
+.\client\build\wizzmania-client.exe
+```
+
+## Build and start Server
+```bash
+docker compose up -d
+```
+test a response
+```bash
+curl http://localhost:8888/PATH
 ```
