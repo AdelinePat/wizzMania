@@ -1,9 +1,4 @@
-// #include <chrono>
-#include <cstdlib>
-#include <iostream>
-#include <thread>
-
-#include "crow.h"
+#include "server.hpp"
 
 int main() {
   // Disable buffering entirely

@@ -28,10 +28,12 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
         sources/server.cpp
+        sources/helpers.cpp
     )
 
     set(SERVER_HEADERS
         headers/server.hpp
+        headers/helpers.hpp
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})
