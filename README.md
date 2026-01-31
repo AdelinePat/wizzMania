@@ -1,6 +1,15 @@
 # wizzMania
 Second year IT Bachelor group project : create a chat application with C++ and Qt
 
+## Build & run client app
+
+```cmd
+cd client/build
+cmake .. -G Ninja -DCMAKE_PREFIX_PATH="C:/Qt/6.10.1/mingw_64"
+ninja
+./wizzmania-client.exe
+```
+
 ## Design
 ### Main colors
 - ![#00111a](https://placehold.co/15x15/00111a/00111a.png) `Background: #00111a`

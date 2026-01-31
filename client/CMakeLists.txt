@@ -10,31 +10,37 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+# Tell AUTOUIC where to find .ui files
+set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/Forms)
+
 # Disable Vulkan requirement (not needed for basic Qt apps)
 set(QT_FEATURE_vulkan OFF)
 
 # Find Qt6 packages
 find_package(Qt6 REQUIRED COMPONENTS
     Core
+    Gui
     Widgets
     Network
 )
 
-# Collect source files
+# Collect source files from Sources/ directory
 set(CLIENT_SOURCES
-    client.cpp
+    Sources/client.cpp
+    Sources/mainwindow.cpp
+    Sources/loginwidget.cpp
 )
 
-# Collect header files (add your .h files here as you create them)
+# Collect header files from Headers/ directory
 set(CLIENT_HEADERS
-    # client.h
-    # other_class.h
+    Headers/mainwindow.h
+    Headers/loginwidget.h
 )
 
-# Collect UI files (Qt Designer .ui files - will be auto-compiled by AUTOUIC)
+# Collect UI files from Forms/ directory
 set(CLIENT_UI_FILES
-    # mainwindow.ui
-    # logindialog.ui
+    Forms/mainwindow.ui
+    Forms/loginwidget.ui
 )
 
 # Collect resource files (.qrc for images, icons, etc.)
@@ -61,14 +67,17 @@ endif()
 
 # Include directories
 target_include_directories(wizzmania-client PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Forms
     ${CMAKE_CURRENT_SOURCE_DIR}/../common
-    ${CMAKE_CURRENT_BINARY_DIR}  # For generated UI headers
+    ${CMAKE_CURRENT_BINARY_DIR}  # For generated UI headers (ui_*.h)
 )
 
 # Link Qt libraries
 target_link_libraries(wizzmania-client PRIVATE
     Qt6::Core
+    Qt6::Gui
     Qt6::Widgets
     Qt6::Network
 )
