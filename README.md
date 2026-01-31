@@ -137,7 +137,7 @@ rm -rf .git/modules/PATH/TO/SUBMODULE
 ```
 
 
-## Build client
+## Build client for windows
 On windows, install Qt 6.10.?? , install it with gcc, g++ and cmake
 add those to your path
 ```
@@ -160,6 +160,19 @@ start client
 start client
 ```powershell
 .\client\build\wizzmania-client.exe
+```
+## Build client for linux
+Install cmake and qmake (g++ and gcc if not already installed)
+```bash
+sudo apt update
+sudo apt install -y cmake qt6-base-dev qt6-tools-dev qt6-tools-dev-tools
+```
+Then build and run
+```bash
+chmod +x ./client/build-client.sh
+chmod +x ./client/run-client.sh
+./client/build-client.sh
+./client/run-client.sh
 ```
 
 ## Build and start Server
