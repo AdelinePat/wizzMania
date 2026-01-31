@@ -58,7 +58,7 @@ services:
         target: /app/tests
     depends_on:
       - mysql-db
-    command: ["./server/build-server.sh"]
+    command: ["bash", "./server/build-server.sh"]
     restart: unless-stopped
 
 volumes:
