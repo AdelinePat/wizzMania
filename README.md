@@ -183,3 +183,9 @@ test a response
 ```bash
 curl http://localhost:8888/PATH
 ```
+
+
+test queries 
+```bash
+docker compose exec mysql-db sh -c 'mysql -h localhost -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /queries.sql' 
+```
