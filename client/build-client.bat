@@ -9,7 +9,26 @@ echo.
 REM This script is inside client/ directory
 
 REM Navigate to script's directory (client/)
-cd /d "%~dp0"
+REM Use pushd instead of cd for better compatibility
+pushd "%~dp0" 2>nul
+if errorlevel 1 (
+    REM Fallback: try to extract path from %0
+    set "SCRIPT_PATH=%~dp0"
+    if defined SCRIPT_PATH (
+        cd /d "%SCRIPT_PATH%" 2>nul
+    )
+)
+
+REM Verify we're in the right place
+if not exist "CMakeLists.txt" (
+    REM Try going to client/ subdirectory if we're in root
+    if exist "client\CMakeLists.txt" (
+        cd client
+    )
+)
+
+echo [INFO] Working directory: %CD%
+echo.
 
 REM Check if Qt6 is in PATH
 where /q qmake >nul 2>&1
