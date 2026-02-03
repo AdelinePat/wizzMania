@@ -5,15 +5,19 @@
 -- Users table
 CREATE TABLE users (
     id_user BIGINT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100) NOT NULL,
+    username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255)
+    -- last_seen DATETIME
 );
 
 -- Channels table
 CREATE TABLE channels (
     id_channel BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(100) NOT NULL
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_by BIGINT NOT NULL
+    CONSTRAINT kf_channel_creator FOREIGN KEY (created_by) REFERENCES users(id_user) ON DELETE NO ACTION ON UPDATE CASCADE
 );
 
 -- User-Channel link table
@@ -22,6 +26,10 @@ CREATE TABLE userChannel (
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
     accepted BOOLEAN NOT NULL DEFAULT FALSE,
+    -- status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
+    -- ORRR FOR LESS ISSUES !! 
+    status TINYINT NOT NULL DEFAULT 0,  -- 0=pending, 1=accepted, 2=rejected, 3=left
+    joined_at DATETIME, 
     last_read_message_id BIGINT,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
@@ -38,7 +46,7 @@ CREATE TABLE messages (
     id_message BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
-    timestamp DATETIME,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     body TEXT,
     CONSTRAINT fk_messages_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
@@ -53,6 +61,11 @@ CREATE TABLE messages (
 
 -- INIT FALSE DATA
 -- USERS
+-- Add system user during initialization
+INSERT INTO users (id_user, username, email, password) 
+VALUES (0, 'System', 'system@wizzmania.internal', 'SYSTEM_NO_LOGIN');
+
+-- FAKE USERS 
 INSERT INTO users (username, email, password) VALUES
 ('alice', 'alice@mail.com', 'hash'),
 ('bob', 'bob@mail.com', 'hash'),

@@ -28,12 +28,20 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
         sources/server.cpp
+        sources/auth.cpp
         sources/helpers.cpp
+        # sources/database.cpp
+        # sources/message_handler.cpp
+        # sources/websocket_manager.cpp
     )
 
     set(SERVER_HEADERS
-        headers/server.hpp
-        headers/helpers.hpp
+        sources/server.hpp
+        sources/auth.hpp
+        sources/helpers.hpp
+        # sources/database.hpp
+        # sources/message_handler.hpp
+        # sources/websocket_manager.hpp
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})
@@ -54,6 +62,7 @@ if(NOT BUILD_TESTS)
         OpenSSL::Crypto
         ${MYSQL_LIBRARIES}
         ${Boost_LIBRARIES}
+        mysqlcppconn
     )
 
     target_compile_options(wizzmania-server PRIVATE
