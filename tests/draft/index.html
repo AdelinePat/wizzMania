@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WizzMania Chat Client</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 50px auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        background: white;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 30px;
+      }
+      .section {
+        margin-bottom: 30px;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+      }
+      .section h2 {
+        margin-top: 0;
+        color: #555;
+      }
+      input,
+      button {
+        padding: 10px;
+        margin: 5px 0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      input {
+        width: 300px;
+      }
+      button {
+        background-color: #007bff;
+        color: white;
+        border: none;
+        cursor: pointer;
+        padding: 10px 20px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      button:disabled {
+        background-color: #ccc;
+        cursor: not-allowed;
+      }
+      .status {
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 4px;
+      }
+      .status.success {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .status.error {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .status.info {
+        background-color: #d1ecf1;
+        color: #0c5460;
+        border: 1px solid #bee5eb;
+      }
+      #messages {
+        height: 300px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        padding: 10px;
+        background-color: #fafafa;
+        border-radius: 4px;
+      }
+      .message {
+        padding: 8px;
+        margin: 5px 0;
+        border-radius: 4px;
+        background-color: white;
+        border-left: 3px solid #007bff;
+      }
+      .message.sent {
+        border-left-color: #28a745;
+        background-color: #f0f8f0;
+      }
+      .message.received {
+        border-left-color: #007bff;
+        background-color: #f0f4ff;
+      }
+      .message.system {
+        border-left-color: #ffc107;
+        background-color: #fff8e1;
+        font-style: italic;
+      }
+      .timestamp {
+        font-size: 11px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔮 WizzMania Chat Client</h1>
+
+      <!-- Login Section -->
+      <div class="section">
+        <h2>1. Login</h2>
+        <div>
+          <input
+            type="text"
+            id="username"
+            placeholder="Username (alice, bob, carol)"
+            value="alice"
+          />
+          <input
+            type="password"
+            id="password"
+            placeholder="Password"
+            value="hash"
+          />
+          <button id="loginBtn" onclick="login()">Login</button>
+        </div>
+        <div id="loginStatus"></div>
+      </div>
+
+      <!-- WebSocket Section -->
+      <div class="section">
+        <h2>2. WebSocket Connection</h2>
+        <button id="connectBtn" onclick="connectWebSocket()" disabled>
+          Connect WebSocket
+        </button>
+        <button id="disconnectBtn" onclick="disconnectWebSocket()" disabled>
+          Disconnect
+        </button>
+        <div id="wsStatus"></div>
+      </div>
+
+      <!-- Messaging Section -->
+      <div class="section">
+        <h2>3. Send Messages</h2>
+        <div id="messages"></div>
+        <div style="margin-top: 10px">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type a message..."
+            disabled
+          />
+          <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="index.js"></script>
+  </body>
+</html>

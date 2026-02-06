@@ -1,3 +1,6 @@
+#include <vector>
+#include <string>
+#include "messages.hpp"
 
 // ===== CLIENT -> SERVER Messages =====
 namespace CliendSend {
