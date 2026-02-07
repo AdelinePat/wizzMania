@@ -138,18 +138,6 @@ int main() {
         WizzMania::MessageType msg_type =
             static_cast<WizzMania::MessageType>(type_int);
 
-        // bool is_authenticated = false;
-        // int64_t user_id = -1;
-
-        // {
-        //   std::lock_guard<std::mutex> lock(ws_mutex);
-        //   auto it = socket_to_user.find(&conn);
-        //   if (it != socket_to_user.end()) {
-        //     is_authenticated = true;
-        //     user_id = it->second;
-        //   }
-        // }
-
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
           if (ws_manager.is_authenticated(&conn)) {
@@ -219,14 +207,7 @@ int main() {
 
         switch (msg_type) {
           case WizzMania::MessageType::SEND_MESSAGE: {
-            std::optional<ClientSend::SendMessageRequest> req =
-                JsonHelpers::ClientSend::parse_send_message(json_msg);
-            if (!req.has_value()) {
-              msg_handler.send_error(conn, "INVALID_FORMAT",
-                                     "Invalid SEND_MESSAGE format");
-              return;
-            }
-            msg_handler.handle_send_message(conn, user_id, req.value());
+            msg_handler.handle_send_message(conn, user_id, json_msg);
             break;
           }
 

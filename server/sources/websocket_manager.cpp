@@ -37,16 +37,18 @@ std::optional<int64_t> WebSocketManager::get_user_id(WSConn conn) {
   return std::nullopt;
 }
 
-std::vector<WSConn> WebSocketManager::get_user_connections(int64_t user_id) {
-  std::lock_guard<std::mutex> lock(this->ws_mutex);
+// EVERYTHING USING VECTOR IS UTTERLY USELESS
 
-  std::vector<WSConn> connections;
-  auto it = this->user_sockets.find(user_id);
-  if (it != this->user_sockets.end()) {
-    connections.assign(it->second.begin(), it->second.end());
-  }
-  return connections;
-}
+// std::vector<WSConn> WebSocketManager::get_user_connections(int64_t user_id) {
+//   std::lock_guard<std::mutex> lock(this->ws_mutex);
+
+//   std::vector<WSConn> connections;
+//   auto it = this->user_sockets.find(user_id);
+//   if (it != this->user_sockets.end()) {
+//     connections.assign(it->second.begin(), it->second.end());
+//   }
+//   return connections;
+// }
 
 // std::vector<WSConn> WebSocketManager::get_all_connections() {
 //   std::lock_guard<std::mutex> lock(this->ws_mutex);
@@ -63,6 +65,16 @@ void WebSocketManager::broadcast_to_all(const std::string& message) {
     conn->send_text(message);
   }
 }
+
+// V2 with type a bit less readable I think
+// void WebSocketManager::broadcast_to_all(const std::string& message) {
+//   std::lock_guard<std::mutex> lock(ws_mutex_);
+
+//   for (const std::pair<WSConn, int64_t>& entry : socket_to_user_) {
+//     WSConn conn = entry.first;
+//     entry.first->send_text(message);
+//   }
+// }
 
 void WebSocketManager::broadcast_to_users(const std::vector<int64_t>& user_ids,
                                           const std::string& message) {
