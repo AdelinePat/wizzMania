@@ -28,7 +28,7 @@ enum class MessageType : uint8_t {
     TYPING_START = 7,           // User starts typing
     TYPING_STOP = 8,            // User stops typing
     REQUEST_CHANNEL_HISTORY = 9,// User requests old messages
-    CHANNEL_OPEN = 10           // Ask for a specific channel messages (before websocket opened) ??? A PRECISER ?
+    CHANNEL_OPEN = 10,          // Ask for a specific channel messages (before websocket opened) ??? A PRECISER ?
     
     // ===== Server -> Client =====
     NEW_MESSAGE = 100,          // Broadcast: New message in channel

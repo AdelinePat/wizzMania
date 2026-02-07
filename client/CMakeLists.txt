@@ -29,12 +29,14 @@ set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
     Sources/loginwidget.cpp
+    Sources/serverconfig.cpp
 )
 
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
     Headers/mainwindow.h
     Headers/loginwidget.h
+    Headers/serverconfig.h
 )
 
 # Collect UI files from Forms/ directory

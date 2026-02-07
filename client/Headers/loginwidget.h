@@ -1,6 +1,8 @@
 #ifndef LOGINWIDGET_H
 #define LOGINWIDGET_H
 
+#include <QNetworkAccessManager>
+#include <QString>
 #include <QWidget>
 
 namespace Ui {
@@ -15,13 +17,17 @@ class LoginWidget : public QWidget {
   ~LoginWidget();
 
  signals:
-  void loginSuccessful(const QString& username);
+  void loginSuccessful(const QString& username, const QString& token);
 
  private slots:
   void onLoginClicked();
 
  private:
+  void sendLoginRequest(const QString& username, const QString& password);
+  void handleMockLogin(const QString& username, const QString& password);
+
   Ui::LoginWidget* ui;
+  QNetworkAccessManager* network;
 };
 
 #endif  // LOGINWIDGET_H

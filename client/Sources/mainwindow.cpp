@@ -44,8 +44,10 @@ void MainWindow::setupChatView() {
   ui->chatSplitter->setSizes({250, 650});
 }
 
-void MainWindow::onLoginSuccessful(const QString& username) {
+void MainWindow::onLoginSuccessful(const QString& username,
+                                   const QString& token) {
   currentUser = username;
+  authToken = token;
 
   // Switch to chat view
   ui->stackedWidget->setCurrentIndex(1);

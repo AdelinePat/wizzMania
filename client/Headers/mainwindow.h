@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QString>
 
 class LoginWidget;
 
@@ -17,7 +18,7 @@ class MainWindow : public QMainWindow {
   ~MainWindow();
 
  private slots:
-  void onLoginSuccessful(const QString& username);
+  void onLoginSuccessful(const QString& username, const QString& token);
   void onChatSelected(int row);
   void onSendMessage();
 
@@ -28,6 +29,7 @@ class MainWindow : public QMainWindow {
   Ui::MainWindow* ui;
   LoginWidget* loginWidget;
   QString currentUser;
+  QString authToken;
 };
 
 #endif  // MAINWINDOW_H
