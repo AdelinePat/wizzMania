@@ -6,13 +6,15 @@
 
 #include <cstdlib>
 #include <iostream>
-#include <mutex>
 #include <string>
 #include <thread>
-#include <unordered_map>
-#include <unordered_set>
 
 #include "auth.hpp"
 #include "helpers.hpp"
+#include "json_helpers.hpp"
+#include "message_handler.hpp"
+#include "message_structure.hpp"
+#include "websocket_manager.hpp"
 
+using WSConn = crow::websocket::connection*;
 #endif

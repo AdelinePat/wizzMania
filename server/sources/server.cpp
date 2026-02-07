@@ -1,6 +1,5 @@
 #include "server.hpp"
 
-
 // --------------------
 // CORS Middleware
 // --------------------
@@ -32,6 +31,9 @@ int main() {
   std::cout << "========================================\n";
 
   crow::App<CORS> app;
+
+  WebSocketManager ws_manager;
+  MessageHandler msg_handler(ws_manager);
 
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
@@ -108,23 +110,20 @@ int main() {
       })
       .onclose([&](crow::websocket::connection& conn, const std::string& reason,
                    uint16_t status_code) {
-        std::lock_guard<std::mutex> lock(ws_mutex);
-
-        auto it = socket_to_user.find(&conn);
-        if (it != socket_to_user.end()) {
-          int64_t user_id = it->second;
-          std::cout << "[WS] User " << user_id
+        std::optional<int64_t> user_id = ws_manager.get_user_id(&conn);
+        if (user_id.has_value()) {
+          std::cout << "[WS] User " << user_id.value()
                     << " disconnected. Reason: " << reason << "\n";
-
-          user_sockets[user_id].erase(&conn);
-          if (user_sockets[user_id].empty()) {
-            user_sockets.erase(user_id);
-          }
-          socket_to_user.erase(&conn);
         } else {
           std::cout << "[WS] Unauthenticated connection closed. Reason: "
                     << reason << "\n";
         }
+
+        ws_manager.remove_connection(&conn);
+
+        // std::cout << "[WS] Online users: " <<
+        // ws_manager.get_online_user_count()
+        //           << "\n";
       })
       .onmessage([&](crow::websocket::connection& conn, const std::string& data,
                      [[maybe_unused]] bool is_binary) {
@@ -139,21 +138,21 @@ int main() {
         WizzMania::MessageType msg_type =
             static_cast<WizzMania::MessageType>(type_int);
 
-        bool is_authenticated = false;
-        int64_t user_id = -1;
+        // bool is_authenticated = false;
+        // int64_t user_id = -1;
 
-        {
-          std::lock_guard<std::mutex> lock(ws_mutex);
-          auto it = socket_to_user.find(&conn);
-          if (it != socket_to_user.end()) {
-            is_authenticated = true;
-            user_id = it->second;
-          }
-        }
+        // {
+        //   std::lock_guard<std::mutex> lock(ws_mutex);
+        //   auto it = socket_to_user.find(&conn);
+        //   if (it != socket_to_user.end()) {
+        //     is_authenticated = true;
+        //     user_id = it->second;
+        //   }
+        // }
 
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
-          if (is_authenticated) {
+          if (ws_manager.is_authenticated(&conn)) {
             std::cout << "[WS] User already authenticated\n";
             return;
           }
@@ -168,8 +167,8 @@ int main() {
             return;
           }
 
-          std::cout << "[WS] Validating token: "
-                    << auth_req->token.substr(0, 20) << "...\n";
+          // std::cout << "[WS] Validating token: "
+          //           << auth_req->token.substr(0, 20) << "...\n";
 
           std::optional<int64_t> validated_user_id =
               Auth::validateToken(auth_req->token);
@@ -183,11 +182,13 @@ int main() {
           std::cout << "[WS] ✅ User " << validated_user_id.value()
                     << " authenticated!\n";
 
-          {
-            std::lock_guard<std::mutex> lock(ws_mutex);
-            user_sockets[validated_user_id.value()].insert(&conn);
-            socket_to_user[&conn] = validated_user_id.value();
-          }
+          ws_manager.add_user(validated_user_id.value(), &conn);
+
+          // {
+          //   std::lock_guard<std::mutex> lock(ws_mutex);
+          //   user_sockets[validated_user_id.value()].insert(&conn);
+          //   socket_to_user[&conn] = validated_user_id.value();
+          // }
 
           AuthMessages::WSAuthResponse auth_resp;
           auth_resp.type =
@@ -200,55 +201,32 @@ int main() {
         }
 
         // ===== ALL OTHER MESSAGES REQUIRE AUTH =====
-        if (!is_authenticated) {
-          std::cout << "[WS] Unauthenticated connection\n";
+        // if (!is_authenticated) {
+        //   std::cout << "[WS] Unauthenticated connection\n";
+        //   conn.close("Authentication required");
+        //   return;
+        // }
+        std::optional<int64_t> user_id_opt = ws_manager.get_user_id(&conn);
+        if (!user_id_opt.has_value()) {
+          std::cout << "[WS] Unauthenticated message attempt\n";
           conn.close("Authentication required");
           return;
         }
 
         // ===== ROUTE AUTHENTICATED MESSAGES =====
+        int64_t user_id = user_id_opt.value();
         std::cout << "[WS] User " << user_id << " - type: " << type_int << "\n";
 
         switch (msg_type) {
           case WizzMania::MessageType::SEND_MESSAGE: {
-            std::optional<::ClientSend::SendMessageRequest> req =
+            std::optional<ClientSend::SendMessageRequest> req =
                 JsonHelpers::ClientSend::parse_send_message(json_msg);
             if (!req.has_value()) {
-              ServerSend::ErrorResponse err;
-              err.type = WizzMania::MessageType::ERROR;  // Explicitly set type
-              err.message = "Invalid SEND_MESSAGE format";
-              err.error_code = "INVALID_FORMAT";
-              conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+              msg_handler.send_error(conn, "INVALID_FORMAT",
+                                     "Invalid SEND_MESSAGE format");
               return;
             }
-
-            std::cout << "[MSG] User " << user_id << " -> Channel "
-                      << req->channel_id << ": " << req->body << "\n";
-
-            // TEMP : ECHO MSG BACK
-            ServerSend::NewMessageBroadcast broadcast;  // outer struct
-            broadcast.type =
-                WizzMania::MessageType::NEW_MESSAGE;  // ✅ this exists here
-            broadcast.channel_id = req->channel_id;
-
-            // fill the inner message
-            broadcast.message.message_id = 0;  // fake id for now
-            broadcast.message.sender_id = user_id;
-            broadcast.message.sender_username = "whatever";
-            broadcast.message.body = req->body;
-
-            // timestamp as string
-            auto now = std::chrono::system_clock::now();
-            std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-            std::ostringstream oss;
-            oss << std::put_time(std::localtime(&now_time),
-                                 "%Y-%m-%dT%H:%M:%S");
-            broadcast.message.timestamp = oss.str();
-
-            broadcast.message.is_system = true;
-
-            // send JSON
-            conn.send_text(JsonHelpers::ServerSend::to_json(broadcast).dump());
+            msg_handler.handle_send_message(conn, user_id, req.value());
             break;
           }
 
