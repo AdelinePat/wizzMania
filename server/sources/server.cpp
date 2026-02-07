@@ -1,19 +1,5 @@
 #include "server.hpp"
 
-#include <iostream>
-
-#include "auth.hpp"
-#include "json_helpers.hpp"
-#include "message_structure.hpp"
-
-using WSConn = crow::websocket::connection*;
-
-// --------------------
-// WebSocket connection maps
-// --------------------
-std::unordered_map<int64_t, std::unordered_set<WSConn>> user_sockets;
-std::unordered_map<WSConn, int64_t> socket_to_user;
-std::mutex ws_mutex;
 
 // --------------------
 // CORS Middleware
