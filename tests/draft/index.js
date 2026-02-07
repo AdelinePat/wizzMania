@@ -71,24 +71,24 @@ function connectWebSocket() {
   ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
-    // console.log("WebSocket opened, sending token...");
-    // addSystemMessage("WebSocket connection opened");
-
-    // // Send token as first message
-    // console.log("first message :') ???");
-    // ws.send(
-    //   JSON.stringify({
-    //     token: token,
-    //   }),
-    // );
     console.log("WebSocket opened, sending token...");
     addSystemMessage("WebSocket connection opened");
 
-    // Wait 50ms just to be sure handshake is fully done
-    setTimeout(() => {
-        ws.send(JSON.stringify({ token: token }));
-        console.log("Token sent");
-    }, 50);
+    // Send token as first message
+    console.log("first message :') ???");
+    ws.send(
+      JSON.stringify({
+        token: token,
+      }),
+    );
+    // console.log("WebSocket opened, sending token...");
+    // addSystemMessage("WebSocket connection opened");
+
+    // // Wait 50ms just to be sure handshake is fully done
+    // setTimeout(() => {
+    //     ws.send(JSON.stringify({ token: token }));
+    //     console.log("Token sent");
+    // }, 50);
   };
 
   ws.onmessage = (event) => {
