@@ -7,6 +7,41 @@ let ws = null;
 const SERVER_URL = "http://localhost:8888";
 const WS_URL = "ws://localhost:8888/ws";
 
+
+const MessageType = {
+  WS_AUTH: 0,          // client -> server
+  LOGOUT: 1,
+  SEND_MESSAGE: 10,
+  CREATE_CHANNEL: 11,
+  ACCEPT_INVITATION: 12,
+  REJECT_INVITATION: 13,
+  LEAVE_CHANNEL: 14,
+  UPDATE_CHANNEL_TITLE: 15,
+  MARK_AS_READ: 16,
+  TYPING_START: 17,
+  TYPING_STOP: 18,
+  REQUEST_CHANNEL_HISTORY: 19,
+  CHANNEL_OPEN: 20,
+
+  // server -> client
+  WS_AUTH_SUCCESS: 100,
+  NEW_MESSAGE: 101,
+  CHANNEL_CREATED: 102,
+  CHANNEL_INVITATION: 103,
+  INVITATION_ACCEPTED: 104,
+  INVITATION_REJECTED: 105,
+  USER_JOINED: 106,
+  USER_LEFT: 107,
+  CHANNEL_ACTIVATED: 108,
+  CHANNEL_DELETED: 109,
+  TITLE_UPDATED: 110,
+  USER_STATUS: 111,
+  USER_TYPING: 112,
+  INITIAL_DATA: 113,
+  CHANNEL_HISTORY: 114,
+  ERROR: 255
+};
+
 // ==================== LOGIN ====================
 
 async function login() {
@@ -32,22 +67,22 @@ async function login() {
 
     if (data.success) {
       token = data.token;
-      console.log(token);
       userId = data.user_id;
       username = data.username;
 
       statusDiv.innerHTML = `
-                <div class="status success">
-                    ✅ Login successful!<br>
-                    User ID: ${userId}<br>
-                    Username: ${username}<br>
-                    Token: ${token.substring(0, 30)}...
-                </div>
-            `;
+        <div class="status success">
+          ✅ Login successful!<br>
+          User ID: ${userId}<br>
+          Username: ${username}<br>
+          Token: ${token.substring(0, 30)}...
+        </div>
+      `;
 
-      // Enable WebSocket connect button
-      document.getElementById("connectBtn").disabled = false;
       document.getElementById("loginBtn").disabled = true;
+
+      // Automatically connect WebSocket and send WSAuthRequest
+      connectWebSocket();
     } else {
       statusDiv.innerHTML = `<div class="status error">❌ ${data.message}</div>`;
     }
@@ -60,35 +95,24 @@ async function login() {
 
 function connectWebSocket() {
   if (!token) {
-    alert("Please login first!");
+    alert("No token available. Login first!");
     return;
   }
 
   const statusDiv = document.getElementById("wsStatus");
-  statusDiv.innerHTML =
-    '<div class="status info">Connecting to WebSocket...</div>';
+  statusDiv.innerHTML = '<div class="status info">Connecting to WebSocket...</div>';
 
   ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
-    console.log("WebSocket opened, sending token...");
+    console.log("WebSocket opened, sending WSAuthRequest...");
     addSystemMessage("WebSocket connection opened");
 
-    // Send token as first message
-    console.log("first message :') ???");
-    ws.send(
-      JSON.stringify({
-        token: token,
-      }),
-    );
-    // console.log("WebSocket opened, sending token...");
-    // addSystemMessage("WebSocket connection opened");
-
-    // // Wait 50ms just to be sure handshake is fully done
-    // setTimeout(() => {
-    //     ws.send(JSON.stringify({ token: token }));
-    //     console.log("Token sent");
-    // }, 50);
+    // Send WSAuthRequest immediately
+    ws.send(JSON.stringify({
+      type: 0,        // WS_AUTH message type
+      token: token,   // authentication token
+    }));
   };
 
   ws.onmessage = (event) => {
@@ -97,25 +121,46 @@ function connectWebSocket() {
     try {
       const data = JSON.parse(event.data);
 
-      if (data.type === "connected") {
-        statusDiv.innerHTML = `
-                    <div class="status success">
-                        ✅ WebSocket connected!<br>
-                        ${data.message}
-                    </div>
-                `;
+      switch (data.type) {
+        case MessageType.WS_AUTH_SUCCESS:
+          statusDiv.innerHTML = `
+          <div class="status success">
+            ✅ WebSocket connected and authenticated!<br>
+            ${data.message || "Welcome!"}
+          </div>
+        `;
+          // Enable messaging
+          document.getElementById("messageInput").disabled = false;
+          document.getElementById("sendBtn").disabled = false;
+          document.getElementById("connectBtn").disabled = true;
+          document.getElementById("disconnectBtn").disabled = false;
 
-        // Enable messaging
-        document.getElementById("messageInput").disabled = false;
-        document.getElementById("sendBtn").disabled = false;
-        document.getElementById("connectBtn").disabled = true;
-        document.getElementById("disconnectBtn").disabled = false;
+          addSystemMessage(`Authenticated as ${username} (ID: ${userId})`);
+          break;
 
-        addSystemMessage(`Authenticated as ${username} (ID: ${userId})`);
-      } else if (data.type === "echo") {
-        addReceivedMessage(data.message);
-      } else {
-        addReceivedMessage(JSON.stringify(data, null, 2));
+        case MessageType.NEW_MESSAGE:
+          if (data.message) {
+            const sender = data.message.sender_username || "System";
+            const body = data.message.body || "";
+            const timestamp = data.message.timestamp
+              ? ` (${data.message.timestamp})`
+              : "";
+
+            // addReceivedMessage(`${sender}:${timestamp} ${body}`);
+            addReceivedMessage(body);
+          } else {
+            // fallback if message object is missing
+            addReceivedMessage(JSON.stringify(data, null, 2));
+          }
+          break;
+
+        case MessageType.ERROR:
+          addSystemMessage(`Server Error: ${data.message}`);
+          break;
+
+        default:
+          // fallback for unknown types
+          addReceivedMessage(JSON.stringify(data, null, 2));
       }
     } catch (e) {
       addReceivedMessage(event.data);
@@ -142,13 +187,6 @@ function connectWebSocket() {
   };
 }
 
-function disconnectWebSocket() {
-  if (ws) {
-    ws.close();
-    ws = null;
-  }
-}
-
 // ==================== MESSAGING ====================
 
 function sendMessage() {
@@ -162,15 +200,21 @@ function sendMessage() {
     return;
   }
 
-  // Send message
-  ws.send(message);
+  // Send message in proper format
+  const sendRequest = {
+    type: MessageType.SEND_MESSAGE,               // SEND_MESSAGE
+    channel_id: 1,          // replace with your active channel_id
+    body: message
+  };
 
-  // Display in UI
+  ws.send(JSON.stringify(sendRequest));
+
+  // Display in UI immediately
   addSentMessage(message);
 
-  // Clear input
   input.value = "";
 }
+
 
 // Allow Enter key to send message
 document.addEventListener("DOMContentLoaded", () => {

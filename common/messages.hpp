@@ -1,17 +1,15 @@
 // common/messages.hpp
+#ifndef MESSAGES_HPP
+#define MESSAGES_HPP
+
+#include <cstdint>
+
 enum class ChannelStatus : uint8_t {
     PENDING,
     ACCEPTED,
     REJECTED,
     LEFT
 };
-
-// Usage in server code:
-// int status_value = static_cast<int>(ChannelStatus::ACCEPTED);  // = 1
-// Store status_value in DB
-
-// Reading from DB:
-// ChannelStatus status = static_cast<ChannelStatus>(row["status"].as<int>());
 
 namespace WizzMania {
 
@@ -54,3 +52,5 @@ enum class MessageType : uint8_t {
 };
 
 }
+
+#endif // MESSAGES_HPP

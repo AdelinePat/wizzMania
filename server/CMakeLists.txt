@@ -36,12 +36,13 @@ if(NOT BUILD_TESTS)
     )
 
     set(SERVER_HEADERS
-        sources/server.hpp
-        sources/auth.hpp
-        sources/helpers.hpp
-        # sources/database.hpp
-        # sources/message_handler.hpp
-        # sources/websocket_manager.hpp
+        headers/server.hpp
+        headers/auth.hpp
+        headers/helpers.hpp
+        headers/json_helpers.hpp
+        # headers/database.hpp
+        # headers/message_handler.hpp
+        # headers/websocket_manager.hpp
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})

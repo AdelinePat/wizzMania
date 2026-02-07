@@ -1,5 +1,10 @@
 #include "server.hpp"
-// #include <memory>
+
+#include <iostream>
+
+#include "auth.hpp"
+#include "json_helpers.hpp"
+#include "message_structure.hpp"
 
 using WSConn = crow::websocket::connection*;
 
@@ -62,25 +67,35 @@ int main() {
         crow::json::rvalue json_body = crow::json::load(req.body);
         if (!json_body) {
           std::cout << "[LOGIN] Invalid JSON\n";
-          crow::json::wvalue error;
-          error["success"] = false;
-          error["message"] = "Invalid JSON";
-          return crow::response(400, error);
+          AuthMessages::LoginResponse error_resp;
+          error_resp.success = false;
+          error_resp.message = "Invalid JSON";
+          return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
         }
 
-        std::string username = json_body["username"].s();
-        std::string password = json_body["password"].s();
+        std::optional<AuthMessages::LoginRequest> login_req =
+            JsonHelpers::Auth::parse_login_request(json_body);
+        if (!login_req.has_value()) {
+          std::cout << "[LOGIN] Missing required fields\n";
+          AuthMessages::LoginResponse error_resp;
+          error_resp.success = false;
+          error_resp.message = "Missing username or password";
+          return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
+        }
 
-        std::cout << "[LOGIN] Attempting login for user: " << username << "\n";
+        std::cout << "[LOGIN] Attempting login for user: "
+                  << login_req->username << "\n";
 
-        int64_t user_id = check_user_credentials(username, password);
+        int64_t user_id =
+            check_user_credentials(login_req->username, login_req->password);
 
         if (user_id < 0) {
-          std::cout << "[LOGIN] Invalid credentials for: " << username << "\n";
-          crow::json::wvalue error;
-          error["success"] = false;
-          error["message"] = "Invalid username or password";
-          return crow::response(401, error);
+          std::cout << "[LOGIN] Invalid credentials for: "
+                    << login_req->username << "\n";
+          AuthMessages::LoginResponse error_resp;
+          error_resp.success = false;
+          error_resp.message = "Invalid username or password";
+          return crow::response(401, JsonHelpers::Auth::to_json(error_resp));
         }
 
         std::string token = Auth::generateToken(user_id);
@@ -88,13 +103,14 @@ int main() {
         std::cout << "[LOGIN] Token generated: " << token.substr(0, 20)
                   << "...\n";
 
-        crow::json::wvalue response;
-        response["success"] = true;
-        response["token"] = token;
-        response["user_id"] = user_id;
-        response["username"] = username;
+        AuthMessages::LoginResponse success_resp;
+        success_resp.success = true;
+        success_resp.message = "Login successful";
+        success_resp.token = token;
+        success_resp.user_id = user_id;
+        success_resp.username = login_req->username;
 
-        return crow::response(200, response);
+        return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
       });
 
   // ===== WebSocket endpoint =====
@@ -126,7 +142,17 @@ int main() {
       })
       .onmessage([&](crow::websocket::connection& conn, const std::string& data,
                      [[maybe_unused]] bool is_binary) {
-        // Check if already authenticated by looking in socket_to_user map
+        crow::json::rvalue json_msg = crow::json::load(data);
+        if (!json_msg || !json_msg.has("type")) {
+          std::cout << "[WS] Invalid JSON or missing 'type' field\n";
+          conn.close("Invalid message format");
+          return;
+        }
+
+        int type_int = json_msg["type"].i();
+        WizzMania::MessageType msg_type =
+            static_cast<WizzMania::MessageType>(type_int);
+
         bool is_authenticated = false;
         int64_t user_id = -1;
 
@@ -139,59 +165,168 @@ int main() {
           }
         }
 
-        // If not authenticated, expect authentication message
-        if (!is_authenticated) {
-          std::cout << "[WS] Received authentication message\n";
-
-          crow::json::rvalue json_msg = crow::json::load(data);
-          if (!json_msg || !json_msg.has("token")) {
-            std::cout << "[WS] Missing or invalid token in auth message\n";
-            conn.close("Missing or invalid token");
+        // ===== AUTHENTICATION =====
+        if (msg_type == WizzMania::MessageType::WS_AUTH) {
+          if (is_authenticated) {
+            std::cout << "[WS] User already authenticated\n";
             return;
           }
 
-          std::string token = json_msg["token"].s();
-          std::cout << "[WS] Validating token: " << token.substr(0, 20)
-                    << "...\n";
+          std::cout << "[WS] Processing authentication request\n";
 
-          std::optional<int64_t> validated_user_id = Auth::validateToken(token);
+          std::optional<::AuthMessages::WSAuthRequest> auth_req =
+              JsonHelpers::Auth::parse_ws_auth_request(json_msg);
+          if (!auth_req.has_value()) {
+            std::cout << "[WS] Invalid auth request format\n";
+            conn.close("Invalid authentication format");
+            return;
+          }
+
+          std::cout << "[WS] Validating token: "
+                    << auth_req->token.substr(0, 20) << "...\n";
+
+          std::optional<int64_t> validated_user_id =
+              Auth::validateToken(auth_req->token);
 
           if (!validated_user_id.has_value()) {
-            std::cout << "[WS] Invalid token, closing connection\n";
+            std::cout << "[WS] Invalid token\n";
             conn.close("Invalid token");
             return;
           }
 
           std::cout << "[WS] ✅ User " << validated_user_id.value()
-                    << " authenticated successfully!\n";
+                    << " authenticated!\n";
 
-          // Store connection in maps (this marks it as authenticated)
           {
             std::lock_guard<std::mutex> lock(ws_mutex);
             user_sockets[validated_user_id.value()].insert(&conn);
             socket_to_user[&conn] = validated_user_id.value();
           }
 
-          // Send confirmation to client
-          crow::json::wvalue welcome;
-          welcome["type"] = "connected";
-          welcome["message"] = "WebSocket authenticated successfully";
-          welcome["user_id"] = validated_user_id.value();
-          conn.send_text(welcome.dump());
+          AuthMessages::WSAuthResponse auth_resp;
+          auth_resp.type =
+              WizzMania::MessageType::WS_AUTH_SUCCESS;  // Explicitly set type
+          auth_resp.message = "Authentication successful";
+          auth_resp.user_id = validated_user_id.value();
+          conn.send_text(JsonHelpers::Auth::to_json(auth_resp).dump());
 
           return;
         }
 
-        // Handle regular messages from authenticated users
-        std::cout << "[WS] Message from user " << user_id << ": " << data
-                  << "\n";
+        // ===== ALL OTHER MESSAGES REQUIRE AUTH =====
+        if (!is_authenticated) {
+          std::cout << "[WS] Unauthenticated connection\n";
+          conn.close("Authentication required");
+          return;
+        }
 
-        // Echo the message back for now (you can customize this)
-        crow::json::wvalue response;
-        response["type"] = "echo";
-        response["message"] = data;
-        response["user_id"] = user_id;
-        conn.send_text(response.dump());
+        // ===== ROUTE AUTHENTICATED MESSAGES =====
+        std::cout << "[WS] User " << user_id << " - type: " << type_int << "\n";
+
+        switch (msg_type) {
+          case WizzMania::MessageType::SEND_MESSAGE: {
+            std::optional<::ClientSend::SendMessageRequest> req =
+                JsonHelpers::ClientSend::parse_send_message(json_msg);
+            if (!req.has_value()) {
+              ServerSend::ErrorResponse err;
+              err.type = WizzMania::MessageType::ERROR;  // Explicitly set type
+              err.message = "Invalid SEND_MESSAGE format";
+              err.error_code = "INVALID_FORMAT";
+              conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+              return;
+            }
+
+            std::cout << "[MSG] User " << user_id << " -> Channel "
+                      << req->channel_id << ": " << req->body << "\n";
+
+            // TEMP : ECHO MSG BACK
+            ServerSend::NewMessageBroadcast broadcast;  // outer struct
+            broadcast.type =
+                WizzMania::MessageType::NEW_MESSAGE;  // ✅ this exists here
+            broadcast.channel_id = req->channel_id;
+
+            // fill the inner message
+            broadcast.message.message_id = 0;  // fake id for now
+            broadcast.message.sender_id = user_id;
+            broadcast.message.sender_username = "whatever";
+            broadcast.message.body = req->body;
+
+            // timestamp as string
+            auto now = std::chrono::system_clock::now();
+            std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+            std::ostringstream oss;
+            oss << std::put_time(std::localtime(&now_time),
+                                 "%Y-%m-%dT%H:%M:%S");
+            broadcast.message.timestamp = oss.str();
+
+            broadcast.message.is_system = true;
+
+            // send JSON
+            conn.send_text(JsonHelpers::ServerSend::to_json(broadcast).dump());
+            break;
+          }
+
+          case WizzMania::MessageType::CREATE_CHANNEL: {
+            auto req = JsonHelpers::ClientSend::parse_create_channel(json_msg);
+            if (!req.has_value()) {
+              ServerSend::ErrorResponse err;
+              err.type = WizzMania::MessageType::ERROR;
+              err.message = "Invalid CREATE_CHANNEL format";
+              err.error_code = "INVALID_FORMAT";
+              conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+              return;
+            }
+
+            std::cout << "[CHANNEL] User " << user_id << " creating with "
+                      << req->participant_ids.size() << " participants\n";
+
+            // TODO: Create channel
+
+            break;
+          }
+
+          case WizzMania::MessageType::TYPING_START:
+          case WizzMania::MessageType::TYPING_STOP: {
+            auto req = JsonHelpers::ClientSend::parse_typing(json_msg);
+            if (!req.has_value()) {
+              ServerSend::ErrorResponse err;
+              err.type = WizzMania::MessageType::ERROR;
+              err.message = "Invalid TYPING format";
+              err.error_code = "INVALID_FORMAT";
+              conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+              return;
+            }
+
+            std::cout << "[TYPING] User " << user_id << " in channel "
+                      << req->channel_id << ": "
+                      << (req->is_typing ? "start" : "stop") << "\n";
+
+            // TODO: Broadcast typing
+
+            break;
+          }
+
+          case WizzMania::MessageType::LOGOUT: {
+            auto req = JsonHelpers::Auth::parse_logout_request(json_msg);
+            std::cout << "[LOGOUT] User " << user_id;
+            if (req.has_value() && !req->reason.empty()) {
+              std::cout << " (" << req->reason << ")";
+            }
+            std::cout << "\n";
+
+            conn.close("User logout");
+            break;
+          }
+
+          default:
+            std::cout << "[WS] Unhandled type: " << type_int << "\n";
+            ServerSend::ErrorResponse err;
+            err.type = WizzMania::MessageType::ERROR;
+            err.message = "Message type not implemented";
+            err.error_code = "NOT_IMPLEMENTED";
+            conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+            break;
+        }
       });
 
   uint16_t port = 8888;
