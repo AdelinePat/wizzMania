@@ -30,41 +30,7 @@ int main() {
   std::cout << " WizzMania Server Starting...\n";
   std::cout << "========================================\n";
 
-  // =========================================
-  // Initialize Server Port from environment
-  // =========================================
   uint16_t port = get_server_port();
-      // const char* portStr = std::getenv("SERVER_PORT");
-      // uint16_t port = 8888;
-
-      // if (!portStr) {
-      //   std::cout << "[WARN] SERVER_PORT not set. Using default 8888\n";
-      //   portStr = "8888";
-      // }
-
-      // try {
-      //   int temp = std::stoi(portStr);
-      //   if (temp > 0 && temp <= 65535)
-      //     port = static_cast<uint16_t>(temp);
-      //   else
-      //     std::cerr << "[WARN] SERVER_PORT out of range, using default\n";
-      // } catch (...) {
-      //   std::cerr << "[WARN] Invalid SERVER_PORT, using default\n";
-      // }
-
-      // =========================================
-      // Initialize Database Connection
-      // =========================================
-  //     std::string db_host =
-  //         std::getenv("DB_HOST") ? std::getenv("DB_HOST") : "mysql-db";
-  // std::string db_user =
-  //     std::getenv("DB_USER") ? std::getenv("DB_USER") : "root";
-  // std::string db_pass =
-  //     std::getenv("DB_PASSWORD") ? std::getenv("DB_PASSWORD") : "root_password";
-  // std::string db_name =
-  //     std::getenv("DB_NAME") ? std::getenv("DB_NAME") : "wizzmania";
-
-  // Database db(db_host, db_user, db_pass, db_name);
   Database db;
   std::cout << "[Server] Database initialized successfully" << std::endl;
 
@@ -90,55 +56,6 @@ int main() {
   CROW_ROUTE(app, "/login")
       .methods("POST"_method)([&db, &http_manager](const crow::request& req) {
         return http_manager.login(db, req);
-        // std::cout << "[LOGIN] Received login request\n";
-
-        // crow::json::rvalue json_body = crow::json::load(req.body);
-        // if (!json_body) {
-        //   std::cout << "[LOGIN] Invalid JSON\n";
-        //   AuthMessages::LoginResponse error_resp;
-        //   error_resp.success = false;
-        //   error_resp.message = "Invalid JSON";
-        //   return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
-        // }
-
-        // std::optional<AuthMessages::LoginRequest> login_req =
-        //     JsonHelpers::Auth::parse_login_request(json_body);
-        // if (!login_req.has_value()) {
-        //   std::cout << "[LOGIN] Missing required fields\n";
-        //   AuthMessages::LoginResponse error_resp;
-        //   error_resp.success = false;
-        //   error_resp.message = "Missing username or password";
-        //   return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
-        // }
-
-        // std::cout << "[LOGIN] Attempting login for user: "
-        //           << login_req->username << "\n";
-
-        // int64_t user_id =
-        //      db.verify_user(login_req->username, login_req->password);
-
-        // if (user_id < 0) {
-        //   std::cout << "[LOGIN] Invalid credentials for: "
-        //             << login_req->username << "\n";
-        //   AuthMessages::LoginResponse error_resp;
-        //   error_resp.success = false;
-        //   error_resp.message = "Invalid username or password";
-        //   return crow::response(401, JsonHelpers::Auth::to_json(error_resp));
-        // }
-
-        // std::string token = Auth::generateToken(user_id);
-        // std::cout << "[LOGIN] Login successful! User ID: " << user_id <<
-        // "\n"; std::cout << "[LOGIN] Token generated: " << token.substr(0, 20)
-        //           << "...\n";
-
-        // AuthMessages::LoginResponse success_resp;
-        // success_resp.success = true;
-        // success_resp.message = "Login successful";
-        // success_resp.token = token;
-        // success_resp.user_id = user_id;
-        // success_resp.username = login_req->username;
-
-        // return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
       });
 
   // ===== WebSocket endpoint =====
@@ -158,12 +75,7 @@ int main() {
           std::cout << "[WS] Unauthenticated connection closed. Reason: "
                     << reason << "\n";
         }
-
         ws_manager.remove_connection(&conn);
-
-        // std::cout << "[WS] Online users: " <<
-        // ws_manager.get_online_user_count()
-        //           << "\n";
       })
       .onmessage([&](crow::websocket::connection& conn, const std::string& data,
                      [[maybe_unused]] bool is_binary) {
@@ -180,60 +92,11 @@ int main() {
 
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
-          if (ws_manager.is_authenticated(&conn)) {
-            std::cout << "[WS] User already authenticated\n";
-            return;
-          }
-
-          std::cout << "[WS] Processing authentication request\n";
-
-          std::optional<::AuthMessages::WSAuthRequest> auth_req =
-              JsonHelpers::Auth::parse_ws_auth_request(json_msg);
-          if (!auth_req.has_value()) {
-            std::cout << "[WS] Invalid auth request format\n";
-            conn.close("Invalid authentication format");
-            return;
-          }
-
-          // std::cout << "[WS] Validating token: "
-          //           << auth_req->token.substr(0, 20) << "...\n";
-
-          std::optional<int64_t> validated_user_id =
-              Auth::validateToken(auth_req->token);
-
-          if (!validated_user_id.has_value()) {
-            std::cout << "[WS] Invalid token\n";
-            conn.close("Invalid token");
-            return;
-          }
-
-          std::cout << "[WS] ✅ User " << validated_user_id.value()
-                    << " authenticated!\n";
-
-          ws_manager.add_user(validated_user_id.value(), &conn);
-
-          // {
-          //   std::lock_guard<std::mutex> lock(ws_mutex);
-          //   user_sockets[validated_user_id.value()].insert(&conn);
-          //   socket_to_user[&conn] = validated_user_id.value();
-          // }
-
-          AuthMessages::WSAuthResponse auth_resp;
-          auth_resp.type =
-              WizzMania::MessageType::WS_AUTH_SUCCESS;  // Explicitly set type
-          auth_resp.message = "Authentication successful";
-          auth_resp.user_id = validated_user_id.value();
-          conn.send_text(JsonHelpers::Auth::to_json(auth_resp).dump());
-
-          return;
+          // method in progress
+          return msg_handler.authenticate_ws(conn, json_msg);
         }
 
         // ===== ALL OTHER MESSAGES REQUIRE AUTH =====
-        // if (!is_authenticated) {
-        //   std::cout << "[WS] Unauthenticated connection\n";
-        //   conn.close("Authentication required");
-        //   return;
-        // }
         std::optional<int64_t> user_id_opt = ws_manager.get_user_id(&conn);
         if (!user_id_opt.has_value()) {
           std::cout << "[WS] Unauthenticated message attempt\n";

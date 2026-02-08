@@ -26,7 +26,7 @@ void MessageHandler::handle_send_message(crow::websocket::connection& conn,
   // fill the inner message
   broadcast.message.message_id = 0;  // fake id for now TODO get from DB!!
   broadcast.message.sender_id = user_id;
-//   broadcast.message.sender_username = "whatever";
+  //   broadcast.message.sender_username = "whatever";
   broadcast.message.body = req->body;
 
   // timestamp as string
@@ -54,4 +54,54 @@ void MessageHandler::send_error(crow::websocket::connection& conn,
   err.message = error_message;
 
   conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+}
+
+void MessageHandler::auth_error(crow::websocket::connection& conn,
+                                const std::string& message) {
+  std::cout << "[WS]" << message << "\n";
+  conn.close(message);
+}
+
+void MessageHandler::auth_success(crow::websocket::connection& conn,
+                                  const int64_t validated_user_id) {
+  std::cout << "[WS] ✅ User " << validated_user_id << " authenticated!\n";
+
+  ws_manager.add_user(validated_user_id, &conn);
+
+  AuthMessages::WSAuthResponse auth_resp;
+  auth_resp.type =
+      WizzMania::MessageType::WS_AUTH_SUCCESS;  // Explicitly set type
+  auth_resp.message = "Authentication successful";
+  auth_resp.user_id = validated_user_id;
+  conn.send_text(JsonHelpers::Auth::to_json(auth_resp).dump());
+}
+
+void MessageHandler::authenticate_ws(crow::websocket::connection& conn,
+                                     const crow::json::rvalue& json_msg) {
+  if (ws_manager.is_authenticated(&conn)) {
+    std::cout << "[WS] User already authenticated\n";
+    return;
+  }
+
+  std::cout << "[WS] Processing authentication request\n";
+
+  std::optional<::AuthMessages::WSAuthRequest> auth_req =
+      JsonHelpers::Auth::parse_ws_auth_request(json_msg);
+
+  if (!auth_req.has_value()) {
+    this->auth_error(conn, "Invalid authentication format");
+    return;
+  }
+
+  std::optional<int64_t> validated_user_id =
+      Auth::validateToken(auth_req->token);
+
+  if (!validated_user_id.has_value()) {
+    this->auth_error(conn, "Invalid token");
+    return;
+  }
+
+  this->auth_success(conn, validated_user_id.value());
+
+  return;
 }

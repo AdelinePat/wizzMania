@@ -1,25 +1,38 @@
 #include "http_manager.hpp"
 
+crow::response HttpManager::send_login_error(const int code,
+                                             const std::string& message) {
+  AuthMessages::LoginResponse error_resp;
+  error_resp.success = false;
+  error_resp.message = message;
+  return crow::response(code, JsonHelpers::Auth::to_json(error_resp));
+}
+
+crow::response HttpManager::send_login_response(
+    const int64_t user_id, const std::string& username,  const std::string& token) {
+  AuthMessages::LoginResponse success_resp;
+  success_resp.success = true;
+  success_resp.message = "Login successful";
+  success_resp.token = token;
+  success_resp.user_id = user_id;
+  success_resp.username = username;
+  return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
+}
+
 crow::response HttpManager::login(Database& db, const crow::request& req) {
   std::cout << "[LOGIN] Received login request\n";
 
   crow::json::rvalue json_body = crow::json::load(req.body);
   if (!json_body) {
     std::cout << "[LOGIN] Invalid JSON\n";
-    AuthMessages::LoginResponse error_resp;
-    error_resp.success = false;
-    error_resp.message = "Invalid JSON";
-    return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
+    return this->send_login_error(400, "Invalid JSON");
   }
 
   std::optional<AuthMessages::LoginRequest> login_req =
       JsonHelpers::Auth::parse_login_request(json_body);
   if (!login_req.has_value()) {
     std::cout << "[LOGIN] Missing required fields\n";
-    AuthMessages::LoginResponse error_resp;
-    error_resp.success = false;
-    error_resp.message = "Missing username or password";
-    return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
+    return this->send_login_error(400, "Missing username or password");
   }
 
   std::cout << "[LOGIN] Attempting login for user: " << login_req->username
@@ -30,22 +43,11 @@ crow::response HttpManager::login(Database& db, const crow::request& req) {
   if (user_id < 0) {
     std::cout << "[LOGIN] Invalid credentials for: " << login_req->username
               << "\n";
-    AuthMessages::LoginResponse error_resp;
-    error_resp.success = false;
-    error_resp.message = "Invalid username or password";
-    return crow::response(401, JsonHelpers::Auth::to_json(error_resp));
+    return this->send_login_error(401, "Invalid username or password");
   }
 
   std::string token = Auth::generateToken(user_id);
   std::cout << "[LOGIN] Login successful! User ID: " << user_id << "\n";
   std::cout << "[LOGIN] Token generated: " << token.substr(0, 20) << "...\n";
-
-  AuthMessages::LoginResponse success_resp;
-  success_resp.success = true;
-  success_resp.message = "Login successful";
-  success_resp.token = token;
-  success_resp.user_id = user_id;
-  success_resp.username = login_req->username;
-
-  return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
+  return this->send_login_response(user_id, login_req->username, token);
 }

@@ -37,28 +37,6 @@ std::optional<int64_t> WebSocketManager::get_user_id(WSConn conn) {
   return std::nullopt;
 }
 
-// EVERYTHING USING VECTOR IS UTTERLY USELESS
-
-// std::vector<WSConn> WebSocketManager::get_user_connections(int64_t user_id) {
-//   std::lock_guard<std::mutex> lock(this->ws_mutex);
-
-//   std::vector<WSConn> connections;
-//   auto it = this->user_sockets.find(user_id);
-//   if (it != this->user_sockets.end()) {
-//     connections.assign(it->second.begin(), it->second.end());
-//   }
-//   return connections;
-// }
-
-// std::vector<WSConn> WebSocketManager::get_all_connections() {
-//   std::lock_guard<std::mutex> lock(this->ws_mutex);
-//   std::vector<WSConn> all_connections;
-//   for (const auto& [conn, user_id] : this->socket_to_user) {
-//     all_connections.push_back(conn);
-//   }
-//   return all_connections;
-// }
-
 void WebSocketManager::broadcast_to_all(const std::string& message) {
   std::lock_guard<std::mutex> lock(this->ws_mutex);
   for (const auto& [conn, user_id] : this->socket_to_user) {

@@ -9,7 +9,7 @@
 #include <string>
 #include <thread>
 
-#include "auth.hpp"
+
 #include "database.hpp"
 #include "helpers.hpp"
 #include "http_manager.hpp"

@@ -80,11 +80,7 @@ int64_t Database::verify_user(const std::string& username,
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     if (res->next()) {
-      // AuthMessages::LoginResponse login_response;
       return res->getInt64("id_user");
-      // login_response.user_id = res->getInt64("id_user");
-      // login_response.username = res->getString("username");
-      // return login_response;
     }
     return -1;
 
