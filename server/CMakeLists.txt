@@ -29,20 +29,20 @@ if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
         sources/server.cpp
         sources/auth.cpp
+        sources/database.cpp
         sources/helpers.cpp
         sources/message_handler.cpp
         sources/websocket_manager.cpp
-        # sources/database.cpp
         )
 
     set(SERVER_HEADERS
         headers/server.hpp
         headers/auth.hpp
+        headers/database.hpp
         headers/helpers.hpp
         headers/json_helpers.hpp
         headers/message_handler.hpp
         headers/websocket_manager.hpp
-        # headers/database.hpp
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})

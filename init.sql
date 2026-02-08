@@ -14,9 +14,9 @@ CREATE TABLE users (
 -- Channels table
 CREATE TABLE channels (
     id_channel BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(100) NOT NULL
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    created_by BIGINT NOT NULL
+    title VARCHAR(100) NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_by BIGINT NOT NULL,
     CONSTRAINT kf_channel_creator FOREIGN KEY (created_by) REFERENCES users(id_user) ON DELETE NO ACTION ON UPDATE CASCADE
 );
 
@@ -25,10 +25,7 @@ CREATE TABLE userChannel (
     id_userChannel BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
-    accepted BOOLEAN NOT NULL DEFAULT FALSE,
-    -- status ENUM('pending', 'accepted', 'rejected') NOT NULL DEFAULT 'pending',
-    -- ORRR FOR LESS ISSUES !! 
-    status TINYINT NOT NULL DEFAULT 0,  -- 0=pending, 1=accepted, 2=rejected, 3=left
+    membership TINYINT NOT NULL DEFAULT 0,  -- 0=pending, 1=accepted, 2=rejected, 3=left
     joined_at DATETIME, 
     last_read_message_id BIGINT,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
@@ -46,8 +43,8 @@ CREATE TABLE messages (
     id_message BIGINT AUTO_INCREMENT PRIMARY KEY,
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     body TEXT,
+    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_messages_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
         ON DELETE NO ACTION
@@ -61,11 +58,9 @@ CREATE TABLE messages (
 
 -- INIT FALSE DATA
 -- USERS
--- Add system user during initialization
-INSERT INTO users (id_user, username, email, password) 
-VALUES (0, 'System', 'system@wizzmania.internal', 'SYSTEM_NO_LOGIN');
+INSERT INTO users (username, email, password) 
+VALUES ('System', 'system@wizzmania.internal', 'SYSTEM_NO_LOGIN');
 
--- FAKE USERS 
 INSERT INTO users (username, email, password) VALUES
 ('alice', 'alice@mail.com', 'hash'),
 ('bob', 'bob@mail.com', 'hash'),
@@ -79,62 +74,119 @@ INSERT INTO users (username, email, password) VALUES
 ('judy', 'judy@mail.com', 'hash');
 
 -- CHANNELS
-INSERT INTO channels (title) VALUES
-('Alice,  Bob'),
-('Alice, Carol, Dave'),
-('Bob, Carol'),
-('Dave, Eve, Frank'),
-('Grace, Heidi'),
-('Ivan, Judy, Alice');
-
--- USER_CHANNEL
-INSERT INTO userChannel (id_user, id_channel, accepted, last_read_message_id) VALUES
--- Chat 1 (A-B)
-(1, 1, TRUE, 15),
-(2, 1, TRUE, 18),
-
--- Chat 2 (A-C-D) → D has not accepted yet
-(1, 2, TRUE, 10),
-(3, 2, TRUE, 12),
-(4, 2, TRUE, 12),
-
--- Chat 3 (B-C)
-(2, 3, TRUE, 20),
-(3, 3, TRUE, 20),
-
--- Chat 4 (D-E-F) → F pending
-(4, 4, TRUE, 8),
-(5, 4, TRUE, 10),
-(6, 4, FALSE, NULL),
-
--- Chat 5 (G-H)
-(7, 5, TRUE, 20),
-(8, 5, TRUE, 19),
-
--- Chat 6 (I-J-A) → J pending
-(9, 6, TRUE, 14),
-(10, 6, FALSE, NULL),
-(1, 6, TRUE, 16);
+INSERT INTO channels (id_channel, title, created_by) VALUES
+(1, 'DM alice-bob', 2),      -- alice (was 1, now 2)
+(2, 'DM alice-carol', 2),    -- alice
+(3, 'DM bob-dave', 3),       -- bob (was 2, now 3)
+(4, 'DM carol-eve', 4),      -- carol (was 3, now 4)
+(5, 'DM dave-frank', 5),     -- dave (was 4, now 5)
+(6, 'DM eve-grace', 6),      -- eve (was 5, now 6)
+(7, 'DM frank-heidi', 7),    -- frank (was 6, now 7)
+(8, 'DM grace-ivan', 8),     -- grace (was 7, now 8)
+(9, 'DM heidi-judy', 9),     -- heidi (was 8, now 9)
+(10, 'DM ivan-alice', 10),   -- ivan (was 9, now 10)
+(11, 'Group Alpha', 2),      -- alice
+(12, 'Group Beta', 3),       -- bob
+(13, 'Group Gamma', 4),      -- carol
+(14, 'Group Delta', 5),      -- dave
+(15, 'Group Omega', 6),      -- eve
+(16, 'Group Sigma', 7),      -- frank
+(17, 'Group Lambda', 8),     -- grace
+(18, 'Group Zeta', 9);       -- heidi
 
 -- MESSAGES
-INSERT INTO messages (id_user, id_channel, timestamp, body) VALUES
-(1, 1, NOW() - INTERVAL 20 MINUTE, 'Hey'),
-(2, 1, NOW() - INTERVAL 19 MINUTE, 'Hi'),
-(1, 1, NOW() - INTERVAL 18 MINUTE, 'How are you?'),
-(2, 1, NOW() - INTERVAL 17 MINUTE, 'Good'),
-(1, 1, NOW() - INTERVAL 16 MINUTE, 'Nice'),
-(2, 1, NOW() - INTERVAL 15 MINUTE, 'Yep'),
-(1, 1, NOW() - INTERVAL 14 MINUTE, 'Any news?'),
-(2, 1, NOW() - INTERVAL 13 MINUTE, 'Not really'),
-(1, 1, NOW() - INTERVAL 12 MINUTE, 'Ok'),
-(2, 1, NOW() - INTERVAL 11 MINUTE, 'See you'),
-(1, 1, NOW() - INTERVAL 10 MINUTE, 'Later'),
-(2, 1, NOW() - INTERVAL 9 MINUTE, 'Bye'),
-(1, 1, NOW() - INTERVAL 8 MINUTE, '👍'),
-(2, 1, NOW() - INTERVAL 7 MINUTE, '👍'),
-(1, 1, NOW() - INTERVAL 6 MINUTE, 'Done'),
-(2, 1, NOW() - INTERVAL 5 MINUTE, 'Yep'),
-(1, 1, NOW() - INTERVAL 4 MINUTE, 'End'),
-(2, 1, NOW() - INTERVAL 3 MINUTE, 'Ok'),
-(1, 1, NOW() - INTERVAL 2 MINUTE, 'Final'),
-(2, 1, NOW() - INTERVAL 1 MINUTE, '👍');
+-- System logs
+INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
+(1, 1, '@2 has joined the chat', NOW()),
+(1, 1, '@3 has joined the chat', NOW()),
+(1, 3, '@5 rejected the invitation', NOW());
+
+-- DM messages
+INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
+(2, 1, 'Hey Bob', NOW()),
+(3, 1, 'Hey Alice', NOW()),
+(2, 1, 'How are you?', NOW()),
+(3, 1, 'Good, you?', NOW()),
+(2, 1, 'All good', NOW()),
+(3, 1, 'Nice', NOW()),
+(2, 1, 'What are you doing?', NOW()),
+(3, 1, 'Working', NOW()),
+(2, 1, 'Same here', NOW()),
+(3, 1, 'Coffee later?', NOW());
+
+-- Group chat messages
+INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
+(2, 11, 'Welcome everyone', NOW()),
+(3, 11, 'Hi!', NOW()),
+(4, 11, 'Hello', NOW()),
+(5, 11, 'Hey', NOW()),
+(2, 11, 'Let s start', NOW()),
+(3, 11, 'Sure', NOW()),
+(4, 11, 'Ready', NOW()),
+(5, 11, 'Yep', NOW()),
+(2, 11, 'Cool', NOW()),
+(3, 11, 'Go', NOW());
+
+
+
+
+-- -- CHANNELS
+-- INSERT INTO channels (title) VALUES
+-- ('Alice,  Bob'),
+-- ('Alice, Carol, Dave'),
+-- ('Bob, Carol'),
+-- ('Dave, Eve, Frank'),
+-- ('Grace, Heidi'),
+-- ('Ivan, Judy, Alice');
+
+-- -- USER_CHANNEL
+-- INSERT INTO userChannel (id_user, id_channel, accepted, last_read_message_id) VALUES
+-- -- Chat 1 (A-B)
+-- (1, 1, TRUE, 15),
+-- (2, 1, TRUE, 18),
+
+-- -- Chat 2 (A-C-D) → D has not accepted yet
+-- (1, 2, TRUE, 10),
+-- (3, 2, TRUE, 12),
+-- (4, 2, TRUE, 12),
+
+-- -- Chat 3 (B-C)
+-- (2, 3, TRUE, 20),
+-- (3, 3, TRUE, 20),
+
+-- -- Chat 4 (D-E-F) → F pending
+-- (4, 4, TRUE, 8),
+-- (5, 4, TRUE, 10),
+-- (6, 4, FALSE, NULL),
+
+-- -- Chat 5 (G-H)
+-- (7, 5, TRUE, 20),
+-- (8, 5, TRUE, 19),
+
+-- -- Chat 6 (I-J-A) → J pending
+-- (9, 6, TRUE, 14),
+-- (10, 6, FALSE, NULL),
+-- (1, 6, TRUE, 16);
+
+-- -- MESSAGES
+-- INSERT INTO messages (id_user, id_channel, timestamp, body) VALUES
+-- (1, 1, NOW() - INTERVAL 20 MINUTE, 'Hey'),
+-- (2, 1, NOW() - INTERVAL 19 MINUTE, 'Hi'),
+-- (1, 1, NOW() - INTERVAL 18 MINUTE, 'How are you?'),
+-- (2, 1, NOW() - INTERVAL 17 MINUTE, 'Good'),
+-- (1, 1, NOW() - INTERVAL 16 MINUTE, 'Nice'),
+-- (2, 1, NOW() - INTERVAL 15 MINUTE, 'Yep'),
+-- (1, 1, NOW() - INTERVAL 14 MINUTE, 'Any news?'),
+-- (2, 1, NOW() - INTERVAL 13 MINUTE, 'Not really'),
+-- (1, 1, NOW() - INTERVAL 12 MINUTE, 'Ok'),
+-- (2, 1, NOW() - INTERVAL 11 MINUTE, 'See you'),
+-- (1, 1, NOW() - INTERVAL 10 MINUTE, 'Later'),
+-- (2, 1, NOW() - INTERVAL 9 MINUTE, 'Bye'),
+-- (1, 1, NOW() - INTERVAL 8 MINUTE, '👍'),
+-- (2, 1, NOW() - INTERVAL 7 MINUTE, '👍'),
+-- (1, 1, NOW() - INTERVAL 6 MINUTE, 'Done'),
+-- (2, 1, NOW() - INTERVAL 5 MINUTE, 'Yep'),
+-- (1, 1, NOW() - INTERVAL 4 MINUTE, 'End'),
+-- (2, 1, NOW() - INTERVAL 3 MINUTE, 'Ok'),
+-- (1, 1, NOW() - INTERVAL 2 MINUTE, 'Final'),
+-- (2, 1, NOW() - INTERVAL 1 MINUTE, '👍');

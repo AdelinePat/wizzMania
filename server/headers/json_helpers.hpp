@@ -173,7 +173,7 @@ inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   crow::json::wvalue json;
   json["message_id"] = msg.message_id;
   json["sender_id"] = msg.sender_id;
-  json["sender_username"] = msg.sender_username;
+  // json["sender_username"] = msg.sender_username;
   json["body"] = msg.body;
   json["timestamp"] = msg.timestamp;
   json["is_system"] = msg.is_system;

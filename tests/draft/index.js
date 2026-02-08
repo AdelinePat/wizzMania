@@ -1,15 +1,23 @@
-// Global state
+// ==================== GLOBAL STATE ====================
 let token = null;
 let userId = null;
 let username = null;
 let ws = null;
 
+// Username cache (hardcoded for testing - matches your 3 fake users)
+const userCache = new Map([
+  [1, "alice"],
+  [2, "bob"],
+  [3, "charlie"]
+]);
+
 const SERVER_URL = "http://localhost:8888";
 const WS_URL = "ws://localhost:8888/ws";
 
-
+// Message type constants (matching your C++ enum)
 const MessageType = {
-  WS_AUTH: 0,          // client -> server
+  // Client -> Server
+  WS_AUTH: 0,
   LOGOUT: 1,
   SEND_MESSAGE: 10,
   CREATE_CHANNEL: 11,
@@ -23,7 +31,7 @@ const MessageType = {
   REQUEST_CHANNEL_HISTORY: 19,
   CHANNEL_OPEN: 20,
 
-  // server -> client
+  // Server -> Client
   WS_AUTH_SUCCESS: 100,
   NEW_MESSAGE: 101,
   CHANNEL_CREATED: 102,
@@ -73,15 +81,15 @@ async function login() {
       statusDiv.innerHTML = `
         <div class="status success">
           ✅ Login successful!<br>
-          User ID: ${userId}<br>
-          Username: ${username}<br>
-          Token: ${token.substring(0, 30)}...
+          User: ${username} (ID: ${userId})
         </div>
       `;
 
       document.getElementById("loginBtn").disabled = true;
 
-      // Automatically connect WebSocket and send WSAuthRequest
+      addSystemMessage(`Logged in as ${username} (ID: ${userId})`);
+      
+      // ✅ Automatically connect WebSocket after successful login
       connectWebSocket();
     } else {
       statusDiv.innerHTML = `<div class="status error">❌ ${data.message}</div>`;
@@ -105,14 +113,17 @@ function connectWebSocket() {
   ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
-    console.log("WebSocket opened, sending WSAuthRequest...");
-    addSystemMessage("WebSocket connection opened");
+    console.log("WebSocket opened, sending authentication...");
+    addSystemMessage("Connecting to chat server...");
 
-    // Send WSAuthRequest immediately
-    ws.send(JSON.stringify({
-      type: 0,        // WS_AUTH message type
-      token: token,   // authentication token
-    }));
+    // Send authentication message
+    setTimeout(() => {
+      ws.send(JSON.stringify({
+        type: MessageType.WS_AUTH,
+        token: token
+      }));
+      console.log("Auth message sent");
+    }, 50);
   };
 
   ws.onmessage = (event) => {
@@ -124,45 +135,38 @@ function connectWebSocket() {
       switch (data.type) {
         case MessageType.WS_AUTH_SUCCESS:
           statusDiv.innerHTML = `
-          <div class="status success">
-            ✅ WebSocket connected and authenticated!<br>
-            ${data.message || "Welcome!"}
-          </div>
-        `;
+            <div class="status success">
+              ✅ Connected to chat server!
+            </div>
+          `;
+
           // Enable messaging
           document.getElementById("messageInput").disabled = false;
           document.getElementById("sendBtn").disabled = false;
-          document.getElementById("connectBtn").disabled = true;
           document.getElementById("disconnectBtn").disabled = false;
 
-          addSystemMessage(`Authenticated as ${username} (ID: ${userId})`);
+          addSystemMessage(`Ready to chat!`);
           break;
 
         case MessageType.NEW_MESSAGE:
-          if (data.message) {
-            const sender = data.message.sender_username || "System";
-            const body = data.message.body || "";
-            const timestamp = data.message.timestamp
-              ? ` (${data.message.timestamp})`
-              : "";
+          // ✅ Handle message echo from server
+          handleNewMessage(data);
+          break;
 
-            // addReceivedMessage(`${sender}:${timestamp} ${body}`);
-            addReceivedMessage(body);
-          } else {
-            // fallback if message object is missing
-            addReceivedMessage(JSON.stringify(data, null, 2));
-          }
+        case MessageType.USER_TYPING:
+          handleTypingNotification(data);
           break;
 
         case MessageType.ERROR:
-          addSystemMessage(`Server Error: ${data.message}`);
+          addSystemMessage(`Server Error: ${data.message} (${data.error_code})`);
           break;
 
         default:
-          // fallback for unknown types
-          addReceivedMessage(JSON.stringify(data, null, 2));
+          console.log("Unhandled message type:", data.type);
+          addSystemMessage(`Received message type ${data.type}`);
       }
     } catch (e) {
+      console.error("Error parsing message:", e);
       addReceivedMessage(event.data);
     }
   };
@@ -170,21 +174,73 @@ function connectWebSocket() {
   ws.onerror = (error) => {
     console.error("WebSocket error:", error);
     statusDiv.innerHTML = '<div class="status error">❌ WebSocket error</div>';
-    addSystemMessage("WebSocket error occurred");
+    addSystemMessage("Connection error");
   };
 
   ws.onclose = (event) => {
     console.log("WebSocket closed:", event.reason);
-    statusDiv.innerHTML = `<div class="status info">WebSocket disconnected: ${event.reason || "Unknown reason"}</div>`;
+    statusDiv.innerHTML = `<div class="status info">Disconnected from chat server</div>`;
 
     // Disable messaging
     document.getElementById("messageInput").disabled = true;
     document.getElementById("sendBtn").disabled = true;
-    document.getElementById("connectBtn").disabled = false;
     document.getElementById("disconnectBtn").disabled = true;
 
-    addSystemMessage(`Connection closed: ${event.reason || "Unknown reason"}`);
+    addSystemMessage(`Disconnected from server`);
   };
+}
+
+function disconnectWebSocket() {
+  if (ws) {
+    // Send logout message
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        type: MessageType.LOGOUT,
+        reason: "User logged out"
+      }));
+    }
+    ws.close();
+    ws = null;
+    
+    addSystemMessage("Logged out");
+  }
+}
+
+// ==================== MESSAGE HANDLERS ====================
+
+function handleNewMessage(data) {
+  if (!data.message) {
+    console.error("NEW_MESSAGE missing message field:", data);
+    return;
+  }
+
+  const msg = data.message;
+  const isMe = msg.sender_id === userId;
+  
+  // Get username from cache
+  const senderUsername = userCache.get(msg.sender_id) || `User${msg.sender_id}`;
+  
+  // Display message with proper styling
+  if (isMe) {
+    addSentMessage(msg.body, senderUsername, msg.timestamp);
+  } else {
+    addReceivedMessage(msg.body, senderUsername, msg.timestamp);
+  }
+}
+
+function handleTypingNotification(data) {
+  // Don't show our own typing
+  if (data.user_id === userId) return;
+
+  const typingUsername = userCache.get(data.user_id) || `User${data.user_id}`;
+  
+  if (data.is_typing) {
+    console.log(`${typingUsername} is typing...`);
+    // TODO: Show typing indicator in UI
+  } else {
+    console.log(`${typingUsername} stopped typing`);
+    // TODO: Hide typing indicator
+  }
 }
 
 // ==================== MESSAGING ====================
@@ -200,21 +256,21 @@ function sendMessage() {
     return;
   }
 
-  // Send message in proper format
-  const sendRequest = {
-    type: MessageType.SEND_MESSAGE,               // SEND_MESSAGE
-    channel_id: 1,          // replace with your active channel_id
+  // Send message to server
+  ws.send(JSON.stringify({
+    type: MessageType.SEND_MESSAGE,
+    channel_id: 1,  // Global chat
     body: message
-  };
+  }));
 
-  ws.send(JSON.stringify(sendRequest));
+  console.log("Message sent:", message);
 
-  // Display in UI immediately
-  addSentMessage(message);
+  // ❌ DON'T display locally - wait for server echo
+  // The server will broadcast it back and handleNewMessage() will display it
 
+  // Clear input
   input.value = "";
 }
-
 
 // Allow Enter key to send message
 document.addEventListener("DOMContentLoaded", () => {
@@ -227,26 +283,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // ==================== UI HELPERS ====================
 
-function addSentMessage(text) {
+function addSentMessage(text, senderUsername, timestamp) {
   const messagesDiv = document.getElementById("messages");
   const messageDiv = document.createElement("div");
   messageDiv.className = "message sent";
+  
+  const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+  
   messageDiv.innerHTML = `
-        <div><strong>You:</strong> ${escapeHtml(text)}</div>
-        <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-    `;
+    <div><strong>${escapeHtml(senderUsername)} (You):</strong> ${escapeHtml(text)}</div>
+    <div class="timestamp">${time}</div>
+  `;
+  
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
 
-function addReceivedMessage(text) {
+function addReceivedMessage(text, senderUsername, timestamp) {
   const messagesDiv = document.getElementById("messages");
   const messageDiv = document.createElement("div");
   messageDiv.className = "message received";
+  
+  const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
+  
   messageDiv.innerHTML = `
-        <div><strong>Server:</strong> ${escapeHtml(text)}</div>
-        <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-    `;
+    <div><strong>${escapeHtml(senderUsername)}:</strong> ${escapeHtml(text)}</div>
+    <div class="timestamp">${time}</div>
+  `;
+  
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -256,9 +320,9 @@ function addSystemMessage(text) {
   const messageDiv = document.createElement("div");
   messageDiv.className = "message system";
   messageDiv.innerHTML = `
-        <div>ℹ️ ${escapeHtml(text)}</div>
-        <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-    `;
+    <div>ℹ️ ${escapeHtml(text)}</div>
+    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
+  `;
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -268,39 +332,3 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
-// ```
-
-// ## How to Use
-
-// 1. **Put both files in a folder** (e.g., `client/`)
-// 2. **Open index.html in your browser** (just double-click it, or use a simple HTTP server)
-// 3. **Make sure your server is running** on port 8888
-
-// ### Testing Flow:
-
-// **Step 1: Login**
-// - Username: `alice`
-// - Password: `hash`
-// - Click "Login"
-// - You should see success message with token
-
-// **Step 2: Connect WebSocket**
-// - Click "Connect WebSocket"
-// - Should see "WebSocket connected!" message
-
-// **Step 3: Send Messages**
-// - Type anything in the message box
-// - Click "Send" or press Enter
-// - Server will echo it back
-
-// ## What You'll See in Server Console:
-// ```
-// [LOGIN] Received login request
-// [LOGIN] Attempting login for user: alice
-// [LOGIN] Login successful! User ID: 1
-// [WS] New WebSocket connection opened (waiting for auth)
-// [WS] Received message: {"token":"eyJhbGci..."}
-// [WS] Authenticating with token: eyJhbGciOiJIUzI1NiIs...
-// [WS] ✅ User 1 authenticated and connected!
-// [WS] Received message: Hello from browser!
-// [WS] Message from authenticated user 1

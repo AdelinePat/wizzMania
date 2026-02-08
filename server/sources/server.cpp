@@ -30,10 +30,47 @@ int main() {
   std::cout << " WizzMania Server Starting...\n";
   std::cout << "========================================\n";
 
+  // =========================================
+  // Initialize Server Port from environment
+  // =========================================
+
+  const char* portStr = std::getenv("SERVER_PORT");
+  uint16_t port = 8888;
+
+  if (!portStr) {
+    std::cout << "[WARN] SERVER_PORT not set. Using default 8888\n";
+    portStr = "8888";
+  }
+
+  try {
+    int temp = std::stoi(portStr);
+    if (temp > 0 && temp <= 65535)
+      port = static_cast<uint16_t>(temp);
+    else
+      std::cerr << "[WARN] SERVER_PORT out of range, using default\n";
+  } catch (...) {
+    std::cerr << "[WARN] Invalid SERVER_PORT, using default\n";
+  }
+
+  // =========================================
+  // Initialize Database Connection
+  // =========================================
+  std::string db_host =
+      std::getenv("DB_HOST") ? std::getenv("DB_HOST") : "mysql-db";
+  std::string db_user =
+      std::getenv("DB_USER") ? std::getenv("DB_USER") : "root";
+  std::string db_pass =
+      std::getenv("DB_PASSWORD") ? std::getenv("DB_PASSWORD") : "root_password";
+  std::string db_name =
+      std::getenv("DB_NAME") ? std::getenv("DB_NAME") : "wizzmania";
+
+  Database db(db_host, db_user, db_pass, db_name);
+  std::cout << "[Server] Database initialized successfully" << std::endl;
+
   crow::App<CORS> app;
 
   WebSocketManager ws_manager;
-  MessageHandler msg_handler(ws_manager);
+  MessageHandler msg_handler(db, ws_manager);
 
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
@@ -49,7 +86,7 @@ int main() {
 
   // ===== POST /login endpoint =====
   CROW_ROUTE(app, "/login")
-      .methods("POST"_method)([](const crow::request& req) {
+      .methods("POST"_method)([&db](const crow::request& req) {
         std::cout << "[LOGIN] Received login request\n";
 
         crow::json::rvalue json_body = crow::json::load(req.body);
@@ -75,8 +112,8 @@ int main() {
                   << login_req->username << "\n";
 
         int64_t user_id =
-            check_user_credentials(login_req->username, login_req->password);
-
+             db.verify_user(login_req->username, login_req->password);
+        
         if (user_id < 0) {
           std::cout << "[LOGIN] Invalid credentials for: "
                     << login_req->username << "\n";
@@ -274,7 +311,7 @@ int main() {
         }
       });
 
-  uint16_t port = 8888;
+  // uint16_t port = 8888;
   std::cout << "[INFO] Server listening on port " << port << "\n";
   std::cout << "========================================\n";
 

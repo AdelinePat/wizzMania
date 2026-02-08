@@ -104,7 +104,7 @@ namespace ServerSend {
     struct Message {
         int64_t message_id;
         int64_t sender_id;
-        std::string sender_username;
+        // std::string sender_username; // client caches user_id <-> username ?
         std::string body;
         std::string timestamp;
         bool is_system;

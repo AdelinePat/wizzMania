@@ -10,8 +10,10 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      # DB_HOST: tcp://mysql:${DB_PORT}
+      DB_HOST: mysql-db # service name!
     ports:
-      - "3308:3306"
+      - "${DB_PORT}:3306"
     volumes:
       - type: volume
         source: mysql-data

@@ -26,7 +26,7 @@ void MessageHandler::handle_send_message(crow::websocket::connection& conn,
   // fill the inner message
   broadcast.message.message_id = 0;  // fake id for now TODO get from DB!!
   broadcast.message.sender_id = user_id;
-  broadcast.message.sender_username = "whatever";
+//   broadcast.message.sender_username = "whatever";
   broadcast.message.body = req->body;
 
   // timestamp as string

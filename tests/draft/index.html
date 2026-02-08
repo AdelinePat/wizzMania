@@ -122,7 +122,7 @@
           <input
             type="text"
             id="username"
-            placeholder="Username (alice, bob, carol)"
+            placeholder="Username"
             value="alice"
           />
           <input
@@ -134,32 +134,22 @@
           <button id="loginBtn" onclick="login()">Login</button>
         </div>
         <div id="loginStatus"></div>
-      </div>
-
-      <!-- WebSocket Section -->
-      <div class="section">
-        <h2>2. WebSocket Connection</h2>
-        <button id="connectBtn" onclick="connectWebSocket()" disabled>
-          Connect WebSocket
-        </button>
-        <button id="disconnectBtn" onclick="disconnectWebSocket()" disabled>
-          Disconnect
-        </button>
         <div id="wsStatus"></div>
       </div>
 
       <!-- Messaging Section -->
       <div class="section">
-        <h2>3. Send Messages</h2>
+        <h2>2. Chat (Global)</h2>
         <div id="messages"></div>
         <div style="margin-top: 10px">
           <input
             type="text"
             id="messageInput"
-            placeholder="Type a message..."
+            placeholder="Type a message and press Enter..."
             disabled
           />
           <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+          <button id="disconnectBtn" onclick="disconnectWebSocket()" disabled style="background-color: #dc3545;">Logout</button>
         </div>
       </div>
     </div>
