@@ -1,3 +1,5 @@
+import { SERVER_IP, SERVER_PORT } from "./secret.js";
+
 // ==================== GLOBAL STATE ====================
 let token = null;
 let userId = null;
@@ -6,17 +8,23 @@ let ws = null;
 
 // Username cache (hardcoded for testing - matches your 3 fake users)
 const userCache = new Map([
-  [1, "alice"],
-  [2, "bob"],
-  [3, "charlie"]
+  [2, "alice"],
+  [3, "bob"],
+  [4, "carol"],
+  [5, 'dave'],
+  [6, 'eve'],
+  [7, 'frank'],
+  [8, 'grace'],
+  [9, 'heidi'],
+  [10, 'ivan'],
+  [11, 'judy'],
 ]);
 
-const SERVER_URL = "http://localhost:8888";
-const WS_URL = "ws://localhost:8888/ws";
+const SERVER_URL = `http://${SERVER_IP ? SERVER_IP : "192.168.0.117"}:${SERVER_PORT ? SERVER_PORT : "8080"}`;
+const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
 
-// Message type constants (matching your C++ enum)
+// Message type constants
 const MessageType = {
-  // Client -> Server
   WS_AUTH: 0,
   LOGOUT: 1,
   SEND_MESSAGE: 10,
@@ -31,7 +39,6 @@ const MessageType = {
   REQUEST_CHANNEL_HISTORY: 19,
   CHANNEL_OPEN: 20,
 
-  // Server -> Client
   WS_AUTH_SUCCESS: 100,
   NEW_MESSAGE: 101,
   CHANNEL_CREATED: 102,
@@ -51,7 +58,6 @@ const MessageType = {
 };
 
 // ==================== LOGIN ====================
-
 async function login() {
   const usernameInput = document.getElementById("username").value;
   const passwordInput = document.getElementById("password").value;
@@ -62,13 +68,8 @@ async function login() {
   try {
     const response = await fetch(`${SERVER_URL}/login`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        username: usernameInput,
-        password: passwordInput,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usernameInput, password: passwordInput })
     });
 
     const data = await response.json();
@@ -86,10 +87,8 @@ async function login() {
       `;
 
       document.getElementById("loginBtn").disabled = true;
-
       addSystemMessage(`Logged in as ${username} (ID: ${userId})`);
-      
-      // ✅ Automatically connect WebSocket after successful login
+
       connectWebSocket();
     } else {
       statusDiv.innerHTML = `<div class="status error">❌ ${data.message}</div>`;
@@ -100,7 +99,6 @@ async function login() {
 }
 
 // ==================== WEBSOCKET ====================
-
 function connectWebSocket() {
   if (!token) {
     alert("No token available. Login first!");
@@ -116,53 +114,34 @@ function connectWebSocket() {
     console.log("WebSocket opened, sending authentication...");
     addSystemMessage("Connecting to chat server...");
 
-    // Send authentication message
     setTimeout(() => {
-      ws.send(JSON.stringify({
-        type: MessageType.WS_AUTH,
-        token: token
-      }));
+      ws.send(JSON.stringify({ type: MessageType.WS_AUTH, token }));
       console.log("Auth message sent");
     }, 50);
   };
 
   ws.onmessage = (event) => {
     console.log("Received:", event.data);
-
     try {
       const data = JSON.parse(event.data);
-
       switch (data.type) {
         case MessageType.WS_AUTH_SUCCESS:
-          statusDiv.innerHTML = `
-            <div class="status success">
-              ✅ Connected to chat server!
-            </div>
-          `;
-
-          // Enable messaging
+          statusDiv.innerHTML = '<div class="status success">✅ Connected to chat server!</div>';
           document.getElementById("messageInput").disabled = false;
           document.getElementById("sendBtn").disabled = false;
           document.getElementById("disconnectBtn").disabled = false;
-
           addSystemMessage(`Ready to chat!`);
           break;
-
         case MessageType.NEW_MESSAGE:
-          // ✅ Handle message echo from server
           handleNewMessage(data);
           break;
-
         case MessageType.USER_TYPING:
           handleTypingNotification(data);
           break;
-
         case MessageType.ERROR:
           addSystemMessage(`Server Error: ${data.message} (${data.error_code})`);
           break;
-
         default:
-          console.log("Unhandled message type:", data.type);
           addSystemMessage(`Received message type ${data.type}`);
       }
     } catch (e) {
@@ -179,122 +158,62 @@ function connectWebSocket() {
 
   ws.onclose = (event) => {
     console.log("WebSocket closed:", event.reason);
-    statusDiv.innerHTML = `<div class="status info">Disconnected from chat server</div>`;
-
-    // Disable messaging
+    statusDiv.innerHTML = '<div class="status info">Disconnected from chat server</div>';
     document.getElementById("messageInput").disabled = true;
     document.getElementById("sendBtn").disabled = true;
     document.getElementById("disconnectBtn").disabled = true;
-
     addSystemMessage(`Disconnected from server`);
   };
 }
 
 function disconnectWebSocket() {
   if (ws) {
-    // Send logout message
     if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({
-        type: MessageType.LOGOUT,
-        reason: "User logged out"
-      }));
+      ws.send(JSON.stringify({ type: MessageType.LOGOUT, reason: "User logged out" }));
     }
     ws.close();
     ws = null;
-    
     addSystemMessage("Logged out");
   }
 }
 
 // ==================== MESSAGE HANDLERS ====================
-
 function handleNewMessage(data) {
-  if (!data.message) {
-    console.error("NEW_MESSAGE missing message field:", data);
-    return;
-  }
+  if (!data.message) return console.error("NEW_MESSAGE missing message field:", data);
 
   const msg = data.message;
   const isMe = msg.sender_id === userId;
-  
-  // Get username from cache
   const senderUsername = userCache.get(msg.sender_id) || `User${msg.sender_id}`;
-  
-  // Display message with proper styling
-  if (isMe) {
-    addSentMessage(msg.body, senderUsername, msg.timestamp);
-  } else {
-    addReceivedMessage(msg.body, senderUsername, msg.timestamp);
-  }
+
+  if (isMe) addSentMessage(msg.body, senderUsername, msg.timestamp);
+  else addReceivedMessage(msg.body, senderUsername, msg.timestamp);
 }
 
 function handleTypingNotification(data) {
-  // Don't show our own typing
   if (data.user_id === userId) return;
-
   const typingUsername = userCache.get(data.user_id) || `User${data.user_id}`;
-  
-  if (data.is_typing) {
-    console.log(`${typingUsername} is typing...`);
-    // TODO: Show typing indicator in UI
-  } else {
-    console.log(`${typingUsername} stopped typing`);
-    // TODO: Hide typing indicator
-  }
+  console.log(data.is_typing ? `${typingUsername} is typing...` : `${typingUsername} stopped typing`);
 }
 
 // ==================== MESSAGING ====================
-
 function sendMessage() {
   const input = document.getElementById("messageInput");
   const message = input.value.trim();
+  if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-  if (!message) return;
-
-  if (!ws || ws.readyState !== WebSocket.OPEN) {
-    alert("WebSocket not connected!");
-    return;
-  }
-
-  // Send message to server
-  ws.send(JSON.stringify({
-    type: MessageType.SEND_MESSAGE,
-    channel_id: 1,  // Global chat
-    body: message
-  }));
-
+  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, channel_id: 1, body: message }));
   console.log("Message sent:", message);
-
-  // ❌ DON'T display locally - wait for server echo
-  // The server will broadcast it back and handleNewMessage() will display it
-
-  // Clear input
   input.value = "";
 }
 
-// Allow Enter key to send message
-document.addEventListener("DOMContentLoaded", () => {
-  document.getElementById("messageInput").addEventListener("keypress", (e) => {
-    if (e.key === "Enter") {
-      sendMessage();
-    }
-  });
-});
-
 // ==================== UI HELPERS ====================
-
 function addSentMessage(text, senderUsername, timestamp) {
   const messagesDiv = document.getElementById("messages");
   const messageDiv = document.createElement("div");
   messageDiv.className = "message sent";
-  
   const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-  
-  messageDiv.innerHTML = `
-    <div><strong>${escapeHtml(senderUsername)} (You):</strong> ${escapeHtml(text)}</div>
-    <div class="timestamp">${time}</div>
-  `;
-  
+  messageDiv.innerHTML = `<div><strong>${escapeHtml(senderUsername)} (You):</strong> ${escapeHtml(text)}</div>
+                          <div class="timestamp">${time}</div>`;
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -303,14 +222,9 @@ function addReceivedMessage(text, senderUsername, timestamp) {
   const messagesDiv = document.getElementById("messages");
   const messageDiv = document.createElement("div");
   messageDiv.className = "message received";
-  
   const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-  
-  messageDiv.innerHTML = `
-    <div><strong>${escapeHtml(senderUsername)}:</strong> ${escapeHtml(text)}</div>
-    <div class="timestamp">${time}</div>
-  `;
-  
+  messageDiv.innerHTML = `<div><strong>${escapeHtml(senderUsername)}:</strong> ${escapeHtml(text)}</div>
+                          <div class="timestamp">${time}</div>`;
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -319,10 +233,8 @@ function addSystemMessage(text) {
   const messagesDiv = document.getElementById("messages");
   const messageDiv = document.createElement("div");
   messageDiv.className = "message system";
-  messageDiv.innerHTML = `
-    <div>ℹ️ ${escapeHtml(text)}</div>
-    <div class="timestamp">${new Date().toLocaleTimeString()}</div>
-  `;
+  messageDiv.innerHTML = `<div>ℹ️ ${escapeHtml(text)}</div>
+                          <div class="timestamp">${new Date().toLocaleTimeString()}</div>`;
   messagesDiv.appendChild(messageDiv);
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 }
@@ -332,3 +244,14 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
+// ==================== EVENT LISTENERS ====================
+document.addEventListener("DOMContentLoaded", () => {
+  document.getElementById("loginBtn").addEventListener("click", login);
+  document.getElementById("sendBtn").addEventListener("click", sendMessage);
+  document.getElementById("disconnectBtn").addEventListener("click", disconnectWebSocket);
+
+  document.getElementById("messageInput").addEventListener("keypress", (e) => {
+    if (e.key === "Enter") sendMessage();
+  });
+});
