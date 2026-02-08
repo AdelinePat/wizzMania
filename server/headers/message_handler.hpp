@@ -10,8 +10,8 @@
 
 class MessageHandler {
  private:
-  WebSocketManager& ws_manager;
   Database& db;
+  WebSocketManager& ws_manager;
   void send_error(crow::websocket::connection& conn,
                   const std::string& error_code,
                   const std::string& error_message);

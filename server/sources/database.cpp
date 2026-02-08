@@ -1,5 +1,24 @@
 #include "database.hpp"
 
+Database::Database() {
+  std::string db_host =
+      std::getenv("DB_HOST") ? std::getenv("DB_HOST") : "mysql-db";
+  std::string db_user =
+      std::getenv("DB_USER") ? std::getenv("DB_USER") : "root";
+  std::string db_pass =
+      std::getenv("DB_PASSWORD") ? std::getenv("DB_PASSWORD") : "root_password";
+  std::string db_name =
+      std::getenv("DB_NAME") ? std::getenv("DB_NAME") : "wizzmania";
+  try {
+    this->driver = get_driver_instance();
+    this->start_connection(db_host, db_user, db_pass, db_name);
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] ERROR: " << e.what() << std::endl;
+    std::cerr << "[DB] Error code: " << e.getErrorCode() << std::endl;
+    throw;
+  }
+}
+
 Database::Database(const std::string& host, const std::string& user,
                    const std::string& password, const std::string& database)
     : host(host), user(user), password(password), database(database) {

@@ -35,6 +35,7 @@ class Database {
   void ensure_connection();
 
  public:
+  Database();
   Database(const std::string& host, const std::string& user,
            const std::string& password, const std::string& database);
   ~Database();

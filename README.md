@@ -194,3 +194,10 @@ Or directly test your query in terminal
 ```bash
 docker compose exec mysql-db sh -c 'mysql -h localhost -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /queries.sql' 
 ```
+
+
+## test using fake client (web)
+need to add secret.js in the same folder as index.js
+```bash
+python3 -m http.server 8880
+```

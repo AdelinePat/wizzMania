@@ -33,44 +33,46 @@ int main() {
   // =========================================
   // Initialize Server Port from environment
   // =========================================
+  uint16_t port = get_server_port();
+      // const char* portStr = std::getenv("SERVER_PORT");
+      // uint16_t port = 8888;
 
-  const char* portStr = std::getenv("SERVER_PORT");
-  uint16_t port = 8888;
+      // if (!portStr) {
+      //   std::cout << "[WARN] SERVER_PORT not set. Using default 8888\n";
+      //   portStr = "8888";
+      // }
 
-  if (!portStr) {
-    std::cout << "[WARN] SERVER_PORT not set. Using default 8888\n";
-    portStr = "8888";
-  }
+      // try {
+      //   int temp = std::stoi(portStr);
+      //   if (temp > 0 && temp <= 65535)
+      //     port = static_cast<uint16_t>(temp);
+      //   else
+      //     std::cerr << "[WARN] SERVER_PORT out of range, using default\n";
+      // } catch (...) {
+      //   std::cerr << "[WARN] Invalid SERVER_PORT, using default\n";
+      // }
 
-  try {
-    int temp = std::stoi(portStr);
-    if (temp > 0 && temp <= 65535)
-      port = static_cast<uint16_t>(temp);
-    else
-      std::cerr << "[WARN] SERVER_PORT out of range, using default\n";
-  } catch (...) {
-    std::cerr << "[WARN] Invalid SERVER_PORT, using default\n";
-  }
+      // =========================================
+      // Initialize Database Connection
+      // =========================================
+  //     std::string db_host =
+  //         std::getenv("DB_HOST") ? std::getenv("DB_HOST") : "mysql-db";
+  // std::string db_user =
+  //     std::getenv("DB_USER") ? std::getenv("DB_USER") : "root";
+  // std::string db_pass =
+  //     std::getenv("DB_PASSWORD") ? std::getenv("DB_PASSWORD") : "root_password";
+  // std::string db_name =
+  //     std::getenv("DB_NAME") ? std::getenv("DB_NAME") : "wizzmania";
 
-  // =========================================
-  // Initialize Database Connection
-  // =========================================
-  std::string db_host =
-      std::getenv("DB_HOST") ? std::getenv("DB_HOST") : "mysql-db";
-  std::string db_user =
-      std::getenv("DB_USER") ? std::getenv("DB_USER") : "root";
-  std::string db_pass =
-      std::getenv("DB_PASSWORD") ? std::getenv("DB_PASSWORD") : "root_password";
-  std::string db_name =
-      std::getenv("DB_NAME") ? std::getenv("DB_NAME") : "wizzmania";
-
-  Database db(db_host, db_user, db_pass, db_name);
+  // Database db(db_host, db_user, db_pass, db_name);
+  Database db;
   std::cout << "[Server] Database initialized successfully" << std::endl;
 
   crow::App<CORS> app;
 
   WebSocketManager ws_manager;
   MessageHandler msg_handler(db, ws_manager);
+  HttpManager http_manager;
 
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
@@ -86,56 +88,57 @@ int main() {
 
   // ===== POST /login endpoint =====
   CROW_ROUTE(app, "/login")
-      .methods("POST"_method)([&db](const crow::request& req) {
-        std::cout << "[LOGIN] Received login request\n";
+      .methods("POST"_method)([&db, &http_manager](const crow::request& req) {
+        return http_manager.login(db, req);
+        // std::cout << "[LOGIN] Received login request\n";
 
-        crow::json::rvalue json_body = crow::json::load(req.body);
-        if (!json_body) {
-          std::cout << "[LOGIN] Invalid JSON\n";
-          AuthMessages::LoginResponse error_resp;
-          error_resp.success = false;
-          error_resp.message = "Invalid JSON";
-          return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
-        }
+        // crow::json::rvalue json_body = crow::json::load(req.body);
+        // if (!json_body) {
+        //   std::cout << "[LOGIN] Invalid JSON\n";
+        //   AuthMessages::LoginResponse error_resp;
+        //   error_resp.success = false;
+        //   error_resp.message = "Invalid JSON";
+        //   return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
+        // }
 
-        std::optional<AuthMessages::LoginRequest> login_req =
-            JsonHelpers::Auth::parse_login_request(json_body);
-        if (!login_req.has_value()) {
-          std::cout << "[LOGIN] Missing required fields\n";
-          AuthMessages::LoginResponse error_resp;
-          error_resp.success = false;
-          error_resp.message = "Missing username or password";
-          return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
-        }
+        // std::optional<AuthMessages::LoginRequest> login_req =
+        //     JsonHelpers::Auth::parse_login_request(json_body);
+        // if (!login_req.has_value()) {
+        //   std::cout << "[LOGIN] Missing required fields\n";
+        //   AuthMessages::LoginResponse error_resp;
+        //   error_resp.success = false;
+        //   error_resp.message = "Missing username or password";
+        //   return crow::response(400, JsonHelpers::Auth::to_json(error_resp));
+        // }
 
-        std::cout << "[LOGIN] Attempting login for user: "
-                  << login_req->username << "\n";
+        // std::cout << "[LOGIN] Attempting login for user: "
+        //           << login_req->username << "\n";
 
-        int64_t user_id =
-             db.verify_user(login_req->username, login_req->password);
-        
-        if (user_id < 0) {
-          std::cout << "[LOGIN] Invalid credentials for: "
-                    << login_req->username << "\n";
-          AuthMessages::LoginResponse error_resp;
-          error_resp.success = false;
-          error_resp.message = "Invalid username or password";
-          return crow::response(401, JsonHelpers::Auth::to_json(error_resp));
-        }
+        // int64_t user_id =
+        //      db.verify_user(login_req->username, login_req->password);
 
-        std::string token = Auth::generateToken(user_id);
-        std::cout << "[LOGIN] Login successful! User ID: " << user_id << "\n";
-        std::cout << "[LOGIN] Token generated: " << token.substr(0, 20)
-                  << "...\n";
+        // if (user_id < 0) {
+        //   std::cout << "[LOGIN] Invalid credentials for: "
+        //             << login_req->username << "\n";
+        //   AuthMessages::LoginResponse error_resp;
+        //   error_resp.success = false;
+        //   error_resp.message = "Invalid username or password";
+        //   return crow::response(401, JsonHelpers::Auth::to_json(error_resp));
+        // }
 
-        AuthMessages::LoginResponse success_resp;
-        success_resp.success = true;
-        success_resp.message = "Login successful";
-        success_resp.token = token;
-        success_resp.user_id = user_id;
-        success_resp.username = login_req->username;
+        // std::string token = Auth::generateToken(user_id);
+        // std::cout << "[LOGIN] Login successful! User ID: " << user_id <<
+        // "\n"; std::cout << "[LOGIN] Token generated: " << token.substr(0, 20)
+        //           << "...\n";
 
-        return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
+        // AuthMessages::LoginResponse success_resp;
+        // success_resp.success = true;
+        // success_resp.message = "Login successful";
+        // success_resp.token = token;
+        // success_resp.user_id = user_id;
+        // success_resp.username = login_req->username;
+
+        // return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
       });
 
   // ===== WebSocket endpoint =====

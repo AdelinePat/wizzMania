@@ -3,10 +3,7 @@
 #include "crow.h"
 #include <string>
 
-// Returns user ID if credentials are valid, otherwise -1
-int64_t check_user_credentials(const std::string& username, const std::string& password);
 
-// Returns a crow JSON array of channels for the user
-crow::json::wvalue get_channels_for_user(int64_t user_id);
+uint16_t get_server_port();
 
 #endif

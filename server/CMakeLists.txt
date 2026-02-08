@@ -31,6 +31,7 @@ if(NOT BUILD_TESTS)
         sources/auth.cpp
         sources/database.cpp
         sources/helpers.cpp
+        sources/http_manager.cpp
         sources/message_handler.cpp
         sources/websocket_manager.cpp
         )
@@ -40,6 +41,7 @@ if(NOT BUILD_TESTS)
         headers/auth.hpp
         headers/database.hpp
         headers/helpers.hpp
+        headers/http_manager.hpp
         headers/json_helpers.hpp
         headers/message_handler.hpp
         headers/websocket_manager.hpp

@@ -12,6 +12,7 @@
 #include "auth.hpp"
 #include "database.hpp"
 #include "helpers.hpp"
+#include "http_manager.hpp"
 #include "json_helpers.hpp"
 #include "message_handler.hpp"
 #include "message_structure.hpp"
