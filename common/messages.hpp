@@ -1,58 +1,56 @@
 // common/messages.hpp
+#ifndef MESSAGES_HPP
+#define MESSAGES_HPP
+
+#include <cstdint>
+
 enum class ChannelStatus : uint8_t {
-    PENDING = 0,
-    ACCEPTED = 1,
-    REJECTED = 2,
-    LEFT = 3
+    PENDING,
+    ACCEPTED,
+    REJECTED,
+    LEFT
 };
-
-// Usage in server code:
-// int status_value = static_cast<int>(ChannelStatus::ACCEPTED);  // = 1
-// Store status_value in DB
-
-// Reading from DB:
-// ChannelStatus status = static_cast<ChannelStatus>(row["status"].as<int>());
 
 namespace WizzMania {
 
 // All possible message types between client and server
 enum class MessageType : uint8_t {
+    // ===== Authentication =====
+    WS_AUTH = 0,                // First message: WebSocket authentication with token
+    LOGOUT = 1,                 // Client requests graceful disconnect
+    
     // ===== Client -> Server =====
-    SEND_MESSAGE = 0,           // User sends a chat message
-    CREATE_CHANNEL = 1,         // User creates a new channel
-    ACCEPT_INVITATION = 2,      // User accepts channel invitation
-    REJECT_INVITATION = 3,      // User rejects channel invitation
-    LEAVE_CHANNEL = 4,          // User leaves a channel
-    UPDATE_CHANNEL_TITLE = 5,   // User changes channel title
-    MARK_AS_READ = 6,           // User marks messages as read
-    TYPING_START = 7,           // User starts typing
-    TYPING_STOP = 8,            // User stops typing
-    REQUEST_CHANNEL_HISTORY = 9,// User requests old messages
-    CHANNEL_OPEN = 10,          // Ask for a specific channel messages (before websocket opened) ??? A PRECISER ?
+    SEND_MESSAGE = 10,          // User sends a chat message
+    CREATE_CHANNEL = 11,        // User creates a new channel
+    ACCEPT_INVITATION = 12,     // User accepts channel invitation
+    REJECT_INVITATION = 13,     // User rejects channel invitation
+    LEAVE_CHANNEL = 14,         // User leaves a channel
+    UPDATE_CHANNEL_TITLE = 15,  // User changes channel title
+    MARK_AS_READ = 16,          // User marks messages as read
+    TYPING_START = 17,          // User starts typing
+    TYPING_STOP = 18,           // User stops typing
+    REQUEST_CHANNEL_HISTORY = 19,// User requests old messages
+    CHANNEL_OPEN = 20,          // Ask for a specific channel messages
     
     // ===== Server -> Client =====
-    NEW_MESSAGE = 100,          // Broadcast: New message in channel
-    CHANNEL_CREATED = 101,      // Response: Channel created successfully
-    CHANNEL_INVITATION = 102,   // Notification: You've been invited
-    INVITATION_ACCEPTED = 103,  // Notification: Someone accepted
-    INVITATION_REJECTED = 104,  // Notification: Someone rejected
-    USER_JOINED = 105,          // Notification: User joined channel
-    USER_LEFT = 106,            // Notification: User left channel
-    CHANNEL_ACTIVATED = 107,    // Notification: Channel is now active => A PRECISER
-    CHANNEL_DELETED = 108,      // Notification: Channel was deleted
-    TITLE_UPDATED = 109,        // Notification: Title changed
-    USER_STATUS = 110,          // Notification: User online/offline
-    USER_TYPING = 111,          // Notification: Someone is typing
-    INITIAL_DATA = 112,         // Response: All channels on connect
-    CHANNEL_HISTORY = 113,      // Response: Old messages
+    WS_AUTH_SUCCESS = 100,      // Response: Authentication successful
+    NEW_MESSAGE = 101,          // Broadcast: New message in channel
+    CHANNEL_CREATED = 102,      // Response: Channel created successfully
+    CHANNEL_INVITATION = 103,   // Notification: You've been invited
+    INVITATION_ACCEPTED = 104,  // Notification: Someone accepted
+    INVITATION_REJECTED = 105,  // Notification: Someone rejected
+    USER_JOINED = 106,          // Notification: User joined channel
+    USER_LEFT = 107,            // Notification: User left channel
+    CHANNEL_ACTIVATED = 108,    // Notification: Channel is now active
+    CHANNEL_DELETED = 109,      // Notification: Channel was deleted
+    TITLE_UPDATED = 110,        // Notification: Title changed
+    USER_STATUS = 111,          // Notification: User online/offline
+    USER_TYPING = 112,          // Notification: Someone is typing
+    INITIAL_DATA = 113,         // Response: All channels on connect
+    CHANNEL_HISTORY = 114,      // Response: Old messages
     ERROR = 255                 // Error response
 };
 
-enum class InvitationStatus {
-    PENDING,
-    ACCEPTED,
-    REJECTED,
-    LEFT,
-};
-
 }
+
+#endif // MESSAGES_HPP

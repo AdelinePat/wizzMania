@@ -1,63 +1,117 @@
+#ifndef MESSAGE_STRUCTURE_HPP
+#define MESSAGE_STRUCTURE_HPP
+
+#include <string>
+#include <vector>
+#include "messages.hpp"
+
+// ===== LOGIN/LOGOUT ======
+namespace AuthMessages {
+    // HTTP POST REQUEST (no type field - this is HTTP, not WebSocket)
+    struct LoginRequest {
+        std::string username;
+        std::string password;
+    };
+
+    struct LoginResponse {
+        bool success;
+        std::string message;
+        std::string token;
+        int64_t user_id;
+        std::string username;
+    };
+
+    // WebSocket authentication request
+    struct WSAuthRequest {
+        WizzMania::MessageType type;  // Client sets this to WS_AUTH
+        std::string token;
+    };
+
+    struct WSAuthResponse {
+        WizzMania::MessageType type;  // Server sets this to WS_AUTH_SUCCESS
+        std::string message;
+        int64_t user_id;
+    };
+
+    struct LogoutRequest {
+        WizzMania::MessageType type;  // Client sets this to LOGOUT
+        std::string reason;
+    };
+}
 
 // ===== CLIENT -> SERVER Messages =====
-namespace CliendSend {
+namespace ClientSend {
     struct SendMessageRequest {
+        WizzMania::MessageType type;  // SEND_MESSAGE
         int64_t channel_id;
         std::string body;
     };
 
     struct CreateChannelRequest {
-        std::vector<int64_t> participant_ids;  // User IDs to invite
-        std::string title;                      // Optional, can be empty
+        WizzMania::MessageType type;  // CREATE_CHANNEL
+        std::vector<int64_t> participant_ids;
+        std::string title;
     };
 
     struct AcceptInvitationRequest {
+        WizzMania::MessageType type;  // ACCEPT_INVITATION
         int64_t channel_id;
     };
 
     struct RejectInvitationRequest {
+        WizzMania::MessageType type;  // REJECT_INVITATION
         int64_t channel_id;
     };
 
     struct LeaveChannelRequest {
+        WizzMania::MessageType type;  // LEAVE_CHANNEL
         int64_t channel_id;
     };
 
     struct UpdateChannelTitleRequest {
+        WizzMania::MessageType type;  // UPDATE_CHANNEL_TITLE
         int64_t channel_id;
         std::string new_title;
     };
 
     struct MarkAsReadRequest {
+        WizzMania::MessageType type;  // MARK_AS_READ
         int64_t channel_id;
-        int64_t last_message_id;  // Mark all messages up to this ID as read
+        int64_t last_message_id;
     };
 
     struct TypingRequest {
+        WizzMania::MessageType type;  // TYPING_START or TYPING_STOP
         int64_t channel_id;
-        bool is_typing;  // true = started, false = stopped
+        bool is_typing;
     };
 
     struct RequestChannelHistoryRequest {
+        WizzMania::MessageType type;  // REQUEST_CHANNEL_HISTORY
         int64_t channel_id;
-        int64_t before_message_id;  // Get messages before this ID (pagination)
-        int limit = 50;             // How many messages to fetch
+        int64_t before_message_id;
+        int limit = 50;  // This default makes sense - it's a parameter, not a type
+    };
+
+    struct ChannelOpenRequest {
+        WizzMania::MessageType type;  // CHANNEL_OPEN
+        int64_t channel_id;
     };
 }
-
 
 // ===== SERVER -> CLIENT Messages =====
 namespace ServerSend {
     struct Message {
         int64_t message_id;
         int64_t sender_id;
-        std::string sender_username;
+        // std::string sender_username; // client caches user_id <-> username ?
         std::string body;
-        std::string timestamp;  // ISO 8601: "2026-02-01T14:30:00Z"
-        bool is_system;         // true if sender_id = 0
+        std::string timestamp;
+        bool is_system;
     };
 
     struct NewMessageBroadcast {
+        WizzMania::MessageType type;  // NEW_MESSAGE
         Message message;
         int64_t channel_id;
     };
@@ -75,18 +129,20 @@ namespace ServerSend {
         bool is_group;
         int64_t created_by;
         std::vector<Participant> participants;
-        Message last_message;       // Most recent message
-        int64_t unread_count;       // Number of unread messages
+        Message last_message;
+        int64_t unread_count;
         int64_t last_read_message_id;
     };
 
     struct ChannelCreatedResponse {
+        WizzMania::MessageType type;  // CHANNEL_CREATED
         int64_t channel_id;
-        bool already_existed;       // true if channel already existed
+        bool already_existed;
         ChannelInfo channel;
     };
 
     struct ChannelInvitation {
+        WizzMania::MessageType type;  // CHANNEL_INVITATION
         int64_t channel_id;
         int64_t inviter_id;
         std::string inviter_username;
@@ -95,51 +151,60 @@ namespace ServerSend {
     };
 
     struct InvitationAcceptedNotification {
+        WizzMania::MessageType type;  // INVITATION_ACCEPTED
         int64_t channel_id;
         int64_t user_id;
         std::string username;
     };
 
     struct InvitationRejectedNotification {
+        WizzMania::MessageType type;  // INVITATION_REJECTED
         int64_t channel_id;
         int64_t user_id;
         std::string username;
     };
 
     struct UserJoinedNotification {
+        WizzMania::MessageType type;  // USER_JOINED
         int64_t channel_id;
         int64_t user_id;
         std::string username;
     };
 
     struct UserLeftNotification {
+        WizzMania::MessageType type;  // USER_LEFT
         int64_t channel_id;
         int64_t user_id;
         std::string username;
     };
 
     struct ChannelActivatedNotification {
+        WizzMania::MessageType type;  // CHANNEL_ACTIVATED
         int64_t channel_id;
         std::string title;
     };
 
     struct ChannelDeletedNotification {
+        WizzMania::MessageType type;  // CHANNEL_DELETED
         int64_t channel_id;
         std::string reason;
     };
 
     struct TitleUpdatedNotification {
+        WizzMania::MessageType type;  // TITLE_UPDATED
         int64_t channel_id;
         std::string new_title;
         int64_t updated_by;
     };
 
     struct UserStatusNotification {
+        WizzMania::MessageType type;  // USER_STATUS
         int64_t user_id;
         bool is_online;
     };
 
     struct UserTypingNotification {
+        WizzMania::MessageType type;  // USER_TYPING
         int64_t channel_id;
         int64_t user_id;
         std::string username;
@@ -147,19 +212,23 @@ namespace ServerSend {
     };
 
     struct InitialDataResponse {
-        std::vector<ChannelInfo> channels;           // Accepted channels
-        std::vector<ChannelInvitation> invitations;  // Pending invitations
+        WizzMania::MessageType type;  // INITIAL_DATA
+        std::vector<ChannelInfo> channels;
+        std::vector<ChannelInvitation> invitations;
     };
 
     struct ChannelHistoryResponse {
+        WizzMania::MessageType type;  // CHANNEL_HISTORY
         int64_t channel_id;
         std::vector<Message> messages;
-        bool has_more;  // true if there are older messages
+        bool has_more;
     };
 
     struct ErrorResponse {
-        std::string error_code;     // e.g., "UNAUTHORIZED", "CHANNEL_NOT_FOUND"
-        std::string message;        // Human-readable error
+        WizzMania::MessageType type;  // ERROR
+        std::string error_code;
+        std::string message;
     };
-
 }
+
+#endif // MESSAGE_STRUCTURE_HPP

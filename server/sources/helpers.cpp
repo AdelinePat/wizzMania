@@ -1,30 +1,23 @@
 #include "helpers.hpp"
 
-// --------------------
-// Helper stubs (replace with DB logic later)
-// --------------------
-int64_t check_user_credentials(const std::string& username, const std::string& password) {
-    if (username == "alice" && password == "hash") return 1;
-    if (username == "bob"   && password == "hash") return 2;
-    if (username == "carol" && password == "hash") return 3;
-    return -1;
-}
+uint16_t get_server_port() {
+  const char* portStr = std::getenv("SERVER_PORT");
+  uint16_t port = 8888;
 
-crow::json::wvalue get_channels_for_user(int64_t user_id) {
-    crow::json::wvalue channels;
+  if (!portStr) {
+    std::cout << "[WARN] SERVER_PORT not set. Using default 8888\n";
+    portStr = "8888";
+  }
 
-    if (user_id == 1) {
-        channels[0]["id_channel"] = 1;
-        channels[0]["title"] = "Chat with Bob";
-        channels[1]["id_channel"] = 2;
-        channels[1]["title"] = "Chat with Carol";
-    } else if (user_id == 2) {
-        channels[0]["id_channel"] = 1;
-        channels[0]["title"] = "Chat with Alice";
-    } else if (user_id == 3) {
-        channels[0]["id_channel"] = 2;
-        channels[0]["title"] = "Chat with Alice";
-    }
+  try {
+    int temp = std::stoi(portStr);
+    if (temp > 0 && temp <= 65535)
+      port = static_cast<uint16_t>(temp);
+    else
+      std::cerr << "[WARN] SERVER_PORT out of range, using default\n";
+  } catch (...) {
+    std::cerr << "[WARN] Invalid SERVER_PORT, using default\n";
+  }
 
-    return channels;
+  return port;
 }
