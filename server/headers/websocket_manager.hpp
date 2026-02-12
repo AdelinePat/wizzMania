@@ -20,19 +20,20 @@ class WebSocketManager {
   std::mutex ws_mutex;
 
  public:
-  void add_user(int64_t user_id, WSConn conn);
+  void add_user(int64_t id_user, WSConn conn);
   void remove_connection(WSConn conn);
   bool is_authenticated(WSConn conn);
-  std::optional<int64_t> get_user_id(WSConn conn);
-  std::vector<WSConn> get_user_connections(int64_t user_id);
+  std::optional<int64_t> get_id_user(WSConn conn);
+  std::vector<WSConn> get_user_connections(int64_t id_user);
   // Does it have to be a vector ? Isn't a queue or stack
   // enough since I'll never access it using an index?
   // std::vector<WSConn> get_all_connections();
   void broadcast_to_all(const std::string& message);
-  void broadcast_to_users(const std::vector<int64_t>& user_ids,
+  void broadcast_to_users(const std::vector<int64_t>& id_users,
                           const std::string& message);
 
-  bool is_user_online(int64_t user_id);  // might not use this one
+  bool is_user_online(int64_t id_user);  // might not use this one
+  int64_t get_user_id(WSConn conn);
   // TODO: Implement
 };
 

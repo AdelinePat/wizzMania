@@ -89,3 +89,44 @@ int64_t Database::verify_user(const std::string& username,
     return -1;
   }
 }
+
+std::vector<ServerSend::Contact> Database::get_contact(const int64_t id_user) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  std::vector<ServerSend::Contact> contacts;
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "SELECT DISTINCT "
+            "u.id_user, u.username "
+            "FROM userChannel uc1 "
+            "JOIN "
+            "userChannel uc2 ON uc1.id_channel = uc2.id_channel "
+            "JOIN "
+            "users u ON u.id_user = uc2.id_user "
+            "WHERE "
+            "uc1.id_user = ? "
+            "AND uc1.membership = ? "
+            "AND uc2.membership = ? "
+            "AND uc2.id_user <> ?;"));
+
+    prep_statement->setInt64(1, id_user);
+    prep_statement->setInt(2, static_cast<int32_t>(ChannelStatus::ACCEPTED));
+    prep_statement->setInt(3, static_cast<int32_t>(ChannelStatus::ACCEPTED));
+    prep_statement->setInt64(4, id_user);
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    while (res->next()) {
+      ServerSend::Contact contact;
+      contact.id_user = res->getInt64("id_user");
+      contact.username = res->getString("username");
+      contacts.push_back(contact);
+    }
+    return contacts;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] verify_user error: " << e.what() << std::endl;
+    return contacts;
+  }
+}

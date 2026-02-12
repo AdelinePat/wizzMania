@@ -17,6 +17,7 @@
 #include <vector>
 
 #include "message_structure.hpp"
+#include "messages.hpp"
 
 class Database {
  private:
@@ -41,6 +42,7 @@ class Database {
   ~Database();
 
   int64_t verify_user(const std::string& username, const std::string& password);
+  std::vector<ServerSend::Contact> get_contact(const int64_t id_user);
   // TODO: Implement
 };
 

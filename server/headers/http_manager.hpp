@@ -17,7 +17,9 @@
 class HttpManager {
  private:
   crow::response send_login_error(const int code, const std::string& message);
-  crow::response send_login_response(const int64_t user_id, const std::string& username,  const std::string& token);
+  crow::response send_login_response(const int64_t id_user,
+                                     const std::string& username,
+                                     const std::string& token);
 
  public:
   crow::response login(Database& db, const crow::request& req);
