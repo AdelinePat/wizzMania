@@ -29,7 +29,7 @@ inline crow::json::wvalue to_json(const ::AuthMessages::LoginResponse& resp) {
   json["message"] = resp.message;
   if (resp.success) {
     json["token"] = resp.token;
-    json["user_id"] = resp.user_id;
+    json["id_user"] = resp.id_user;
     json["username"] = resp.username;
   }
   return json;
@@ -54,7 +54,7 @@ inline crow::json::wvalue to_json(const ::AuthMessages::WSAuthResponse& resp) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(resp.type);  // Cast enum to int for JSON
   json["message"] = resp.message;
-  json["user_id"] = resp.user_id;
+  json["id_user"] = resp.id_user;
   return json;
 }
 
@@ -180,15 +180,6 @@ inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   return json;
 }
 
-inline crow::json::wvalue to_json(const ::ServerSend::Participant& p) {
-  crow::json::wvalue json;
-  json["user_id"] = p.user_id;
-  json["username"] = p.username;
-  json["status"] = static_cast<int>(p.status);
-  json["is_online"] = p.is_online;
-  return json;
-}
-
 inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
   crow::json::wvalue json;
   json["channel_id"] = ch.channel_id;
@@ -199,11 +190,29 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
   json["last_read_message_id"] = ch.last_read_message_id;
   json["last_message"] = to_json(ch.last_message);
 
-  crow::json::wvalue::list participants_list;
-  for (const auto& p : ch.participants) {
-    participants_list.push_back(to_json(p));
-  }
-  json["participants"] = std::move(participants_list);
+  // crow::json::wvalue::list participants_list;
+  // for (const auto& p : ch.participants) {
+  //   participants_list.push_back(to_json(p));
+  // }
+  // json["participants"] = std::move(participants_list);
+
+  return json;
+}
+
+// TO JSON CONTACT
+inline crow::json::wvalue to_json(const ::ServerSend::Contact& contact) {
+  crow::json::wvalue json;
+  json["id_user"] = contact.id_user;
+  json["username"] = contact.username;
+
+  //  id_user;
+  // std::string username;
+
+  // crow::json::wvalue::list participants_list;
+  // for (const auto& p : ch.participants) {
+  //   participants_list.push_back(to_json(p));
+  // }
+  // json["participants"] = std::move(participants_list);
 
   return json;
 }
@@ -222,7 +231,7 @@ inline crow::json::wvalue to_json(
   crow::json::wvalue json;
   json["type"] = static_cast<int>(notif.type);  // Cast enum to int
   json["channel_id"] = notif.channel_id;
-  json["user_id"] = notif.user_id;
+  json["id_user"] = notif.id_user;
   json["username"] = notif.username;
   json["is_typing"] = notif.is_typing;
   return json;
@@ -251,13 +260,26 @@ inline crow::json::wvalue to_json(
   crow::json::wvalue json;
   json["type"] = static_cast<int>(resp.type);  // Cast enum to int
 
+  // contacts
+  crow::json::wvalue::list contact_list;
+  for (const ::ServerSend::Contact& contact : resp.contacts) {
+    contact_list.push_back(to_json(contact));
+  }
+  json["contacts"] = std::move(contact_list);
+
+  // Channels
   crow::json::wvalue::list channels_list;
-  for (const auto& ch : resp.channels) {
-    channels_list.push_back(to_json(ch));
+  for (const ::ServerSend::ChannelInfo& channel : resp.channels) {
+    channels_list.push_back(to_json(channel));
   }
   json["channels"] = std::move(channels_list);
 
-  // TODO: Add invitations serialization
+  // Invitations (TODO later)
+  // crow::json::wvalue::list invitations_list;
+  // for (const auto& inv : resp.invitations) {
+  //   invitations_list.push_back(to_json(inv));
+  // }
+  // json["invitations"] = std::move(invitations_list);
 
   return json;
 }

@@ -8,13 +8,17 @@ crow::response HttpManager::send_login_error(const int code,
   return crow::response(code, JsonHelpers::Auth::to_json(error_resp));
 }
 
-crow::response HttpManager::send_login_response(
-    const int64_t user_id, const std::string& username,  const std::string& token) {
+crow::response HttpManager::send_login_response(const int64_t id_user,
+                                                const std::string& username,
+                                                const std::string& token) {
+  std::cout << "[LOGIN] Login successful! User ID: " << id_user << "\n";
+  std::cout << "[LOGIN] Token generated: " << token.substr(0, 20) << "...\n";
+
   AuthMessages::LoginResponse success_resp;
   success_resp.success = true;
   success_resp.message = "Login successful";
   success_resp.token = token;
-  success_resp.user_id = user_id;
+  success_resp.id_user = id_user;
   success_resp.username = username;
   return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
 }
@@ -37,17 +41,13 @@ crow::response HttpManager::login(Database& db, const crow::request& req) {
 
   std::cout << "[LOGIN] Attempting login for user: " << login_req->username
             << "\n";
+  int64_t id_user = db.verify_user(login_req->username, login_req->password);
 
-  int64_t user_id = db.verify_user(login_req->username, login_req->password);
-
-  if (user_id < 0) {
+  if (id_user < 0) {
     std::cout << "[LOGIN] Invalid credentials for: " << login_req->username
               << "\n";
     return this->send_login_error(401, "Invalid username or password");
   }
-
-  std::string token = Auth::generateToken(user_id);
-  std::cout << "[LOGIN] Login successful! User ID: " << user_id << "\n";
-  std::cout << "[LOGIN] Token generated: " << token.substr(0, 20) << "...\n";
-  return this->send_login_response(user_id, login_req->username, token);
+  std::string token = Auth::generateToken(id_user);
+  return this->send_login_response(id_user, login_req->username, token);
 }

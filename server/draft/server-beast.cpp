@@ -11,7 +11,6 @@ namespace http = beast::http;
 namespace net = boost::asio;
 using tcp = net::ip::tcp;
 
-
 // Handle an HTTP request and send a response
 void handle_request(tcp::socket& socket) {
   beast::flat_buffer buffer;
@@ -90,46 +89,47 @@ int main() {
   return 0;
 }
 
-CROW_ROUTE(app, "/ws").websocket()
-.onopen([&](crow::websocket::connection& conn){
-    // Get token or user_id from query parameter
-    auto user_id_str = conn.get_url_param("user_id");
-    if (!user_id_str) {
-        conn.close("Missing user_id");
+CROW_ROUTE(app, "/ws")
+    .websocket()
+    .onopen([&](crow::websocket::connection& conn) {
+      // Get token or id_user from query parameter
+      auto id_user_str = conn.get_url_param("id_user");
+      if (!id_user_str) {
+        conn.close("Missing id_user");
         return;
-    }
+      }
 
-    int64_t user_id = std::stoll(user_id_str);
+      int64_t id_user = std::stoll(id_user_str);
 
-    // Save connection
-    {
+      // Save connection
+      {
         std::lock_guard<std::mutex> lock(ws_mutex);
         WSConn c = &conn;
-        user_sockets[user_id].insert(c);
-        socket_to_user[c] = user_id;
-    }
+        user_sockets[id_user].insert(c);
+        socket_to_user[c] = id_user;
+      }
 
-    // Fetch user's channels from DB
-    auto channels = get_channels_for_user(user_id);
+      // Fetch user's channels from DB
+      auto channels = get_channels_for_user(id_user);
 
-    // Send channel list to client
-    crow::json::wvalue res;
-    res["event"] = "channel_list";
-    res["channels"] = channels; // channels should be an array of objects
-    conn.send_text(crow::json::dump(res));
-})
-.onclose([&](crow::websocket::connection& conn, const std::string&){
-    std::lock_guard<std::mutex> lock(ws_mutex);
-    WSConn c = &conn;
-    auto it = socket_to_user.find(c);
-    if (it != socket_to_user.end()) {
-        int64_t user_id = it->second;
-        user_sockets[user_id].erase(c);
-        if (user_sockets[user_id].empty())
-            user_sockets.erase(user_id);
+      // Send channel list to client
+      crow::json::wvalue res;
+      res["event"] = "channel_list";
+      res["channels"] = channels;  // channels should be an array of objects
+      conn.send_text(crow::json::dump(res));
+    })
+    .onclose([&](crow::websocket::connection& conn, const std::string&) {
+      std::lock_guard<std::mutex> lock(ws_mutex);
+      WSConn c = &conn;
+      auto it = socket_to_user.find(c);
+      if (it != socket_to_user.end()) {
+        int64_t id_user = it->second;
+        user_sockets[id_user].erase(c);
+        if (user_sockets[id_user].empty()) user_sockets.erase(id_user);
         socket_to_user.erase(c);
-    }
-})
-.onmessage([&](crow::websocket::connection& conn, const std::string& data, bool){
-    // For now, no messages handled yet
-});
+      }
+    })
+    .onmessage([&](crow::websocket::connection& conn, const std::string& data,
+                   bool) {
+      // For now, no messages handled yet
+    });

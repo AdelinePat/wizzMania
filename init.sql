@@ -94,6 +94,32 @@ INSERT INTO channels (id_channel, title, created_by) VALUES
 (17, 'Group Lambda', 8),     -- grace
 (18, 'Group Zeta', 9);       -- heidi
 
+
+-- USER_CHANNEL memberships
+-- Remember: membership: 0=pending, 1=accepted, 2=rejected, 3=left
+
+-- Channel 1: DM alice-bob (both accepted)
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+(2, 1, 1, NOW(), 10),  -- alice accepted, read up to message 10
+(3, 1, 1, NOW(), 10);  -- bob accepted, read up to message 10
+
+-- Channel 2: DM alice-carol
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+(2, 2, 1, NOW(), NULL),  -- alice
+(4, 2, 1, NOW(), NULL);  -- carol
+
+-- Channel 3: DM bob-dave
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+(3, 3, 1, NOW(), NULL),  -- bob
+(5, 3, 0, NOW(), NULL);  -- dave PENDING (invited but not accepted yet)
+
+-- Channel 11: Group Alpha (alice created it)
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+(2, 11, 1, NOW(), 10),   -- alice (creator)
+(3, 11, 1, NOW(), 10),   -- bob
+(4, 11, 1, NOW(), 10),   -- carol
+(5, 11, 1, NOW(), 10);   -- dave
+
 -- MESSAGES
 -- System logs
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES

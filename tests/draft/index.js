@@ -6,19 +6,8 @@ let userId = null;
 let username = null;
 let ws = null;
 
-// Username cache (hardcoded for testing - matches your 3 fake users)
-const userCache = new Map([
-  [2, "alice"],
-  [3, "bob"],
-  [4, "carol"],
-  [5, 'dave'],
-  [6, 'eve'],
-  [7, 'frank'],
-  [8, 'grace'],
-  [9, 'heidi'],
-  [10, 'ivan'],
-  [11, 'judy'],
-]);
+// No longer hardcoded - populated from server's INITIAL_DATA
+const userCache = new Map();
 
 const SERVER_URL = `http://${SERVER_IP ? SERVER_IP : "192.168.0.117"}:${SERVER_PORT ? SERVER_PORT : "8080"}`;
 const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
@@ -76,7 +65,7 @@ async function login() {
 
     if (data.success) {
       token = data.token;
-      userId = data.user_id;
+      userId = data.id_user;
       username = data.username;
 
       statusDiv.innerHTML = `
@@ -132,6 +121,11 @@ function connectWebSocket() {
           document.getElementById("disconnectBtn").disabled = false;
           addSystemMessage(`Ready to chat!`);
           break;
+
+        case MessageType.INITIAL_DATA:           // ← ADD THIS
+          handleInitialData(data);
+          break;
+
         case MessageType.NEW_MESSAGE:
           handleNewMessage(data);
           break;
@@ -190,8 +184,8 @@ function handleNewMessage(data) {
 }
 
 function handleTypingNotification(data) {
-  if (data.user_id === userId) return;
-  const typingUsername = userCache.get(data.user_id) || `User${data.user_id}`;
+  if (data.id_user === userId) return;
+  const typingUsername = userCache.get(data.id_user) || `User${data.id_user}`;
   console.log(data.is_typing ? `${typingUsername} is typing...` : `${typingUsername} stopped typing`);
 }
 
@@ -255,3 +249,24 @@ document.addEventListener("DOMContentLoaded", () => {
     if (e.key === "Enter") sendMessage();
   });
 });
+
+// ==================== INITIAL DATA HANDLER ====================
+function handleInitialData(data) {
+  // Populate contact map from server data
+  if (data.contacts && Array.isArray(data.contacts)) {
+    data.contacts.forEach(contact => {
+      userCache.set(contact.id_user, contact.username);
+    });
+  }
+
+  // Always add yourself (server won't send you as your own contact)
+  if (userId && username) {
+    userCache.set(userId, username);
+  }
+
+  console.log(`[INIT] Loaded ${userCache.size} contacts:`, Object.fromEntries(userCache));
+  addSystemMessage(`Loaded ${data.contacts?.length ?? 0} contacts`);
+
+  // TODO: Handle data.channels when you implement get_channels()
+  // TODO: Handle data.invitations when you implement get_invitations()
+}

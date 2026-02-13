@@ -1,8 +1,8 @@
 #include "message_handler.hpp"
 
-void MessageHandler::handle_send_message(crow::websocket::connection& conn,
-                                         int64_t user_id,
-                                         const crow::json::rvalue& json_msg) {
+void MessageHandler::send_message(crow::websocket::connection& conn,
+                                  int64_t id_user,
+                                  const crow::json::rvalue& json_msg) {
   //    Shouldn't this part be inside this function???
 
   std::optional<::ClientSend::SendMessageRequest> req =
@@ -12,7 +12,7 @@ void MessageHandler::handle_send_message(crow::websocket::connection& conn,
     return;
   }
 
-  std::cout << "[MSG] User " << user_id << " -> Channel " << req->channel_id
+  std::cout << "[MSG] User " << id_user << " -> Channel " << req->channel_id
             << ": " << req->body << "\n";
 
   // TODO: Validate channel access
@@ -25,7 +25,7 @@ void MessageHandler::handle_send_message(crow::websocket::connection& conn,
 
   // fill the inner message
   broadcast.message.message_id = 0;  // fake id for now TODO get from DB!!
-  broadcast.message.sender_id = user_id;
+  broadcast.message.sender_id = id_user;
   //   broadcast.message.sender_username = "whatever";
   broadcast.message.body = req->body;
 
@@ -63,16 +63,16 @@ void MessageHandler::auth_error(crow::websocket::connection& conn,
 }
 
 void MessageHandler::auth_success(crow::websocket::connection& conn,
-                                  const int64_t validated_user_id) {
-  std::cout << "[WS] ✅ User " << validated_user_id << " authenticated!\n";
+                                  const int64_t validated_id_user) {
+  std::cout << "[WS] ✅ User " << validated_id_user << " authenticated!\n";
 
-  ws_manager.add_user(validated_user_id, &conn);
+  ws_manager.add_user(validated_id_user, &conn);
 
   AuthMessages::WSAuthResponse auth_resp;
   auth_resp.type =
       WizzMania::MessageType::WS_AUTH_SUCCESS;  // Explicitly set type
   auth_resp.message = "Authentication successful";
-  auth_resp.user_id = validated_user_id;
+  auth_resp.id_user = validated_id_user;
   conn.send_text(JsonHelpers::Auth::to_json(auth_resp).dump());
 }
 
@@ -93,15 +93,51 @@ void MessageHandler::authenticate_ws(crow::websocket::connection& conn,
     return;
   }
 
-  std::optional<int64_t> validated_user_id =
+  std::optional<int64_t> validated_id_user =
       Auth::validateToken(auth_req->token);
 
-  if (!validated_user_id.has_value()) {
+  if (!validated_id_user.has_value()) {
     this->auth_error(conn, "Invalid token");
     return;
   }
 
-  this->auth_success(conn, validated_user_id.value());
+  this->auth_success(conn, validated_id_user.value());
+  this->initial_data(conn);
 
   return;
+}
+
+void MessageHandler::initial_data(crow::websocket::connection& conn) {
+  int64_t id_user = ws_manager.get_user_id(&conn);
+  std::cout << "[INIT] Sending initial data to user " << id_user << "\n";
+
+  ServerSend::InitialDataResponse init_data;
+  init_data.type = WizzMania::MessageType::INITIAL_DATA;
+  init_data.contacts = db.get_contact(id_user);
+  // std::vector<ChannelInfo> channels;
+  if (!init_data.contacts.empty()) {
+    std::cout << "[INIT] Warning: No contacts found for user " << id_user
+              << "\n";
+  }
+  std::string json_str = JsonHelpers::ServerSend::to_json(init_data).dump();
+  conn.send_text(json_str);
+
+  std::cout << "[INIT] Sent initial data: " << init_data.contacts.size()
+            << " contacts, " << init_data.channels.size() << " channels, "
+            << init_data.invitations.size() << " invitations\n";
+}
+
+void MessageHandler::create_channel(crow::websocket::connection& conn,
+                                    const crow::json::rvalue& json_msg) {
+  std::optional<::ClientSend::CreateChannelRequest> req =
+      JsonHelpers::ClientSend::parse_create_channel(json_msg);
+  if (!req.has_value()) {
+    send_error(conn, "INVALID_FORMAT", "Invalid CREATE_CHANNEL format");
+    return;
+  }
+
+  // std::cout << "[CHANNEL] User " << id_user << " creating with "
+  //           << req->participant_ids.size() << " participants\n";
+
+  // TODO: Create channel
 }

@@ -67,9 +67,9 @@ int main() {
       })
       .onclose([&](crow::websocket::connection& conn, const std::string& reason,
                    uint16_t status_code) {
-        std::optional<int64_t> user_id = ws_manager.get_user_id(&conn);
-        if (user_id.has_value()) {
-          std::cout << "[WS] User " << user_id.value()
+        std::optional<int64_t> id_user = ws_manager.get_id_user(&conn);
+        if (id_user.has_value()) {
+          std::cout << "[WS] User " << id_user.value()
                     << " disconnected. Reason: " << reason << "\n";
         } else {
           std::cout << "[WS] Unauthenticated connection closed. Reason: "
@@ -97,39 +97,25 @@ int main() {
         }
 
         // ===== ALL OTHER MESSAGES REQUIRE AUTH =====
-        std::optional<int64_t> user_id_opt = ws_manager.get_user_id(&conn);
-        if (!user_id_opt.has_value()) {
+        std::optional<int64_t> id_user_opt = ws_manager.get_id_user(&conn);
+        if (!id_user_opt.has_value()) {
           std::cout << "[WS] Unauthenticated message attempt\n";
           conn.close("Authentication required");
           return;
         }
 
         // ===== ROUTE AUTHENTICATED MESSAGES =====
-        int64_t user_id = user_id_opt.value();
-        std::cout << "[WS] User " << user_id << " - type: " << type_int << "\n";
+        int64_t id_user = id_user_opt.value();
+        std::cout << "[WS] User " << id_user << " - type: " << type_int << "\n";
 
         switch (msg_type) {
           case WizzMania::MessageType::SEND_MESSAGE: {
-            msg_handler.handle_send_message(conn, user_id, json_msg);
+            msg_handler.send_message(conn, id_user, json_msg);
             break;
           }
 
           case WizzMania::MessageType::CREATE_CHANNEL: {
-            auto req = JsonHelpers::ClientSend::parse_create_channel(json_msg);
-            if (!req.has_value()) {
-              ServerSend::ErrorResponse err;
-              err.type = WizzMania::MessageType::ERROR;
-              err.message = "Invalid CREATE_CHANNEL format";
-              err.error_code = "INVALID_FORMAT";
-              conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
-              return;
-            }
-
-            std::cout << "[CHANNEL] User " << user_id << " creating with "
-                      << req->participant_ids.size() << " participants\n";
-
-            // TODO: Create channel
-
+            msg_handler.create_channel(conn, json_msg);
             break;
           }
 
@@ -145,7 +131,7 @@ int main() {
               return;
             }
 
-            std::cout << "[TYPING] User " << user_id << " in channel "
+            std::cout << "[TYPING] User " << id_user << " in channel "
                       << req->channel_id << ": "
                       << (req->is_typing ? "start" : "stop") << "\n";
 
@@ -156,7 +142,7 @@ int main() {
 
           case WizzMania::MessageType::LOGOUT: {
             auto req = JsonHelpers::Auth::parse_logout_request(json_msg);
-            std::cout << "[LOGOUT] User " << user_id;
+            std::cout << "[LOGOUT] User " << id_user;
             if (req.has_value() && !req->reason.empty()) {
               std::cout << " (" << req->reason << ")";
             }
