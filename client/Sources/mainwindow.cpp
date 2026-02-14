@@ -96,10 +96,10 @@ void MainWindow::onInitialDataReceived(
 
 void MainWindow::onNewMessageReceived(
     const ServerSend::NewMessageBroadcast& msg) {
-  if (msg.channel_id != currentChannelId) {
+  if (msg.id_channel != currentChannelId) {
     return;
   }
-  appendMessageToView(msg.channel_id, msg.message);
+  appendMessageToView(msg.id_channel, msg.message);
 }
 
 void MainWindow::onWsError(const QString& code, const QString& message) {
@@ -139,9 +139,9 @@ void MainWindow::populateChannels(
   for (const auto& channel : channels) {
     const QString title = QString::fromStdString(channel.title);
     QListWidgetItem* item = new QListWidgetItem(title);
-    item->setData(Qt::UserRole, static_cast<qint64>(channel.channel_id));
+    item->setData(Qt::UserRole, static_cast<qint64>(channel.id_channel));
     ui->chatGroupsList->addItem(item);
-    channelTitles.insert(channel.channel_id, title);
+    channelTitles.insert(channel.id_channel, title);
   }
 }
 
@@ -185,7 +185,7 @@ void MainWindow::appendMessageToView(int64_t channelId,
   Q_UNUSED(channelId);
 
   const QString sender =
-      msg.is_system ? QString("System") : QString::number(msg.sender_id);
+      msg.is_system ? QString("System") : QString::number(msg.id_sender);
   const QString timestamp = QString::fromStdString(msg.timestamp);
   const QString body = QString::fromStdString(msg.body);
 

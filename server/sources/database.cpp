@@ -210,9 +210,10 @@ std::map<int64_t, int64_t> Database::get_unread_count(const int64_t id_user) {
 
 // Get all the channel a user participates it and the set of every participants
 // from this channel Returns a map<id_channel, set<id_users>>
-std::map<int64_t, std::set<int64_t>> Database::get_participants_and_channel(
-    const int64_t id_user, ChannelStatus membership) {
-  std::map<int64_t, std::set<int64_t>> channel_participants;
+std::map<int64_t, std::unordered_set<int64_t>>
+Database::get_participants_and_channel(const int64_t id_user,
+                                       ChannelStatus membership) {
+  std::map<int64_t, std::unordered_set<int64_t>> channel_participants;
 
   try {
     this->ensure_connection();
@@ -264,7 +265,7 @@ std::vector<ServerSend::ChannelInfo> Database::get_channels(
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     while (res->next()) {
       ServerSend::ChannelInfo channel;
-      channel.channel_id = res->getInt64("id_channel");
+      channel.id_channel = res->getInt64("id_channel");
       channel.title = res->getString("title");
       channel.created_by = res->getInt64("created_by");
       channel.last_read_id_message = res->getInt64("last_read_id_message");
@@ -285,7 +286,7 @@ std::vector<ServerSend::ChannelInfo> Database::get_initial_channels(
 
   std::vector<ServerSend::ChannelInfo> channels_info =
       this->get_channels(id_user);
-  std::map<int64_t, std::set<int64_t>> channel_participants =
+  std::map<int64_t, std::unordered_set<int64_t>> channel_participants =
       this->get_participants_and_channel(id_user);
   std::map<int64_t, int64_t> channels_unread_count =
       this->get_unread_count(id_user);
@@ -293,28 +294,28 @@ std::vector<ServerSend::ChannelInfo> Database::get_initial_channels(
       this->get_last_messages(id_user);
 
   for (ServerSend::ChannelInfo& channel : channels_info) {
-    auto it_participant = channel_participants.find(channel.channel_id);
+    auto it_participant = channel_participants.find(channel.id_channel);
     if (it_participant != channel_participants.end()) {
       channel.participants = it_participant->second;
       channel.is_group = channel.participants.size() > 2;
     } else {
       std::cerr << "[DB] Warning: no participants found for channel "
-                << channel.channel_id << "\n";
+                << channel.id_channel << "\n";
     }
 
-    auto it_unread_count = channels_unread_count.find(channel.channel_id);
+    auto it_unread_count = channels_unread_count.find(channel.id_channel);
     if (it_unread_count != channels_unread_count.end()) {
       channel.unread_count = it_unread_count->second;
     } else {
       channel.unread_count = 0;
     }
 
-    auto it_last_message = channels_last_message.find(channel.channel_id);
+    auto it_last_message = channels_last_message.find(channel.id_channel);
     if (it_last_message != channels_last_message.end()) {
       channel.last_message = it_last_message->second;
     } else {
       std::cerr << "[DB] Warning: no last message found for channel "
-                << channel.channel_id << "\n";
+                << channel.id_channel << "\n";
     }
   }
   return channels_info;
@@ -353,7 +354,7 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
     std::unique_ptr<sql::Statement> stmt(this->conn->createStatement());
     std::unique_ptr<sql::ResultSet> res(
         stmt->executeQuery("SELECT LAST_INSERT_ID()"));
-        
+
     if (res->next()) {
       return res->getInt64(1);
     }
@@ -364,9 +365,9 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
   }
 }
 
-std::set<int64_t> Database::get_channel_participants(int64_t id_channel,
-                                                     ChannelStatus membership) {
-  std::set<int64_t> channel_participants;
+std::unordered_set<int64_t> Database::get_channel_participants(
+    int64_t id_channel, ChannelStatus membership) {
+  std::unordered_set<int64_t> channel_participants;
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
@@ -387,5 +388,41 @@ std::set<int64_t> Database::get_channel_participants(int64_t id_channel,
     std::cerr << "[DB] get_channel_participants error: " << e.what()
               << std::endl;
     return channel_participants;
+  }
+}
+
+std::vector<ServerSend::Message> Database::get_channel_history(
+    int64_t id_channel, int64_t before_id_message, int limit) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+  std::vector<ServerSend::Message> messages;
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "SELECT * FROM ( "
+            "SELECT id_message, id_user, body, timestamp FROM messages "
+            "WHERE id_channel = ? AND (0 = ? OR id_message < ?) "
+            "ORDER BY id_message DESC "
+            "LIMIT ?) AS recent "
+            "ORDER BY id_message ASC;"));
+
+    prep_statement->setInt64(1, id_channel);
+    prep_statement->setInt64(2, before_id_message);
+    prep_statement->setInt64(3, before_id_message);
+    prep_statement->setInt(4, limit);
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    while (res->next()) {
+      ServerSend::Message message =
+          create_message(res->getInt64("id_message"), res->getInt64("id_user"),
+                         res->getString("body"), res->getString("timestamp"));
+      messages.push_back(message);
+    }
+    return messages;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channel_history error: " << e.what() << std::endl;
+    return messages;
   }
 }

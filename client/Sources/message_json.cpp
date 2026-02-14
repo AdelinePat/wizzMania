@@ -7,12 +7,12 @@ namespace {
 int type_to_int(WizzMania::MessageType type) { return static_cast<int>(type); }
 
 bool parse_message(const QJsonObject& obj, ServerSend::Message& out) {
-  if (!obj.contains("message_id") || !obj.contains("sender_id") ||
+  if (!obj.contains("id_message") || !obj.contains("id_sender") ||
       !obj.contains("body") || !obj.contains("timestamp")) {
     return false;
   }
-  out.message_id = obj.value("message_id").toVariant().toLongLong();
-  out.sender_id = obj.value("sender_id").toVariant().toLongLong();
+  out.id_message = obj.value("id_message").toVariant().toLongLong();
+  out.id_sender = obj.value("id_sender").toVariant().toLongLong();
   out.body = obj.value("body").toString().toStdString();
   out.timestamp = obj.value("timestamp").toString().toStdString();
   out.is_system = obj.value("is_system").toBool(false);
@@ -29,16 +29,16 @@ bool parse_contact(const QJsonObject& obj, ServerSend::Contact& out) {
 }
 
 bool parse_channel(const QJsonObject& obj, ServerSend::ChannelInfo& out) {
-  if (!obj.contains("channel_id") || !obj.contains("title")) {
+  if (!obj.contains("id_channel") || !obj.contains("title")) {
     return false;
   }
-  out.channel_id = obj.value("channel_id").toVariant().toLongLong();
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
   out.title = obj.value("title").toString().toStdString();
   out.is_group = obj.value("is_group").toBool(false);
   out.created_by = obj.value("created_by").toVariant().toLongLong();
   out.unread_count = obj.value("unread_count").toVariant().toLongLong();
-  out.last_read_message_id =
-      obj.value("last_read_message_id").toVariant().toLongLong();
+  out.last_read_id_message =
+      obj.value("last_read_id_message").toVariant().toLongLong();
 
   if (obj.contains("last_message") && obj.value("last_message").isObject()) {
     parse_message(obj.value("last_message").toObject(), out.last_message);
@@ -58,7 +58,7 @@ QJsonObject to_json(const AuthMessages::WSAuthRequest& req) {
 QJsonObject to_json(const ClientSend::SendMessageRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
-  obj["channel_id"] = static_cast<qint64>(req.channel_id);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
   obj["body"] = QString::fromStdString(req.body);
   return obj;
 }
@@ -66,7 +66,7 @@ QJsonObject to_json(const ClientSend::SendMessageRequest& req) {
 QJsonObject to_json(const ClientSend::ChannelOpenRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
-  obj["channel_id"] = static_cast<qint64>(req.channel_id);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
   return obj;
 }
 
@@ -85,7 +85,7 @@ bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
 }
 
 bool from_json(const QJsonObject& obj, ServerSend::NewMessageBroadcast& out) {
-  if (!obj.contains("type") || !obj.contains("channel_id") ||
+  if (!obj.contains("type") || !obj.contains("id_channel") ||
       !obj.contains("message")) {
     return false;
   }
@@ -94,7 +94,7 @@ bool from_json(const QJsonObject& obj, ServerSend::NewMessageBroadcast& out) {
     return false;
   }
   out.type = WizzMania::MessageType::NEW_MESSAGE;
-  out.channel_id = obj.value("channel_id").toVariant().toLongLong();
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
   if (!obj.value("message").isObject()) {
     return false;
   }

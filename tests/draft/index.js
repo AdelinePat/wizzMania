@@ -1,64 +1,64 @@
 import { SERVER_IP, SERVER_PORT } from "./secret.js";
 
 // ==================== GLOBAL STATE ====================
-let token = null;
-let userId = null;
-let username = null;
-let ws = null;
+let token      = null;
+let userId     = null;
+let username   = null;
+let ws         = null;
 let activeChannelId = null;
 
-const userCache = new Map();  // id_user -> username
+const userCache    = new Map();  // id_user -> username
 const channelCache = new Map();  // id_channel -> ChannelInfo
 
 const SERVER_URL = `http://${SERVER_IP ?? "192.168.0.117"}:${SERVER_PORT ?? "8080"}`;
-const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
+const WS_URL     = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
 
 // ==================== MESSAGE TYPES ====================
 const MessageType = {
-  WS_AUTH: 0,
-  LOGOUT: 1,
-  SEND_MESSAGE: 10,
-  CREATE_CHANNEL: 11,
-  ACCEPT_INVITATION: 12,
-  REJECT_INVITATION: 13,
-  LEAVE_CHANNEL: 14,
-  UPDATE_CHANNEL_TITLE: 15,
-  MARK_AS_READ: 16,
-  TYPING_START: 17,
-  TYPING_STOP: 18,
+  WS_AUTH:                  0,
+  LOGOUT:                   1,
+  SEND_MESSAGE:            10,
+  CREATE_CHANNEL:          11,
+  ACCEPT_INVITATION:       12,
+  REJECT_INVITATION:       13,
+  LEAVE_CHANNEL:           14,
+  UPDATE_CHANNEL_TITLE:    15,
+  MARK_AS_READ:            16,
+  TYPING_START:            17,
+  TYPING_STOP:             18,
   REQUEST_CHANNEL_HISTORY: 19,
-  CHANNEL_OPEN: 20,
-  WS_AUTH_SUCCESS: 100,
-  NEW_MESSAGE: 101,
-  CHANNEL_CREATED: 102,
-  CHANNEL_INVITATION: 103,
-  INVITATION_ACCEPTED: 104,
-  INVITATION_REJECTED: 105,
-  USER_JOINED: 106,
-  USER_LEFT: 107,
-  CHANNEL_ACTIVATED: 108,
-  CHANNEL_DELETED: 109,
-  TITLE_UPDATED: 110,
-  USER_STATUS: 111,
-  USER_TYPING: 112,
-  INITIAL_DATA: 113,
-  CHANNEL_HISTORY: 114,
-  ERROR: 255
+  CHANNEL_OPEN:            20,
+  WS_AUTH_SUCCESS:        100,
+  NEW_MESSAGE:            101,
+  CHANNEL_CREATED:        102,
+  CHANNEL_INVITATION:     103,
+  INVITATION_ACCEPTED:    104,
+  INVITATION_REJECTED:    105,
+  USER_JOINED:            106,
+  USER_LEFT:              107,
+  CHANNEL_ACTIVATED:      108,
+  CHANNEL_DELETED:        109,
+  TITLE_UPDATED:          110,
+  USER_STATUS:            111,
+  USER_TYPING:            112,
+  INITIAL_DATA:           113,
+  CHANNEL_HISTORY:        114,
+  ERROR:                  255
 };
 
 // ==================== LOGIN ====================
 async function login() {
   const usernameInput = document.getElementById("username").value.trim();
   const passwordInput = document.getElementById("password").value;
-  const errorDiv = document.getElementById("login-error");
-  const loginBtn = document.getElementById("loginBtn");
+  const errorDiv      = document.getElementById("login-error");
+  const loginBtn      = document.getElementById("loginBtn");
 
   if (!usernameInput || !passwordInput) {
     errorDiv.textContent = "Please fill in all fields.";
     return;
   }
 
-  loginBtn.disabled = true;
+  loginBtn.disabled    = true;
   loginBtn.textContent = "Connecting...";
   errorDiv.textContent = "";
 
@@ -72,19 +72,19 @@ async function login() {
     const data = await response.json();
 
     if (data.success) {
-      token = data.token;
-      userId = data.id_user;
+      token    = data.token;
+      userId   = data.id_user;
       username = data.username;
       showApp();
       connectWebSocket();
     } else {
       errorDiv.textContent = data.message ?? "Login failed.";
-      loginBtn.disabled = false;
+      loginBtn.disabled    = false;
       loginBtn.textContent = "Connect";
     }
   } catch (err) {
     errorDiv.textContent = `Connection error: ${err.message}`;
-    loginBtn.disabled = false;
+    loginBtn.disabled    = false;
     loginBtn.textContent = "Connect";
   }
 }
@@ -97,7 +97,7 @@ function showApp() {
   // Populate user info in sidebar
   const initials = username?.slice(0, 2).toUpperCase() ?? "??";
   document.getElementById("user-avatar-initials").textContent = initials;
-  document.getElementById("sidebar-username").textContent = username;
+  document.getElementById("sidebar-username").textContent     = username;
 }
 
 // ==================== WEBSOCKET ====================
@@ -124,6 +124,9 @@ function connectWebSocket() {
         case MessageType.NEW_MESSAGE:
           handleNewMessage(data);
           break;
+        case MessageType.CHANNEL_HISTORY:
+          handleChannelHistory(data);
+          break;
         case MessageType.USER_TYPING:
           handleTypingNotification(data);
           break;
@@ -143,7 +146,7 @@ function connectWebSocket() {
   ws.onclose = (event) => {
     setWsDot("disconnected");
     document.getElementById("messageInput").disabled = true;
-    document.getElementById("sendBtn").disabled = true;
+    document.getElementById("sendBtn").disabled      = true;
     addSystemMessage(`Disconnected: ${event.reason || "connection closed"}`);
   };
 }
@@ -151,7 +154,7 @@ function connectWebSocket() {
 function onAuthSuccess() {
   setWsDot("connected");
   document.getElementById("messageInput").disabled = false;
-  document.getElementById("sendBtn").disabled = false;
+  document.getElementById("sendBtn").disabled      = false;
   addSystemMessage("Connected to WizzMania ✦");
 }
 
@@ -169,9 +172,9 @@ function disconnectWebSocket() {
 function setWsDot(state) {
   const dot = document.getElementById("ws-dot");
   dot.className = "ws-status-dot";
-  if (state === "connected") { dot.classList.add("connected"); dot.title = "Connected"; }
-  else if (state === "error") { dot.classList.add("error"); dot.title = "Error"; }
-  else { dot.title = "Disconnected"; }
+  if (state === "connected")   { dot.classList.add("connected"); dot.title = "Connected"; }
+  else if (state === "error")  { dot.classList.add("error");     dot.title = "Error"; }
+  else                         {                                  dot.title = "Disconnected"; }
 }
 
 // ==================== INITIAL DATA ====================
@@ -185,7 +188,7 @@ function handleInitialData(data) {
 
   // Populate channel cache and sidebar
   if (Array.isArray(data.channels)) {
-    data.channels.forEach(ch => channelCache.set(ch.channel_id, ch));
+    data.channels.forEach(ch => channelCache.set(ch.id_channel, ch));
   }
 
   renderChannelsSidebar();
@@ -206,13 +209,13 @@ function renderChannelsSidebar() {
 
   channelCache.forEach(ch => {
     const item = document.createElement("div");
-    item.className = "sidebar-item";
-    item.dataset.id = ch.channel_id;
+    item.className  = "sidebar-item";
+    item.dataset.id = ch.id_channel;
 
-    const isGroup = ch.is_group;
-    const iconChar = isGroup ? "⊞" : "◈";
-    const preview = ch.last_message?.body ?? "";
-    const unread = ch.unread_count > 0
+    const isGroup   = ch.is_group;
+    const iconChar  = isGroup ? "⊞" : "◈";
+    const preview   = ch.last_message?.body ?? "";
+    const unread    = ch.unread_count > 0
       ? `<div class="unread-badge">${ch.unread_count}</div>`
       : "";
 
@@ -225,7 +228,7 @@ function renderChannelsSidebar() {
       ${unread}
     `;
 
-    item.addEventListener("click", () => selectChannel(ch.channel_id));
+    item.addEventListener("click", () => selectChannel(ch.id_channel));
     list.appendChild(item);
   });
 }
@@ -266,7 +269,7 @@ function selectChannel(channelId) {
   });
 
   // Update header
-  document.getElementById("chat-icon").textContent = ch?.is_group ? "⊞" : "◈";
+  document.getElementById("chat-icon").textContent  = ch?.is_group ? "⊞" : "◈";
   document.getElementById("chat-title").textContent = ch?.title ?? `Channel ${channelId}`;
 
   // Show participant count
@@ -281,32 +284,42 @@ function selectChannel(channelId) {
     if (badge) badge.remove();
   }
 
-  // For now, all messages broadcast to everyone so messages are already shown
-  // TODO: request channel history when per-channel broadcast is implemented
+  // Clear messages and request history from server
+  document.getElementById("messages-container").innerHTML = "";
+  requestChannelHistory(channelId, 0);
+}
+
+function requestChannelHistory(channelId, beforeMessageId) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({
+    type: MessageType.REQUEST_CHANNEL_HISTORY,
+    id_channel: channelId,
+    before_id_message: beforeMessageId,
+    limit: 50
+  }));
 }
 
 // ==================== NEW MESSAGE ====================
 function handleNewMessage(data) {
   if (!data.message) return;
 
-  const msg = data.message;
-  const isMe = msg.id_sender === userId;
-  // const isSystem = msg.is_system;
-  const isSystem = false;
-  const sender = isSystem
+  const msg      = data.message;
+  const isMe     = msg.id_sender === userId;
+  const isSystem = msg.is_system;
+  const sender   = isSystem
     ? "System"
     : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
 
-  // Update channel last message preview in sidebar
-  const chData = channelCache.get(data.channel_id);
+  // Always update sidebar preview + unread badge
+  const chData = channelCache.get(data.id_channel);
   if (chData) {
     chData.last_message = msg;
-    const item = document.querySelector(`.sidebar-item[data-id="${data.channel_id}"]`);
+    const item    = document.querySelector(`.sidebar-item[data-id="${data.id_channel}"]`);
     const preview = item?.querySelector(".item-preview");
     if (preview) preview.textContent = msg.body;
 
-    // If not the active channel, bump unread badge
-    if (data.channel_id !== activeChannelId) {
+    // Only bump unread if not the active channel
+    if (data.id_channel !== activeChannelId) {
       if (item) {
         let badge = item.querySelector(".unread-badge");
         if (!badge) {
@@ -318,12 +331,16 @@ function handleNewMessage(data) {
           badge.textContent = parseInt(badge.textContent) + 1;
         }
       }
+      return; // Don't display message - channel not open
     }
   }
 
-  if (isSystem) addSystemMessage(msg.body);
-  else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);
-  else addReceivedMessage(msg.body, sender, msg.timestamp);
+  // Only display if this is the active channel
+  if (data.id_channel !== activeChannelId) return;
+
+  if (isSystem)     addSystemMessage(msg.body);
+  else if (isMe)    addSentMessage(msg.body, sender, msg.timestamp);
+  else              addReceivedMessage(msg.body, sender, msg.timestamp);
 }
 
 function handleTypingNotification(data) {
@@ -332,24 +349,64 @@ function handleTypingNotification(data) {
   console.log(data.is_typing ? `${name} is typing...` : `${name} stopped typing`);
 }
 
+// ==================== CHANNEL HISTORY ====================
+function handleChannelHistory(data) {
+  // Ignore if user switched channels while waiting for response
+  if (data.id_channel !== activeChannelId) return;
+
+  const container = document.getElementById("messages-container");
+  container.innerHTML = "";
+
+  if (!data.messages || data.messages.length === 0) {
+    addSystemMessage("No messages yet. Say hello!");
+    return;
+  }
+
+  data.messages.forEach(msg => {
+    const isMe     = msg.id_sender === userId;
+    const isSystem = msg.is_system;
+    const sender   = isSystem
+      ? "System"
+      : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
+
+    if (isSystem)     addSystemMessage(msg.body);
+    else if (isMe)    addSentMessage(msg.body, sender, msg.timestamp);
+    else              addReceivedMessage(msg.body, sender, msg.timestamp);
+  });
+
+  // TODO: if data.has_more, show "load older messages" button at top
+  if (data.has_more) {
+    const loadMore = document.createElement("div");
+    loadMore.className = "date-sep";
+    loadMore.style.cursor = "pointer";
+    loadMore.style.color = "var(--accent)";
+    loadMore.textContent = "↑ Load older messages";
+    loadMore.addEventListener("click", () => {
+      const oldest = data.messages[0]?.id_message ?? 0;
+      requestChannelHistory(activeChannelId, oldest);
+    });
+    container.prepend(loadMore);
+  }
+}
+
 // ==================== MESSAGING ====================
 function sendMessage() {
-  const input = document.getElementById("messageInput");
+  const input   = document.getElementById("messageInput");
   const message = input.value.trim();
   if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
 
   const channelId = activeChannelId ?? 1;
-  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, channel_id: channelId, body: message }));
+  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, id_channel: channelId, body: message }));
   input.value = "";
 }
 
 // ==================== MESSAGE RENDERING ====================
 function addSentMessage(text, senderName, timestamp) {
   const container = document.getElementById("messages-container");
-  const row = document.createElement("div");
-  row.className = "msg-row sent";
-  const initials = senderName.slice(0, 2).toUpperCase();
-  const time = formatTime(timestamp);
+  const row       = document.createElement("div");
+  row.className   = "msg-row sent";
+  const initials  = senderName.slice(0, 2).toUpperCase();
+  const time      = formatTime(timestamp);
 
   row.innerHTML = `
     <div class="msg-avatar">${initials}</div>
@@ -366,10 +423,10 @@ function addSentMessage(text, senderName, timestamp) {
 
 function addReceivedMessage(text, senderName, timestamp) {
   const container = document.getElementById("messages-container");
-  const row = document.createElement("div");
-  row.className = "msg-row received";
-  const initials = senderName.slice(0, 2).toUpperCase();
-  const time = formatTime(timestamp);
+  const row       = document.createElement("div");
+  row.className   = "msg-row received";
+  const initials  = senderName.slice(0, 2).toUpperCase();
+  const time      = formatTime(timestamp);
 
   row.innerHTML = `
     <div class="msg-avatar">${initials}</div>
@@ -386,8 +443,8 @@ function addReceivedMessage(text, senderName, timestamp) {
 
 function addSystemMessage(text) {
   const container = document.getElementById("messages-container");
-  const row = document.createElement("div");
-  row.className = "msg-row system";
+  const row       = document.createElement("div");
+  row.className   = "msg-row system";
   row.style.alignSelf = "center";
 
   row.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;

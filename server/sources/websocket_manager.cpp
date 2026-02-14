@@ -54,7 +54,7 @@ void WebSocketManager::broadcast_to_all(const std::string& message) {
 //   }
 // }
 
-void WebSocketManager::broadcast_to_users(const std::set<int64_t>& id_users,
+void WebSocketManager::broadcast_to_users(const std::unordered_set<int64_t>& id_users,
                                           const std::string& message) {
   std::lock_guard<std::mutex> lock(ws_mutex);
   for (int64_t id_user : id_users) {

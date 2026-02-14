@@ -14,10 +14,11 @@
 #include <memory>
 #include <mutex>
 #include <optional>
-#include <set>
 #include <string>
+#include <unordered_set>
 #include <vector>
 
+#include "helpers.hpp"
 #include "message_structure.hpp"
 #include "messages.hpp"
 
@@ -50,7 +51,7 @@ class Database {
   std::map<int64_t, ServerSend::Message> get_last_messages(
       const int64_t id_user);
   std::map<int64_t, int64_t> get_unread_count(const int64_t id_user);
-  std::map<int64_t, std::set<int64_t>> get_participants_and_channel(
+  std::map<int64_t, std::unordered_set<int64_t>> get_participants_and_channel(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
   std::vector<ServerSend::ChannelInfo> get_channels(
@@ -62,8 +63,11 @@ class Database {
   std::optional<int64_t> save_message(int64_t id_user, int64_t id_channel,
                                       const std::string& body,
                                       const std::string& timestamp);
-  std::set<int64_t> get_channel_participants(int64_t id_channel,
-                                             ChannelStatus membership = ChannelStatus::ACCEPTED);
+  std::unordered_set<int64_t> get_channel_participants(
+      int64_t id_channel, ChannelStatus membership = ChannelStatus::ACCEPTED);
+
+  std::vector<ServerSend::Message> get_channel_history(
+      int64_t id_channel, int64_t before_id_message, int limit);
 };
 
 #endif

@@ -34,7 +34,7 @@ void WebSocketClient::sendMessage(int64_t channelId, const QString& body) {
 
   ClientSend::SendMessageRequest req;
   req.type = WizzMania::MessageType::SEND_MESSAGE;
-  req.channel_id = channelId;
+  req.id_channel = channelId;
   req.body = body.toStdString();
 
   const QJsonDocument doc(MessageJson::to_json(req));
@@ -49,7 +49,7 @@ void WebSocketClient::openChannel(int64_t channelId) {
 
   ClientSend::ChannelOpenRequest req;
   req.type = WizzMania::MessageType::CHANNEL_OPEN;
-  req.channel_id = channelId;
+  req.id_channel = channelId;
 
   const QJsonDocument doc(MessageJson::to_json(req));
   socket.sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));

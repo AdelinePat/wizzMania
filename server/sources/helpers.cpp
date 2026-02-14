@@ -30,3 +30,15 @@ std::string get_timestamp() {
   std::string timestamp = oss.str();
   return timestamp;
 }
+
+ServerSend::Message create_message(int64_t id_message, int64_t id_user,
+                                   const std::string& body,
+                                   const std::string& timestamp) {
+  ServerSend::Message message;
+  message.id_message = id_message;
+  message.id_sender = id_user;
+  message.body = body;
+  message.timestamp = timestamp;
+  message.is_system = id_user == 1;
+  return message;
+}
