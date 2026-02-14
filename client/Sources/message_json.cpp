@@ -7,12 +7,12 @@ namespace {
 int type_to_int(WizzMania::MessageType type) { return static_cast<int>(type); }
 
 bool parse_message(const QJsonObject& obj, ServerSend::Message& out) {
-  if (!obj.contains("message_id") || !obj.contains("sender_id") ||
+  if (!obj.contains("id_message") || !obj.contains("id_sender") ||
       !obj.contains("body") || !obj.contains("timestamp")) {
     return false;
   }
-  out.message_id = obj.value("message_id").toVariant().toLongLong();
-  out.sender_id = obj.value("sender_id").toVariant().toLongLong();
+  out.id_message = obj.value("id_message").toVariant().toLongLong();
+  out.id_sender = obj.value("id_sender").toVariant().toLongLong();
   out.body = obj.value("body").toString().toStdString();
   out.timestamp = obj.value("timestamp").toString().toStdString();
   out.is_system = obj.value("is_system").toBool(false);
@@ -37,8 +37,8 @@ bool parse_channel(const QJsonObject& obj, ServerSend::ChannelInfo& out) {
   out.is_group = obj.value("is_group").toBool(false);
   out.created_by = obj.value("created_by").toVariant().toLongLong();
   out.unread_count = obj.value("unread_count").toVariant().toLongLong();
-  out.last_read_message_id =
-      obj.value("last_read_message_id").toVariant().toLongLong();
+  out.last_read_id_message =
+      obj.value("last_read_id_message").toVariant().toLongLong();
 
   if (obj.contains("last_message") && obj.value("last_message").isObject()) {
     parse_message(obj.value("last_message").toObject(), out.last_message);

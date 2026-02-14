@@ -185,7 +185,7 @@ void MainWindow::appendMessageToView(int64_t channelId,
   Q_UNUSED(channelId);
 
   const QString sender =
-      msg.is_system ? QString("System") : QString::number(msg.sender_id);
+      msg.is_system ? QString("System") : QString::number(msg.id_sender);
   const QString timestamp = QString::fromStdString(msg.timestamp);
   const QString body = QString::fromStdString(msg.body);
 
