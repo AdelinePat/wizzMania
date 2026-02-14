@@ -24,8 +24,8 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
   broadcast.channel_id = req->channel_id;
 
   // fill the inner message
-  broadcast.message.message_id = 0;  // fake id for now TODO get from DB!!
-  broadcast.message.sender_id = id_user;
+  broadcast.message.id_message = 0;  // fake id for now TODO get from DB!!
+  broadcast.message.id_sender = id_user;
   //   broadcast.message.sender_username = "whatever";
   broadcast.message.body = req->body;
 
@@ -36,13 +36,10 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
   oss << std::put_time(std::localtime(&now_time), "%Y-%m-%dT%H:%M:%S");
   broadcast.message.timestamp = oss.str();
 
-  broadcast.message.is_system = true;
+  broadcast.message.is_system = id_user == 1;
 
   std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
   ws_manager.broadcast_to_all(json_str);
-
-  // send JSON
-  //   conn.send_text(JsonHelpers::ServerSend::to_json(broadcast).dump());
 }
 
 void MessageHandler::send_error(crow::websocket::connection& conn,
@@ -108,14 +105,18 @@ void MessageHandler::authenticate_ws(crow::websocket::connection& conn,
 }
 
 void MessageHandler::initial_data(crow::websocket::connection& conn) {
-  int64_t id_user = ws_manager.get_user_id(&conn);
+  std::optional<int64_t> id_user_opt = ws_manager.get_user_id(&conn);
+  if (!id_user_opt.has_value()) {
+    std::cerr << "[INIT] Error: user not found for connection\n";
+    return;
+  }
+  int64_t id_user = id_user_opt.value();
+
   std::cout << "[INIT] Sending initial data to user " << id_user << "\n";
 
-  ServerSend::InitialDataResponse init_data;
+  ServerSend::InitialDataResponse init_data = db.get_initial_data(id_user);
   init_data.type = WizzMania::MessageType::INITIAL_DATA;
-  init_data.contacts = db.get_contact(id_user);
-  // std::vector<ChannelInfo> channels;
-  if (!init_data.contacts.empty()) {
+  if (init_data.contacts.empty()) {
     std::cout << "[INIT] Warning: No contacts found for user " << id_user
               << "\n";
   }

@@ -71,7 +71,7 @@ erDiagram
         bigint id_user FK
         bigint id_channel FK
         boolean accepted
-        int last_read_message_id
+        int last_read_id_message
     }
 
     MESSAGES {

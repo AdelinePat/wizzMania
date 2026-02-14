@@ -72,10 +72,11 @@ bool WebSocketManager::is_user_online(int64_t id_user) {
   return user_sockets.find(id_user) != user_sockets.end();
 }
 
-int64_t WebSocketManager::get_user_id(WSConn conn) {
-  std::lock_guard<std::mutex> lock(ws_mutex);
-  // int64_t id_user = this->.socket_to_user.at(conn);
-  // return id_user ? id_user : -1;
-  auto it = socket_to_user.find(conn);
-  return it != socket_to_user.end() ? it->second : -1;
+std::optional<int64_t> WebSocketManager::get_user_id(WSConn conn) {
+    auto it = socket_to_user.find(conn);
+    if (it != socket_to_user.end()) {
+      return std::optional<int64_t>(it->second);
+    } else {
+      return std::nullopt;
+    }
 }

@@ -10,9 +10,11 @@
 #include <mysql_driver.h>
 
 #include <iostream>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -42,8 +44,21 @@ class Database {
   ~Database();
 
   int64_t verify_user(const std::string& username, const std::string& password);
-  std::vector<ServerSend::Contact> get_contact(const int64_t id_user);
-  // TODO: Implement
+  std::vector<ServerSend::Contact> get_contact(
+      const int64_t id_user,
+      ChannelStatus membership = ChannelStatus::ACCEPTED);
+  std::map<int64_t, ServerSend::Message> get_last_messages(
+      const int64_t id_user);
+  std::map<int64_t, int64_t> get_unread_count(const int64_t id_user);
+  std::map<int64_t, std::set<int64_t>> get_participants_and_channel(
+      const int64_t id_user,
+      ChannelStatus membership = ChannelStatus::ACCEPTED);
+  std::vector<ServerSend::ChannelInfo> get_channels(
+      const int64_t id_user,
+      ChannelStatus membership = ChannelStatus::ACCEPTED);
+  std::vector<ServerSend::ChannelInfo> get_initial_channels(
+      const int64_t id_user);
+  ServerSend::InitialDataResponse get_initial_data(const int64_t id_user);
 };
 
 #endif
