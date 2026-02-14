@@ -5,7 +5,7 @@ Second year IT Bachelor group project : create a chat application with C++ and Q
 
 ```cmd
 cd client/build
-cmake .. -G Ninja -DCMAKE_PREFIX_PATH="C:/Qt/6.10.1/mingw_64"
+cmake .. -G Ninja -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/mingw_64"
 ninja
 ./wizzmania-client.exe
 ```
@@ -142,7 +142,7 @@ On windows, install Qt 6.10.?? , install it with gcc, g++ and cmake
 add those to your path
 ```
 C:\Qt\Tools\QtCreator\bin
-C:\Qt\6.10.1\mingw_64\bin
+C:\Qt\6.10.2\mingw_64\bin
 ```
 ### git bash
 ```bash
