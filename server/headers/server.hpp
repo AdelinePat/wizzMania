@@ -2,12 +2,21 @@
 #define SERVER_H
 
 // #include <chrono>
+#include <crow.h>
+
 #include <cstdlib>
 #include <iostream>
-#include <thread>
 #include <string>
-#include <unordered_map>
-#include <unordered_set>
-#include <mutex>
+#include <thread>
 
+
+#include "database.hpp"
+#include "helpers.hpp"
+#include "http_manager.hpp"
+#include "json_helpers.hpp"
+#include "message_handler.hpp"
+#include "message_structure.hpp"
+#include "websocket_manager.hpp"
+
+using WSConn = crow::websocket::connection*;
 #endif

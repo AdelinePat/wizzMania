@@ -17,11 +17,12 @@ set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/Forms)
 set(QT_FEATURE_vulkan OFF)
 
 # Find Qt6 packages
-find_package(Qt6 REQUIRED COMPONENTS
-    Core
-    Gui
-    Widgets
+find_package(Qt6 REQUIRED COMPONENTS 
+    Core 
+    Gui 
+    Widgets 
     Network
+    WebSockets
 )
 
 # Collect source files from Sources/ directory
@@ -29,12 +30,19 @@ set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
     Sources/loginwidget.cpp
+    Sources/serverconfig.cpp
+    Sources/websocket_client.cpp
+    Sources/message_json.cpp
 )
 
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
     Headers/mainwindow.h
     Headers/loginwidget.h
+    Headers/serverconfig.h
+    Headers/websocket_client.h
+    Headers/message_json.h
+    Headers/message_qt_types.h
 )
 
 # Collect UI files from Forms/ directory
@@ -80,6 +88,7 @@ target_link_libraries(wizzmania-client PRIVATE
     Qt6::Gui
     Qt6::Widgets
     Qt6::Network
+    Qt6::WebSockets
 )
 
 # Windows-specific settings

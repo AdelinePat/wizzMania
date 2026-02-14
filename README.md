@@ -5,7 +5,7 @@ Second year IT Bachelor group project : create a chat application with C++ and Q
 
 ```cmd
 cd client/build
-cmake .. -G Ninja -DCMAKE_PREFIX_PATH="C:/Qt/6.10.1/mingw_64"
+cmake .. -G Ninja -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/mingw_64"
 ninja
 ./wizzmania-client.exe
 ```
@@ -112,7 +112,7 @@ curl -L https://github.com/CrowCpp/Crow/archive/refs/tags/v1.3.0.tar.gz \
 ```
 ### 2. Asio - [https://github.com/chriskohlhoff/asio](https://github.com/chriskohlhoff/asio)
 As Crow depends on `Asio 1.28.0`  the same was done for it too 
-```bash
+```bash 
 curl -L https://github.com/chriskohlhoff/asio/archive/refs/tags/asio-1-28-0.tar.gz \
   | tar -xz --strip-components=1 -C server/vendor/asio
 ```
@@ -142,7 +142,7 @@ On windows, install Qt 6.10.?? , install it with gcc, g++ and cmake
 add those to your path
 ```
 C:\Qt\Tools\QtCreator\bin
-C:\Qt\6.10.1\mingw_64\bin
+C:\Qt\6.10.2\mingw_64\bin
 ```
 ### git bash
 ```bash
@@ -193,4 +193,11 @@ docker compose exec mysql-db sh -c 'mysql -h localhost -u "$MYSQL_USER" -p"$MYSQ
 Or directly test your query in terminal
 ```bash
 docker compose exec mysql-db sh -c 'mysql -h localhost -u "$MYSQL_USER" -p"$MYSQL_PASSWORD" "$MYSQL_DATABASE" < /queries.sql' 
+```
+
+
+## test using fake client (web)
+need to add secret.js in the same folder as index.js
+```bash
+python3 -m http.server 8880
 ```
