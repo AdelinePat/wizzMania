@@ -2,6 +2,7 @@
 #include <iostream>
 
 #include "mainwindow.h"
+#include "message_qt_types.h"
 
 int main(int argc, char** argv) {
   std::cout << "========================================\n";
@@ -9,6 +10,11 @@ int main(int argc, char** argv) {
   std::cout << "========================================\n";
 
   QApplication app(argc, argv);
+
+  qRegisterMetaType<AuthMessages::WSAuthResponse>();
+  qRegisterMetaType<ServerSend::InitialDataResponse>();
+  qRegisterMetaType<ServerSend::NewMessageBroadcast>();
+  qRegisterMetaType<ServerSend::ErrorResponse>();
 
   MainWindow window;
   window.show();

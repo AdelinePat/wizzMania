@@ -1,11 +1,20 @@
 #include "loginwidget.h"
 
+#include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QMessageBox>
+#include <QNetworkReply>
+#include <QTimer>
+#include <QUrl>
 
+#include "serverconfig.h"
 #include "ui_loginwidget.h"
 
 LoginWidget::LoginWidget(QWidget* parent)
-    : QWidget(parent), ui(new Ui::LoginWidget) {
+    : QWidget(parent),
+      ui(new Ui::LoginWidget),
+      network(new QNetworkAccessManager(this)) {
   ui->setupUi(this);
 
   // Connect login button
@@ -37,7 +46,71 @@ void LoginWidget::onLoginClicked() {
     return;
   }
 
-  // For now, accept any non-empty credentials (no server communication yet)
-  // Later this will connect to the server for authentication
-  emit loginSuccessful(username);
+  sendLoginRequest(username, password);
+}
+
+void LoginWidget::sendLoginRequest(const QString& username,
+                                   const QString& password) {
+  QJsonObject payload;
+  payload["username"] = username;
+  payload["password"] = password;
+  if (username.contains('@')) {
+    payload["email"] = username;
+  }
+
+  QNetworkRequest request(QUrl(ServerConfig::loginUrl()));
+  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+
+  QNetworkReply* reply =
+      network->post(request, QJsonDocument(payload).toJson());
+  ui->loginButton->setEnabled(false);
+
+  qDebug() << "Login POST sent to" << request.url().toString() << "for user"
+           << username;
+
+  connect(reply, &QNetworkReply::finished, this,
+          [this, reply, username, password]() {
+            ui->loginButton->setEnabled(true);
+
+            if (reply->error() != QNetworkReply::NoError) {
+              qDebug() << "Login request failed:" << reply->errorString();
+              QMessageBox::information(
+                  this, tr("Login"),
+                  tr("Login request sent, but no server response yet.\n"
+                     "Mocking login for local testing."));
+              handleMockLogin(username, password);
+              reply->deleteLater();
+              return;
+            }
+
+            const QByteArray body = reply->readAll();
+            const QJsonDocument doc = QJsonDocument::fromJson(body);
+            const QJsonObject obj = doc.object();
+            const QString token = obj.value("token").toString();
+
+            if (token.isEmpty()) {
+              QMessageBox::warning(this, tr("Login"),
+                                   tr("Server response missing token."));
+              reply->deleteLater();
+              return;
+            }
+
+            emit loginSuccessful(username, token);
+            reply->deleteLater();
+          });
+}
+
+void LoginWidget::handleMockLogin(const QString& username,
+                                  const QString& password) {
+  if (username == "alice" && password == "hash") {
+    const QString mockToken = "mock-token-alice";
+    QTimer::singleShot(300, this, [this, username, mockToken]() {
+      emit loginSuccessful(username, mockToken);
+    });
+    return;
+  }
+
+  QMessageBox::warning(
+      this, tr("Login"),
+      tr("Mock login only enabled for user 'alice' with password 'hash'."));
 }
