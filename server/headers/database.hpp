@@ -51,9 +51,10 @@ class Database {
   std::map<int64_t, ServerSend::Message> get_last_messages(
       const int64_t id_user);
   std::map<int64_t, int64_t> get_unread_count(const int64_t id_user);
-  std::map<int64_t, std::vector<ServerSend::Contact>> get_participants_and_channel(
-      const int64_t id_user,
-      ChannelStatus membership = ChannelStatus::ACCEPTED);
+  std::map<int64_t, std::vector<ServerSend::Contact>>
+  get_participants_and_channel(
+      const int64_t id_user, ChannelStatus membership = ChannelStatus::ACCEPTED,
+      ChannelStatus other_membership = ChannelStatus::ACCEPTED);
   std::vector<ServerSend::ChannelInfo> get_channels(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
@@ -68,6 +69,13 @@ class Database {
 
   std::vector<ServerSend::Message> get_channel_history(
       int64_t id_channel, int64_t before_id_message, int limit);
+
+  std::vector<ServerSend::ChannelInvitation> get_invitations_base(
+      const int64_t id_user, ChannelStatus membership = ChannelStatus::PENDING);
+  std::vector<ServerSend::ChannelInvitation> get_initial_invitations(
+      const int64_t id_user);
+
+  bool has_channel_access(int64_t id_user, int64_t id_channel);
 };
 
 #endif

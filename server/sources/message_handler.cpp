@@ -14,15 +14,25 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
             << ": " << req->body << "\n";
 
   // TODO: Validate channel access
+  int64_t id_channel = req->id_channel;
+  bool is_system_user = (id_user == 1);
+  bool has_channel_access = db.has_channel_access(id_user, id_channel);
+  std::cout << "[DBG] has_channel_access(" << id_user << ", " << id_channel
+            << ") = " << has_channel_access << "\n";
+  if (!is_system_user && !has_channel_access) {
+    std::cerr << "[INIT] Error: user has no access to this channel !\n";
+    send_error(conn, "INVALID_USER",
+               "User has no permission to SEND_MESSAGE to this channel");
+    return;
+  }
 
   std::string body = req->body;
-  int64_t id_channel = req->id_channel;
   std::string timestamp = get_timestamp();
 
   std::optional<int64_t> id_message_opt =
       db.save_message(id_user, id_channel, body, timestamp);
   if (!id_message_opt.has_value()) {
-    std::cerr << "[INIT] Error: message coul not be save in db\n";
+    std::cerr << "[INIT] Error: message could not be save in db\n";
     return;
   }
   int64_t id_message = id_message_opt.value();

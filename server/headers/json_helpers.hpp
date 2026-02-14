@@ -230,6 +230,23 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
   return json;
 }
 
+// TO JSON CHANNEL INVITATION
+inline crow::json::wvalue to_json(const ::ServerSend::ChannelInvitation& inv) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(inv.type);
+  json["id_channel"] = inv.id_channel;
+  json["id_inviter"] = inv.id_inviter;
+  json["title"] = inv.title;
+
+  crow::json::wvalue::list participants_list;
+  for (const ::ServerSend::Contact& p : inv.other_participant_ids) {
+    participants_list.push_back(to_json(p));
+  }
+  json["other_participant_ids"] = std::move(participants_list);
+
+  return json;
+}
+
 inline crow::json::wvalue to_json(
     const ::ServerSend::NewMessageBroadcast& broadcast) {
   crow::json::wvalue json;
@@ -288,11 +305,11 @@ inline crow::json::wvalue to_json(
   json["channels"] = std::move(channels_list);
 
   // Invitations (TODO later)
-  // crow::json::wvalue::list invitations_list;
-  // for (const auto& inv : resp.invitations) {
-  //   invitations_list.push_back(to_json(inv));
-  // }
-  // json["invitations"] = std::move(invitations_list);
+  crow::json::wvalue::list invitations_list;
+  for (const auto& inv : resp.invitations) {
+    invitations_list.push_back(to_json(inv));
+  }
+  json["invitations"] = std::move(invitations_list);
 
   return json;
 }

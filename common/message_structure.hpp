@@ -147,7 +147,7 @@ struct ChannelCreatedResponse {
 struct ChannelInvitation {
   WizzMania::MessageType type;  // CHANNEL_INVITATION
   int64_t id_channel;
-  int64_t inviter_id;
+  int64_t id_inviter;
   // std::string inviter_username;
   std::vector<Contact> other_participant_ids;
   std::string title;
