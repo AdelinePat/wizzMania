@@ -224,7 +224,7 @@ Database::get_participants_and_channel(const int64_t id_user,
             "JOIN userChannel uc2 ON uc1.id_channel = uc2.id_channel "
             "WHERE uc1.id_user = ? "
             "AND uc1.membership = ? "
-            "AND uc2.membership = ?;"));
+            "AND uc2.membership = ?;"));alice
 
     prep_statement->setInt64(1, id_user);
     prep_statement->setInt(2, static_cast<int32_t>(membership));
@@ -255,12 +255,17 @@ std::vector<ServerSend::ChannelInfo> Database::get_channels(
         this->conn->prepareStatement(
             "SELECT c.id_channel, c.title, c.created_by, "
             "uc1.last_read_id_message "
-            "FROM channels c JOIN userChannel uc1 ON c.id_channel = "
-            "uc1.id_channel "
-            "WHERE uc1.id_user = ? AND uc1.membership = ?;"));
+            "FROM channels c "
+            "JOIN userChannel uc1 ON c.id_channel = uc1.id_channel "
+            "WHERE uc1.id_user = ? "
+            "AND uc1.membership = ? "
+            "AND (SELECT COUNT(*) FROM userChannel uc2 "
+            "WHERE uc2.id_channel = c.id_channel "
+            "AND uc2.membership = ?) >= 2;"));
 
     prep_statement->setInt64(1, id_user);
     prep_statement->setInt(2, static_cast<int32_t>(membership));
+    prep_statement->setInt(3, static_cast<int32_t>(membership));
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     while (res->next()) {
