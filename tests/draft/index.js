@@ -5,14 +5,15 @@ let token = null;
 let userId = null;
 let username = null;
 let ws = null;
+let activeChannelId = null;
 
-// No longer hardcoded - populated from server's INITIAL_DATA
-const userCache = new Map();
+const userCache = new Map();  // id_user -> username
+const channelCache = new Map();  // id_channel -> ChannelInfo
 
-const SERVER_URL = `http://${SERVER_IP ? SERVER_IP : "192.168.0.117"}:${SERVER_PORT ? SERVER_PORT : "8080"}`;
+const SERVER_URL = `http://${SERVER_IP ?? "192.168.0.117"}:${SERVER_PORT ?? "8080"}`;
 const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
 
-// Message type constants
+// ==================== MESSAGE TYPES ====================
 const MessageType = {
   WS_AUTH: 0,
   LOGOUT: 1,
@@ -27,7 +28,6 @@ const MessageType = {
   TYPING_STOP: 18,
   REQUEST_CHANNEL_HISTORY: 19,
   CHANNEL_OPEN: 20,
-
   WS_AUTH_SUCCESS: 100,
   NEW_MESSAGE: 101,
   CHANNEL_CREATED: 102,
@@ -48,11 +48,19 @@ const MessageType = {
 
 // ==================== LOGIN ====================
 async function login() {
-  const usernameInput = document.getElementById("username").value;
+  const usernameInput = document.getElementById("username").value.trim();
   const passwordInput = document.getElementById("password").value;
-  const statusDiv = document.getElementById("loginStatus");
+  const errorDiv = document.getElementById("login-error");
+  const loginBtn = document.getElementById("loginBtn");
 
-  statusDiv.innerHTML = '<div class="status info">Logging in...</div>';
+  if (!usernameInput || !passwordInput) {
+    errorDiv.textContent = "Please fill in all fields.";
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Connecting...";
+  errorDiv.textContent = "";
 
   try {
     const response = await fetch(`${SERVER_URL}/login`, {
@@ -67,65 +75,52 @@ async function login() {
       token = data.token;
       userId = data.id_user;
       username = data.username;
-
-      statusDiv.innerHTML = `
-        <div class="status success">
-          ✅ Login successful!<br>
-          User: ${username} (ID: ${userId})
-        </div>
-      `;
-
-      document.getElementById("loginBtn").disabled = true;
-      addSystemMessage(`Logged in as ${username} (ID: ${userId})`);
-
+      showApp();
       connectWebSocket();
     } else {
-      statusDiv.innerHTML = `<div class="status error">❌ ${data.message}</div>`;
+      errorDiv.textContent = data.message ?? "Login failed.";
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Connect";
     }
-  } catch (error) {
-    statusDiv.innerHTML = `<div class="status error">❌ Error: ${error.message}</div>`;
+  } catch (err) {
+    errorDiv.textContent = `Connection error: ${err.message}`;
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Connect";
   }
+}
+
+// ==================== SHOW APP =====================
+function showApp() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-screen").classList.add("visible");
+
+  // Populate user info in sidebar
+  const initials = username?.slice(0, 2).toUpperCase() ?? "??";
+  document.getElementById("user-avatar-initials").textContent = initials;
+  document.getElementById("sidebar-username").textContent = username;
 }
 
 // ==================== WEBSOCKET ====================
 function connectWebSocket() {
-  if (!token) {
-    alert("No token available. Login first!");
-    return;
-  }
-
-  const statusDiv = document.getElementById("wsStatus");
-  statusDiv.innerHTML = '<div class="status info">Connecting to WebSocket...</div>';
-
   ws = new WebSocket(WS_URL);
 
   ws.onopen = () => {
-    console.log("WebSocket opened, sending authentication...");
-    addSystemMessage("Connecting to chat server...");
-
+    setWsDot("connecting");
     setTimeout(() => {
       ws.send(JSON.stringify({ type: MessageType.WS_AUTH, token }));
-      console.log("Auth message sent");
     }, 50);
   };
 
   ws.onmessage = (event) => {
-    console.log("Received:", event.data);
     try {
       const data = JSON.parse(event.data);
       switch (data.type) {
         case MessageType.WS_AUTH_SUCCESS:
-          statusDiv.innerHTML = '<div class="status success">✅ Connected to chat server!</div>';
-          document.getElementById("messageInput").disabled = false;
-          document.getElementById("sendBtn").disabled = false;
-          document.getElementById("disconnectBtn").disabled = false;
-          addSystemMessage(`Ready to chat!`);
+          onAuthSuccess();
           break;
-
-        case MessageType.INITIAL_DATA:           // ← ADD THIS
+        case MessageType.INITIAL_DATA:
           handleInitialData(data);
           break;
-
         case MessageType.NEW_MESSAGE:
           handleNewMessage(data);
           break;
@@ -136,28 +131,28 @@ function connectWebSocket() {
           addSystemMessage(`Server Error: ${data.message} (${data.error_code})`);
           break;
         default:
-          addSystemMessage(`Received message type ${data.type}`);
+          console.log("Unhandled message type:", data.type, data);
       }
     } catch (e) {
       console.error("Error parsing message:", e);
-      addReceivedMessage(event.data);
     }
   };
 
-  ws.onerror = (error) => {
-    console.error("WebSocket error:", error);
-    statusDiv.innerHTML = '<div class="status error">❌ WebSocket error</div>';
-    addSystemMessage("Connection error");
-  };
+  ws.onerror = () => setWsDot("error");
 
   ws.onclose = (event) => {
-    console.log("WebSocket closed:", event.reason);
-    statusDiv.innerHTML = '<div class="status info">Disconnected from chat server</div>';
+    setWsDot("disconnected");
     document.getElementById("messageInput").disabled = true;
     document.getElementById("sendBtn").disabled = true;
-    document.getElementById("disconnectBtn").disabled = true;
-    addSystemMessage(`Disconnected from server`);
+    addSystemMessage(`Disconnected: ${event.reason || "connection closed"}`);
   };
+}
+
+function onAuthSuccess() {
+  setWsDot("connected");
+  document.getElementById("messageInput").disabled = false;
+  document.getElementById("sendBtn").disabled = false;
+  addSystemMessage("Connected to WizzMania ✦");
 }
 
 function disconnectWebSocket() {
@@ -167,26 +162,174 @@ function disconnectWebSocket() {
     }
     ws.close();
     ws = null;
-    addSystemMessage("Logged out");
   }
 }
 
-// ==================== MESSAGE HANDLERS ====================
+// ==================== WS STATUS DOT ====================
+function setWsDot(state) {
+  const dot = document.getElementById("ws-dot");
+  dot.className = "ws-status-dot";
+  if (state === "connected") { dot.classList.add("connected"); dot.title = "Connected"; }
+  else if (state === "error") { dot.classList.add("error"); dot.title = "Error"; }
+  else { dot.title = "Disconnected"; }
+}
+
+// ==================== INITIAL DATA ====================
+function handleInitialData(data) {
+  // Populate contact cache
+  if (Array.isArray(data.contacts)) {
+    data.contacts.forEach(c => userCache.set(c.id_user, c.username));
+  }
+  // Always add self
+  if (userId && username) userCache.set(userId, username);
+
+  // Populate channel cache and sidebar
+  if (Array.isArray(data.channels)) {
+    data.channels.forEach(ch => channelCache.set(ch.channel_id, ch));
+  }
+
+  renderChannelsSidebar();
+  renderContactsSidebar(data.contacts ?? []);
+
+  console.log(`[INIT] ${userCache.size} contacts, ${channelCache.size} channels`);
+}
+
+// ==================== SIDEBAR RENDERING ====================
+function renderChannelsSidebar() {
+  const list = document.getElementById("channels-list");
+  list.innerHTML = "";
+
+  if (channelCache.size === 0) {
+    list.innerHTML = '<div class="empty-sidebar">No channels yet</div>';
+    return;
+  }
+
+  channelCache.forEach(ch => {
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+    item.dataset.id = ch.channel_id;
+
+    const isGroup = ch.is_group;
+    const iconChar = isGroup ? "⊞" : "◈";
+    const preview = ch.last_message?.body ?? "";
+    const unread = ch.unread_count > 0
+      ? `<div class="unread-badge">${ch.unread_count}</div>`
+      : "";
+
+    item.innerHTML = `
+      <div class="item-icon">${iconChar}</div>
+      <div class="item-info">
+        <div class="item-name">${escapeHtml(ch.title)}</div>
+        <div class="item-preview">${escapeHtml(preview)}</div>
+      </div>
+      ${unread}
+    `;
+
+    item.addEventListener("click", () => selectChannel(ch.channel_id));
+    list.appendChild(item);
+  });
+}
+
+function renderContactsSidebar(contacts) {
+  const list = document.getElementById("contacts-list");
+  list.innerHTML = "";
+
+  if (contacts.length === 0) {
+    list.innerHTML = '<div class="empty-sidebar">No contacts yet</div>';
+    return;
+  }
+
+  contacts.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+
+    const initials = c.username.slice(0, 2).toUpperCase();
+    item.innerHTML = `
+      <div class="item-icon" style="border-radius:50%; font-size:11px; font-weight:700; color:var(--accent-bright)">${initials}</div>
+      <div class="item-info">
+        <div class="item-name">${escapeHtml(c.username)}</div>
+      </div>
+    `;
+
+    list.appendChild(item);
+  });
+}
+
+// ==================== CHANNEL SELECTION ====================
+function selectChannel(channelId) {
+  activeChannelId = channelId;
+  const ch = channelCache.get(channelId);
+
+  // Update active state in sidebar
+  document.querySelectorAll(".sidebar-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.id == channelId);
+  });
+
+  // Update header
+  document.getElementById("chat-icon").textContent = ch?.is_group ? "⊞" : "◈";
+  document.getElementById("chat-title").textContent = ch?.title ?? `Channel ${channelId}`;
+
+  // Show participant count
+  const participantCount = ch?.participants?.length ?? 0;
+  document.getElementById("chat-sub").textContent =
+    participantCount > 0 ? `${participantCount} members` : "";
+
+  // Clear unread badge
+  const sidebarItem = document.querySelector(`.sidebar-item[data-id="${channelId}"]`);
+  if (sidebarItem) {
+    const badge = sidebarItem.querySelector(".unread-badge");
+    if (badge) badge.remove();
+  }
+
+  // For now, all messages broadcast to everyone so messages are already shown
+  // TODO: request channel history when per-channel broadcast is implemented
+}
+
+// ==================== NEW MESSAGE ====================
 function handleNewMessage(data) {
-  if (!data.message) return console.error("NEW_MESSAGE missing message field:", data);
+  if (!data.message) return;
 
   const msg = data.message;
-  const isMe = msg.sender_id === userId;
-  const senderUsername = userCache.get(msg.sender_id) || `User${msg.sender_id}`;
+  const isMe = msg.id_sender === userId;
+  // const isSystem = msg.is_system;
+  const isSystem = false;
+  const sender = isSystem
+    ? "System"
+    : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
 
-  if (isMe) addSentMessage(msg.body, senderUsername, msg.timestamp);
-  else addReceivedMessage(msg.body, senderUsername, msg.timestamp);
+  // Update channel last message preview in sidebar
+  const chData = channelCache.get(data.channel_id);
+  if (chData) {
+    chData.last_message = msg;
+    const item = document.querySelector(`.sidebar-item[data-id="${data.channel_id}"]`);
+    const preview = item?.querySelector(".item-preview");
+    if (preview) preview.textContent = msg.body;
+
+    // If not the active channel, bump unread badge
+    if (data.channel_id !== activeChannelId) {
+      if (item) {
+        let badge = item.querySelector(".unread-badge");
+        if (!badge) {
+          badge = document.createElement("div");
+          badge.className = "unread-badge";
+          badge.textContent = "1";
+          item.appendChild(badge);
+        } else {
+          badge.textContent = parseInt(badge.textContent) + 1;
+        }
+      }
+    }
+  }
+
+  if (isSystem) addSystemMessage(msg.body);
+  else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);
+  else addReceivedMessage(msg.body, sender, msg.timestamp);
 }
 
 function handleTypingNotification(data) {
   if (data.id_user === userId) return;
-  const typingUsername = userCache.get(data.id_user) || `User${data.id_user}`;
-  console.log(data.is_typing ? `${typingUsername} is typing...` : `${typingUsername} stopped typing`);
+  const name = userCache.get(data.id_user) ?? `User ${data.id_user}`;
+  console.log(data.is_typing ? `${name} is typing...` : `${name} stopped typing`);
 }
 
 // ==================== MESSAGING ====================
@@ -195,78 +338,91 @@ function sendMessage() {
   const message = input.value.trim();
   if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
 
-  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, channel_id: 1, body: message }));
-  console.log("Message sent:", message);
+  const channelId = activeChannelId ?? 1;
+  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, channel_id: channelId, body: message }));
   input.value = "";
 }
 
-// ==================== UI HELPERS ====================
-function addSentMessage(text, senderUsername, timestamp) {
-  const messagesDiv = document.getElementById("messages");
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "message sent";
-  const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-  messageDiv.innerHTML = `<div><strong>${escapeHtml(senderUsername)} (You):</strong> ${escapeHtml(text)}</div>
-                          <div class="timestamp">${time}</div>`;
-  messagesDiv.appendChild(messageDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+// ==================== MESSAGE RENDERING ====================
+function addSentMessage(text, senderName, timestamp) {
+  const container = document.getElementById("messages-container");
+  const row = document.createElement("div");
+  row.className = "msg-row sent";
+  const initials = senderName.slice(0, 2).toUpperCase();
+  const time = formatTime(timestamp);
+
+  row.innerHTML = `
+    <div class="msg-avatar">${initials}</div>
+    <div class="msg-bubble-wrap">
+      <div class="msg-sender">${escapeHtml(senderName)}</div>
+      <div class="msg-bubble">${escapeHtml(text)}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+  `;
+
+  container.appendChild(row);
+  scrollToBottom();
 }
 
-function addReceivedMessage(text, senderUsername, timestamp) {
-  const messagesDiv = document.getElementById("messages");
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "message received";
-  const time = timestamp ? new Date(timestamp).toLocaleTimeString() : new Date().toLocaleTimeString();
-  messageDiv.innerHTML = `<div><strong>${escapeHtml(senderUsername)}:</strong> ${escapeHtml(text)}</div>
-                          <div class="timestamp">${time}</div>`;
-  messagesDiv.appendChild(messageDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+function addReceivedMessage(text, senderName, timestamp) {
+  const container = document.getElementById("messages-container");
+  const row = document.createElement("div");
+  row.className = "msg-row received";
+  const initials = senderName.slice(0, 2).toUpperCase();
+  const time = formatTime(timestamp);
+
+  row.innerHTML = `
+    <div class="msg-avatar">${initials}</div>
+    <div class="msg-bubble-wrap">
+      <div class="msg-sender">${escapeHtml(senderName)}</div>
+      <div class="msg-bubble">${escapeHtml(text)}</div>
+      <div class="msg-time">${time}</div>
+    </div>
+  `;
+
+  container.appendChild(row);
+  scrollToBottom();
 }
 
 function addSystemMessage(text) {
-  const messagesDiv = document.getElementById("messages");
-  const messageDiv = document.createElement("div");
-  messageDiv.className = "message system";
-  messageDiv.innerHTML = `<div>ℹ️ ${escapeHtml(text)}</div>
-                          <div class="timestamp">${new Date().toLocaleTimeString()}</div>`;
-  messagesDiv.appendChild(messageDiv);
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  const container = document.getElementById("messages-container");
+  const row = document.createElement("div");
+  row.className = "msg-row system";
+  row.style.alignSelf = "center";
+
+  row.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+  container.appendChild(row);
+  scrollToBottom();
+}
+
+// ==================== UTILS ====================
+function scrollToBottom() {
+  const c = document.getElementById("messages-container");
+  c.scrollTop = c.scrollHeight;
+}
+
+function formatTime(timestamp) {
+  if (!timestamp) return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+  const d = document.createElement("div");
+  d.textContent = text ?? "";
+  return d.innerHTML;
 }
 
 // ==================== EVENT LISTENERS ====================
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("loginBtn").addEventListener("click", login);
   document.getElementById("sendBtn").addEventListener("click", sendMessage);
-  document.getElementById("disconnectBtn").addEventListener("click", disconnectWebSocket);
+  document.getElementById("logoutBtn").addEventListener("click", disconnectWebSocket);
 
-  document.getElementById("messageInput").addEventListener("keypress", (e) => {
+  document.getElementById("password").addEventListener("keypress", e => {
+    if (e.key === "Enter") login();
+  });
+
+  document.getElementById("messageInput").addEventListener("keypress", e => {
     if (e.key === "Enter") sendMessage();
   });
 });
-
-// ==================== INITIAL DATA HANDLER ====================
-function handleInitialData(data) {
-  // Populate contact map from server data
-  if (data.contacts && Array.isArray(data.contacts)) {
-    data.contacts.forEach(contact => {
-      userCache.set(contact.id_user, contact.username);
-    });
-  }
-
-  // Always add yourself (server won't send you as your own contact)
-  if (userId && username) {
-    userCache.set(userId, username);
-  }
-
-  console.log(`[INIT] Loaded ${userCache.size} contacts:`, Object.fromEntries(userCache));
-  addSystemMessage(`Loaded ${data.contacts?.length ?? 0} contacts`);
-
-  // TODO: Handle data.channels when you implement get_channels()
-  // TODO: Handle data.invitations when you implement get_invitations()
-}

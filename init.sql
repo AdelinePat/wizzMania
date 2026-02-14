@@ -27,7 +27,7 @@ CREATE TABLE userChannel (
     id_channel BIGINT NOT NULL,
     membership TINYINT NOT NULL DEFAULT 0,  -- 0=pending, 1=accepted, 2=rejected, 3=left
     joined_at DATETIME, 
-    last_read_message_id BIGINT,
+    last_read_id_message BIGINT,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
         ON DELETE NO ACTION
@@ -99,22 +99,22 @@ INSERT INTO channels (id_channel, title, created_by) VALUES
 -- Remember: membership: 0=pending, 1=accepted, 2=rejected, 3=left
 
 -- Channel 1: DM alice-bob (both accepted)
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
 (2, 1, 1, NOW(), 10),  -- alice accepted, read up to message 10
 (3, 1, 1, NOW(), 10);  -- bob accepted, read up to message 10
 
 -- Channel 2: DM alice-carol
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
 (2, 2, 1, NOW(), NULL),  -- alice
 (4, 2, 1, NOW(), NULL);  -- carol
 
 -- Channel 3: DM bob-dave
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
 (3, 3, 1, NOW(), NULL),  -- bob
 (5, 3, 0, NOW(), NULL);  -- dave PENDING (invited but not accepted yet)
 
 -- Channel 11: Group Alpha (alice created it)
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_message_id) VALUES
+INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
 (2, 11, 1, NOW(), 10),   -- alice (creator)
 (3, 11, 1, NOW(), 10),   -- bob
 (4, 11, 1, NOW(), 10),   -- carol
@@ -166,7 +166,7 @@ INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
 -- ('Ivan, Judy, Alice');
 
 -- -- USER_CHANNEL
--- INSERT INTO userChannel (id_user, id_channel, accepted, last_read_message_id) VALUES
+-- INSERT INTO userChannel (id_user, id_channel, accepted, last_read_id_message) VALUES
 -- -- Chat 1 (A-B)
 -- (1, 1, TRUE, 15),
 -- (2, 1, TRUE, 18),

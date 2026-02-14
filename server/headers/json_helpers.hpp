@@ -169,33 +169,15 @@ inline std::optional<::ClientSend::LeaveChannelRequest> parse_leave_channel(
 
 // ===== ServerSend Helpers =====
 namespace ServerSend {
+// TO JSON MESSAGE
 inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   crow::json::wvalue json;
-  json["message_id"] = msg.message_id;
-  json["sender_id"] = msg.sender_id;
+  json["id_message"] = msg.id_message;
+  json["id_sender"] = msg.id_sender;
   // json["sender_username"] = msg.sender_username;
   json["body"] = msg.body;
   json["timestamp"] = msg.timestamp;
   json["is_system"] = msg.is_system;
-  return json;
-}
-
-inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
-  crow::json::wvalue json;
-  json["channel_id"] = ch.channel_id;
-  json["title"] = ch.title;
-  json["is_group"] = ch.is_group;
-  json["created_by"] = ch.created_by;
-  json["unread_count"] = ch.unread_count;
-  json["last_read_message_id"] = ch.last_read_message_id;
-  json["last_message"] = to_json(ch.last_message);
-
-  // crow::json::wvalue::list participants_list;
-  // for (const auto& p : ch.participants) {
-  //   participants_list.push_back(to_json(p));
-  // }
-  // json["participants"] = std::move(participants_list);
-
   return json;
 }
 
@@ -204,15 +186,25 @@ inline crow::json::wvalue to_json(const ::ServerSend::Contact& contact) {
   crow::json::wvalue json;
   json["id_user"] = contact.id_user;
   json["username"] = contact.username;
+  return json;
+}
 
-  //  id_user;
-  // std::string username;
+// TO JSON CHANNEL INFO
+inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
+  crow::json::wvalue json;
+  json["channel_id"] = ch.channel_id;
+  json["title"] = ch.title;
+  json["is_group"] = ch.is_group;
+  json["created_by"] = ch.created_by;
+  json["unread_count"] = ch.unread_count;
+  json["last_read_id_message"] = ch.last_read_id_message;
+  json["last_message"] = to_json(ch.last_message);
 
-  // crow::json::wvalue::list participants_list;
-  // for (const auto& p : ch.participants) {
-  //   participants_list.push_back(to_json(p));
-  // }
-  // json["participants"] = std::move(participants_list);
+  crow::json::wvalue::list participants_list;
+  for (const int64_t id : ch.participants) {
+    participants_list.push_back(id);
+  }
+  json["participants"] = std::move(participants_list);
 
   return json;
 }

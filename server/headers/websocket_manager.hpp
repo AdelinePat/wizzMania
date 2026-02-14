@@ -33,7 +33,7 @@ class WebSocketManager {
                           const std::string& message);
 
   bool is_user_online(int64_t id_user);  // might not use this one
-  int64_t get_user_id(WSConn conn);
+  std::optional<int64_t> get_user_id(WSConn conn);
   // TODO: Implement
 };
 

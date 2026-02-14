@@ -3,7 +3,7 @@
 
 #include <string>
 #include <vector>
-
+#include <set>
 #include "messages.hpp"
 
 // ===== LOGIN/LOGOUT ======
@@ -78,7 +78,7 @@ struct UpdateChannelTitleRequest {
 struct MarkAsReadRequest {
   WizzMania::MessageType type;  // MARK_AS_READ
   int64_t channel_id;
-  int64_t last_message_id;
+  int64_t last_id_message;
 };
 
 struct TypingRequest {
@@ -90,7 +90,7 @@ struct TypingRequest {
 struct RequestChannelHistoryRequest {
   WizzMania::MessageType type;  // REQUEST_CHANNEL_HISTORY
   int64_t channel_id;
-  int64_t before_message_id;
+  int64_t before_id_message;
   int limit = 50;  // This default makes sense - it's a parameter, not a type
 };
 
@@ -103,8 +103,8 @@ struct ChannelOpenRequest {
 // ===== SERVER -> CLIENT Messages =====
 namespace ServerSend {
 struct Message {
-  int64_t message_id;
-  int64_t sender_id;
+  int64_t id_message;
+  int64_t id_sender;
   // std::string sender_username; // client caches id_user <-> username ?
   std::string body;
   std::string timestamp;
@@ -130,10 +130,10 @@ struct ChannelInfo {
   bool is_group;
   int64_t created_by;
   // std::vector<Participant> participants;
-  std::vector<int64_t> participants;
+  std::set<int64_t> participants;
   Message last_message;  // display preview of last message
   int64_t unread_count;
-  int64_t last_read_message_id;
+  int64_t last_read_id_message;
 };
 
 struct ChannelCreatedResponse {
