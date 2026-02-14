@@ -208,8 +208,8 @@ std::map<int64_t, int64_t> Database::get_unread_count(const int64_t id_user) {
   }
 }
 
-// Get all the channel a user participates it and the set of every participants from this channel
-// Returns a map<id_channel, set<id_users>>
+// Get all the channel a user participates it and the set of every participants
+// from this channel Returns a map<id_channel, set<id_users>>
 std::map<int64_t, std::set<int64_t>> Database::get_participants_and_channel(
     const int64_t id_user, ChannelStatus membership) {
   std::map<int64_t, std::set<int64_t>> channel_participants;
@@ -327,4 +327,65 @@ ServerSend::InitialDataResponse Database::get_initial_data(
   init_data.channels = this->get_initial_channels(id_user);
   init_data.invitations = {};
   return init_data;
+}
+
+// Save message in db for the right channel and returns id_message
+std::optional<int64_t> Database::save_message(int64_t id_user,
+                                              int64_t id_channel,
+                                              const std::string& body,
+                                              const std::string& timestamp) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "INSERT INTO messages (id_user, id_channel, body, timestamp) "
+            "VALUES (?, ?, ?, ?);"));
+
+    prep_statement->setInt64(1, id_user);
+    prep_statement->setInt64(2, id_channel);
+    prep_statement->setString(3, body);
+    prep_statement->setString(4, timestamp);
+    prep_statement->executeUpdate();
+
+    // std::unique_ptr<sql::ResultSet> res(prep_statement->getGeneratedKeys());
+    std::unique_ptr<sql::Statement> stmt(this->conn->createStatement());
+    std::unique_ptr<sql::ResultSet> res(
+        stmt->executeQuery("SELECT LAST_INSERT_ID()"));
+        
+    if (res->next()) {
+      return res->getInt64(1);
+    }
+    return std::nullopt;
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] save_message error: " << e.what() << std::endl;
+    return std::nullopt;
+  }
+}
+
+std::set<int64_t> Database::get_channel_participants(int64_t id_channel,
+                                                     ChannelStatus membership) {
+  std::set<int64_t> channel_participants;
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("SELECT id_user FROM userChannel "
+                                     "WHERE id_channel = ? "
+                                     "AND membership = ?;"));
+
+    prep_statement->setInt64(1, id_channel);
+    prep_statement->setInt(2, static_cast<int32_t>(membership));
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    while (res->next()) {
+      channel_participants.insert(res->getInt64("id_user"));
+    }
+    return channel_participants;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channel_participants error: " << e.what()
+              << std::endl;
+    return channel_participants;
+  }
 }

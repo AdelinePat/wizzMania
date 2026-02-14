@@ -17,29 +17,33 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
 
   // TODO: Validate channel access
   // TODO: Store message in database
+  std::string body = req->body;
+  int64_t id_channel = req->channel_id;
+  std::string timestamp = get_timestamp();
+  
+  std::optional<int64_t> id_message_opt = db.save_message(id_user, id_channel, body, timestamp);
+  if (!id_message_opt.has_value()) {
+    std::cerr << "[INIT] Error: message coul not be save in db\n";
+    return;
+  }
+  int64_t id_message = id_message_opt.value();
 
   // TEMP : ECHO MSG BACK
   ServerSend::NewMessageBroadcast broadcast;             // outer struct
   broadcast.type = WizzMania::MessageType::NEW_MESSAGE;  // ✅ this exists here
-  broadcast.channel_id = req->channel_id;
+  broadcast.channel_id = id_channel;
+  broadcast.message.id_message = id_message;
+  broadcast.message.id_sender = id_user;
+  broadcast.message.body = body;
+  broadcast.message.timestamp = timestamp;
 
   // fill the inner message
-  broadcast.message.id_message = 0;  // fake id for now TODO get from DB!!
-  broadcast.message.id_sender = id_user;
   //   broadcast.message.sender_username = "whatever";
-  broadcast.message.body = req->body;
-
-  // timestamp as string
-  auto now = std::chrono::system_clock::now();
-  std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-  std::ostringstream oss;
-  oss << std::put_time(std::localtime(&now_time), "%Y-%m-%dT%H:%M:%S");
-  broadcast.message.timestamp = oss.str();
-
   broadcast.message.is_system = id_user == 1;
 
   std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
-  ws_manager.broadcast_to_all(json_str);
+  std::set participants = db.get_channel_participants(id_channel);
+  ws_manager.broadcast_to_users(participants, json_str);
 }
 
 void MessageHandler::send_error(crow::websocket::connection& conn,

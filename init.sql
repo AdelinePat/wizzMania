@@ -44,7 +44,7 @@ CREATE TABLE messages (
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
     body TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    timestamp VARCHAR(24) NOT NULL DEFAULT '1970-01-01T00:00:00Z',
     CONSTRAINT fk_messages_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
         ON DELETE NO ACTION
@@ -100,58 +100,58 @@ INSERT INTO channels (id_channel, title, created_by) VALUES
 
 -- Channel 1: DM alice-bob (both accepted)
 INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(2, 1, 1, NOW(), 10),  -- alice accepted, read up to message 10
-(3, 1, 1, NOW(), 10);  -- bob accepted, read up to message 10
+(2, 1, 1, '2026-02-14 10:26:00', 10),  -- alice accepted, read up to message 10
+(3, 1, 1, '2026-02-14 10:26:00', 10);  -- bob accepted, read up to message 10
 
 -- Channel 2: DM alice-carol
 INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(2, 2, 1, NOW(), NULL),  -- alice
-(4, 2, 1, NOW(), NULL);  -- carol
+(2, 2, 1, '2026-02-14 10:26:00', NULL),  -- alice
+(4, 2, 1, '2026-02-14 10:26:00', NULL);  -- carol
 
 -- Channel 3: DM bob-dave
 INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(3, 3, 1, NOW(), NULL),  -- bob
-(5, 3, 0, NOW(), NULL);  -- dave PENDING (invited but not accepted yet)
+(3, 3, 1, '2026-02-14 10:26:00', NULL),  -- bob
+(5, 3, 0, '2026-02-14 10:26:00', NULL);  -- dave PENDING (invited but not accepted yet)
 
 -- Channel 11: Group Alpha (alice created it)
 INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(2, 11, 1, NOW(), 10),   -- alice (creator)
-(3, 11, 1, NOW(), 10),   -- bob
-(4, 11, 1, NOW(), 10),   -- carol
-(5, 11, 1, NOW(), 10);   -- dave
+(2, 11, 1, '2026-02-14 10:26:00', 10),   -- alice (creator)
+(3, 11, 1, '2026-02-14 10:26:00', 10),   -- bob
+(4, 11, 1, '2026-02-14 10:26:00', 10),   -- carol
+(5, 11, 1, '2026-02-14 10:26:00', 10);   -- dave
 
 -- MESSAGES
 -- System logs
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
-(1, 1, '@2 has joined the chat', NOW()),
-(1, 1, '@3 has joined the chat', NOW()),
-(1, 3, '@5 rejected the invitation', NOW());
+(1, 1, '@2 has joined the chat', '2026-02-14T10:26:00Z'),
+(1, 1, '@3 has joined the chat', '2026-02-14T10:26:00Z'),
+(1, 3, '@5 rejected the invitation', '2026-02-14T10:26:00Z');
 
 -- DM messages
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
-(2, 1, 'Hey Bob', NOW()),
-(3, 1, 'Hey Alice', NOW()),
-(2, 1, 'How are you?', NOW()),
-(3, 1, 'Good, you?', NOW()),
-(2, 1, 'All good', NOW()),
-(3, 1, 'Nice', NOW()),
-(2, 1, 'What are you doing?', NOW()),
-(3, 1, 'Working', NOW()),
-(2, 1, 'Same here', NOW()),
-(3, 1, 'Coffee later?', NOW());
+(2, 1, 'Hey Bob', '2026-02-14T10:26:00Z'),
+(3, 1, 'Hey Alice', '2026-02-14T10:26:00Z'),
+(2, 1, 'How are you?', '2026-02-14T10:26:00Z'),
+(3, 1, 'Good, you?', '2026-02-14T10:26:00Z'),
+(2, 1, 'All good', '2026-02-14T10:26:00Z'),
+(3, 1, 'Nice', '2026-02-14T10:26:00Z'),
+(2, 1, 'What are you doing?', '2026-02-14T10:26:00Z'),
+(3, 1, 'Working', '2026-02-14T10:26:00Z'),
+(2, 1, 'Same here', '2026-02-14T10:26:00Z'),
+(3, 1, 'Coffee later?', '2026-02-14T10:26:00Z');
 
 -- Group chat messages
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
-(2, 11, 'Welcome everyone', NOW()),
-(3, 11, 'Hi!', NOW()),
-(4, 11, 'Hello', NOW()),
-(5, 11, 'Hey', NOW()),
-(2, 11, 'Let s start', NOW()),
-(3, 11, 'Sure', NOW()),
-(4, 11, 'Ready', NOW()),
-(5, 11, 'Yep', NOW()),
-(2, 11, 'Cool', NOW()),
-(3, 11, 'Go', NOW());
+(2, 11, 'Welcome everyone', '2026-02-14T10:26:00Z'),
+(3, 11, 'Hi!', '2026-02-14T10:26:00Z'),
+(4, 11, 'Hello', '2026-02-14T10:26:00Z'),
+(5, 11, 'Hey', '2026-02-14T10:26:00Z'),
+(2, 11, 'Let s start', '2026-02-14T10:26:00Z'),
+(3, 11, 'Sure', '2026-02-14T10:26:00Z'),
+(4, 11, 'Ready', '2026-02-14T10:26:00Z'),
+(5, 11, 'Yep', '2026-02-14T10:26:00Z'),
+(2, 11, 'Cool', '2026-02-14T10:26:00Z'),
+(3, 11, 'Go', '2026-02-14T10:26:00Z');
 
 
 
