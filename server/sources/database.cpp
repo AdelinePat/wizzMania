@@ -111,12 +111,16 @@ std::vector<ServerSend::Contact> Database::get_contact(
             "uc1.id_user = ? "
             "AND uc1.membership = ? "
             "AND uc2.membership = ? "
-            "AND uc2.id_user <> ?;"));
+            "AND uc2.id_user <> ? "
+            "AND (SELECT COUNT(*) FROM userChannel uc3 "
+            "WHERE uc3.id_channel = uc1.id_channel "
+            "AND uc3.membership = ?) = 2;"));
 
     prep_statement->setInt64(1, id_user);
     prep_statement->setInt(2, static_cast<int32_t>(membership));
     prep_statement->setInt(3, static_cast<int32_t>(membership));
     prep_statement->setInt64(4, id_user);
+    prep_statement->setInt(5, static_cast<int32_t>(membership));
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     while (res->next()) {
@@ -209,22 +213,23 @@ std::map<int64_t, int64_t> Database::get_unread_count(const int64_t id_user) {
 }
 
 // Get all the channel a user participates it and the set of every participants
-// from this channel Returns a map<id_channel, set<id_users>>
-std::map<int64_t, std::unordered_set<int64_t>>
+// from this channel Returns a map<id_channel, vector<ServerSend::Contact>>
+std::map<int64_t, std::vector<ServerSend::Contact>>
 Database::get_participants_and_channel(const int64_t id_user,
                                        ChannelStatus membership) {
-  std::map<int64_t, std::unordered_set<int64_t>> channel_participants;
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants;
 
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
         this->conn->prepareStatement(
-            "SELECT DISTINCT uc2.id_user, uc2.id_channel "
+            "SELECT DISTINCT uc2.id_user, uc2.id_channel, u.username "
             "FROM userChannel uc1 "
             "JOIN userChannel uc2 ON uc1.id_channel = uc2.id_channel "
+            "JOIN users u ON u.id_user = uc2.id_user " 
             "WHERE uc1.id_user = ? "
             "AND uc1.membership = ? "
-            "AND uc2.membership = ?;"));alice
+            "AND uc2.membership = ?;"));
 
     prep_statement->setInt64(1, id_user);
     prep_statement->setInt(2, static_cast<int32_t>(membership));
@@ -233,8 +238,11 @@ Database::get_participants_and_channel(const int64_t id_user,
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     while (res->next()) {
       int64_t id_channel = res->getInt64("id_channel");
-      int64_t participant = res->getInt64("id_user");
-      channel_participants[id_channel].insert(participant);
+      // int64_t participant = res->getInt64("id_user");
+      ServerSend::Contact participant;
+      participant.id_user = res->getInt64("id_user");
+      participant.username = res->getString("username");
+      channel_participants[id_channel].push_back(participant);
     }
     return channel_participants;
 
@@ -291,7 +299,7 @@ std::vector<ServerSend::ChannelInfo> Database::get_initial_channels(
 
   std::vector<ServerSend::ChannelInfo> channels_info =
       this->get_channels(id_user);
-  std::map<int64_t, std::unordered_set<int64_t>> channel_participants =
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
       this->get_participants_and_channel(id_user);
   std::map<int64_t, int64_t> channels_unread_count =
       this->get_unread_count(id_user);

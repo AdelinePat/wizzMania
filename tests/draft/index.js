@@ -188,7 +188,10 @@ function handleInitialData(data) {
 
   // Populate channel cache and sidebar
   if (Array.isArray(data.channels)) {
-    data.channels.forEach(ch => channelCache.set(ch.id_channel, ch));
+    data.channels.forEach(ch => {
+      channelCache.set(ch.id_channel, ch);
+      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+    });
   }
 
   renderChannelsSidebar();

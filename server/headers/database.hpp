@@ -51,7 +51,7 @@ class Database {
   std::map<int64_t, ServerSend::Message> get_last_messages(
       const int64_t id_user);
   std::map<int64_t, int64_t> get_unread_count(const int64_t id_user);
-  std::map<int64_t, std::unordered_set<int64_t>> get_participants_and_channel(
+  std::map<int64_t, std::vector<ServerSend::Contact>> get_participants_and_channel(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
   std::vector<ServerSend::ChannelInfo> get_channels(

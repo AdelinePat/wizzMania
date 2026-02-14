@@ -130,8 +130,8 @@ struct ChannelInfo {
   std::string title;
   bool is_group;
   int64_t created_by;
-  // std::vector<Participant> participants;
-  std::unordered_set<int64_t> participants;
+  std::vector<Contact> participants;
+  // std::unordered_set<int64_t> participants;
   Message last_message;  // display preview of last message
   int64_t unread_count;
   int64_t last_read_id_message;

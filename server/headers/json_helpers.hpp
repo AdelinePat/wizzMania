@@ -222,8 +222,8 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
   json["last_message"] = to_json(ch.last_message);
 
   crow::json::wvalue::list participants_list;
-  for (const int64_t id : ch.participants) {
-    participants_list.push_back(id);
+  for (const ::ServerSend::Contact& participant : ch.participants) {
+    participants_list.push_back(to_json(participant));
   }
   json["participants"] = std::move(participants_list);
 
