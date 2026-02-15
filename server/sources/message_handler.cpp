@@ -13,12 +13,10 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
   std::cout << "[MSG] User " << id_user << " -> Channel " << req->id_channel
             << ": " << req->body << "\n";
 
-  // TODO: Validate channel access
   int64_t id_channel = req->id_channel;
+
   bool is_system_user = (id_user == 1);
   bool has_channel_access = db.has_channel_access(id_user, id_channel);
-  std::cout << "[DBG] has_channel_access(" << id_user << ", " << id_channel
-            << ") = " << has_channel_access << "\n";
   if (!is_system_user && !has_channel_access) {
     std::cerr << "[INIT] Error: user has no access to this channel !\n";
     send_error(conn, "INVALID_USER",
@@ -41,11 +39,6 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
   broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
   broadcast.id_channel = id_channel;
   broadcast.message = create_message(id_message, id_user, body, timestamp);
-  // broadcast.message.id_message = id_message;
-  // broadcast.message.id_sender = id_user;
-  // broadcast.message.body = body;
-  // broadcast.message.timestamp = timestamp;
-  // broadcast.message.is_system = id_user == 1;
 
   std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
   std::unordered_set<int64_t> participants =
@@ -183,4 +176,51 @@ void MessageHandler::send_history(crow::websocket::connection& conn,
   res.messages = messages;
   res.has_more = messages.size() == req->limit;
   conn.send_text(JsonHelpers::ServerSend::to_json(res).dump());
+}
+
+void MessageHandler::accept_invitation(crow::websocket::connection& conn,
+                                       int64_t id_user,
+                                       const crow::json::rvalue& json_msg) {
+  std::optional<::ClientSend::AcceptInvitationRequest> req =
+      JsonHelpers::ClientSend::parse_accept_invitation(json_msg);
+
+  if (!req.has_value()) {
+    std::cerr << "[INVALID_FORMAT] : Invalid ACCEPT_INVITATION format\n";
+    return;
+  }
+
+  std::cout << "[INVITATION] User " << id_user << " -> Channel "
+            << req->id_channel << "\n";
+
+  bool accepted = db.accept_invitation(id_user, req->id_channel);
+  if (!accepted) {
+    this->send_error(conn, "[INVITATION ERROR]",
+                     "Couldn't accept the invitation");
+    return;
+  }
+  ServerSend::InvitationAcceptedResponse resp;
+  resp.type = WizzMania::MessageType::INVITATION_ACCEPTED;
+  resp.channel = db.get_channel(id_user, req->id_channel);
+  std::string channel_info_str = JsonHelpers::ServerSend::to_json(resp).dump();
+  conn.send_text(channel_info_str);
+
+  std::string body = "User @" + std::to_string(id_user) + " joined the chat!";
+
+  std::string timestamp = get_timestamp();
+  std::optional<int64_t> id_message_opt =
+      db.save_message(1, req->id_channel, body, timestamp);
+  if (!id_message_opt.has_value()) {
+    std::cerr << "[INIT] Error: message could not be save in db\n";
+    return;
+  }
+  int64_t id_message = id_message_opt.value();
+
+  ServerSend::NewMessageBroadcast broadcast;
+  broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
+  broadcast.id_channel = req->id_channel;
+  broadcast.message = create_message(id_message, 1, body, timestamp);   
+  std::string broadcast_json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
+  std::unordered_set<int64_t> participants =
+      db.get_channel_participants(req->id_channel);
+  ws_manager.broadcast_to_users(participants, broadcast_json_str);
 }

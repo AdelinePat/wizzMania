@@ -38,6 +38,9 @@ class Database {
                         const std::string& database);
   void ensure_connection();
 
+  bool update_invitation(int64_t id_user, int64_t id_channel,
+                         ChannelStatus membership);
+
  public:
   Database();
   Database(const std::string& host, const std::string& user,
@@ -76,6 +79,25 @@ class Database {
       const int64_t id_user);
 
   bool has_channel_access(int64_t id_user, int64_t id_channel);
+
+  bool accept_invitation(int64_t id_user, int64_t id_channel);
+
+  bool reject_invitation(int64_t id_user, int64_t id_channel);
+
+  ServerSend::ChannelInfo get_channel(
+      int64_t id_user, int64_t id_channel,
+      ChannelStatus membership = ChannelStatus::ACCEPTED,
+      ChannelStatus other_membership = ChannelStatus::ACCEPTED);
+
+  ServerSend::ChannelInfo get_channel_info(int64_t id_user, int64_t id_channel,
+                                           ChannelStatus membership);
+
+  std::vector<ServerSend::Contact> get_participants(
+      const int64_t id_user, const int64_t id_channel, ChannelStatus membership,
+      ChannelStatus other_membership);
+  int64_t get_unread_count(const int64_t id_user, const int64_t id_channel);
+  ServerSend::Message get_last_message(const int64_t id_user,
+                                       const int64_t id_channel);
 };
 
 #endif

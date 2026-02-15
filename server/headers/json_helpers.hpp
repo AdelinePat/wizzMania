@@ -247,6 +247,14 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInvitation& inv) {
   return json;
 }
 
+// TO JSON Invitation Accepted Response
+inline crow::json::wvalue to_json(const ::ServerSend::InvitationAcceptedResponse& invitation_response) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(invitation_response.type);
+  json["channel"] = to_json(invitation_response.channel);;
+  return json;
+}
+
 inline crow::json::wvalue to_json(
     const ::ServerSend::NewMessageBroadcast& broadcast) {
   crow::json::wvalue json;

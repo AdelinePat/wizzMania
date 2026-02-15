@@ -153,25 +153,33 @@ struct ChannelInvitation {
   std::string title;
 };
 
-struct InvitationAcceptedNotification {
-  WizzMania::MessageType type;  // INVITATION_ACCEPTED
-  int64_t id_channel;
-  int64_t id_user;
-  std::string username;
+// struct InvitationAcceptedNotification {
+//   WizzMania::MessageType type;  // INVITATION_ACCEPTED
+//   int64_t id_channel;
+//   int64_t id_user;
+//   std::string username;
+// };
+
+
+struct InvitationAcceptedResponse {
+    WizzMania::MessageType type;  // INVITATION_ACCEPTED
+    ChannelInfo channel;  
 };
 
 struct InvitationRejectedNotification {
   WizzMania::MessageType type;  // INVITATION_REJECTED
   int64_t id_channel;
-  int64_t id_user;
-  std::string username;
+  Contact contact;
+  // int64_t id_user;
+  // std::string username;
 };
 
 struct UserJoinedNotification {
   WizzMania::MessageType type;  // USER_JOINED
   int64_t id_channel;
-  int64_t id_user;
-  std::string username;
+  ServerSend::Contact contact;
+  // int64_t id_user;
+  // std::string username;
 };
 
 struct UserLeftNotification {

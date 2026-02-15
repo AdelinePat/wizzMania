@@ -119,6 +119,16 @@ int main() {
             break;
           }
 
+          case WizzMania::MessageType::ACCEPT_INVITATION: {
+            msg_handler.accept_invitation(conn, id_user, json_msg);
+            break;
+          }
+
+          case WizzMania::MessageType::REJECT_INVITATION: {
+            // msg_handler.reject_invitation(conn, id_user, json_msg);
+            break;
+          }
+
           case WizzMania::MessageType::CREATE_CHANNEL: {
             msg_handler.create_channel(conn, id_user, json_msg);
             break;

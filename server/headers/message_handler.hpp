@@ -35,7 +35,6 @@ class MessageHandler {
   void send_message(crow::websocket::connection& conn, int64_t id_user,
                     const crow::json::rvalue& json_msg);
 
-
   void authenticate_ws(crow::websocket::connection& conn,
                        const crow::json::rvalue& json_msg);
 
@@ -46,6 +45,8 @@ class MessageHandler {
 
   void send_history(crow::websocket::connection& conn, int64_t id_user,
                     const crow::json::rvalue& json_msg);
+  void accept_invitation(crow::websocket::connection& conn, int64_t id_user,
+                         const crow::json::rvalue& json_msg);
 
   // TODO: Implement
 };
