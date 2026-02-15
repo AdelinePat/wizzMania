@@ -1,12 +1,17 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QDateTime>
 #include <QHash>
 #include <QMainWindow>
+#include <QMessageBox>
 #include <QString>
+#include <QVBoxLayout>
 #include <cstdint>
 
+#include "loginwidget.hpp"
 #include "message_structure.hpp"
+#include "websocket_client.hpp"
 
 class LoginWidget;
 class WebSocketClient;

@@ -1,12 +1,6 @@
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
-#include <QDateTime>
-#include <QMessageBox>
-#include <QVBoxLayout>
-
-#include "loginwidget.h"
 #include "ui_mainwindow.h"
-#include "websocket_client.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),

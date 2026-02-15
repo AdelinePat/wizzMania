@@ -2,10 +2,14 @@
 #define WEBSOCKET_CLIENT_H
 
 #include <QAbstractSocket>
+#include <QJsonDocument>
 #include <QObject>
+#include <QUrl>
 #include <QWebSocket>
 
+#include "message_json.hpp"
 #include "message_structure.hpp"
+#include "serverconfig.hpp"
 
 class WebSocketClient : public QObject {
   Q_OBJECT

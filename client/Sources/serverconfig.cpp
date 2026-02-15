@@ -1,8 +1,4 @@
-#include "serverconfig.h"
-
-#include <QCoreApplication>
-#include <QSettings>
-#include <QUrl>
+#include "serverconfig.hpp"
 
 QString ServerConfig::baseUrl() {
   const QString configPath =

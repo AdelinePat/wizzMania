@@ -1,7 +1,10 @@
 #ifndef SERVERCONFIG_H
 #define SERVERCONFIG_H
 
+#include <QCoreApplication>
+#include <QSettings>
 #include <QString>
+#include <QUrl>
 
 class ServerConfig {
  public:

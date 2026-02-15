@@ -1,10 +1,4 @@
-#include "websocket_client.h"
-
-#include <QJsonDocument>
-#include <QUrl>
-
-#include "message_json.h"
-#include "serverconfig.h"
+#include "websocket_client.hpp"
 
 WebSocketClient::WebSocketClient(QObject* parent) : QObject(parent) {
   connect(&socket, &QWebSocket::connected, this, &WebSocketClient::onConnected);

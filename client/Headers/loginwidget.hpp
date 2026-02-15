@@ -1,9 +1,18 @@
 #ifndef LOGINWIDGET_H
 #define LOGINWIDGET_H
 
+#include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
+#include <QMessageBox>
 #include <QNetworkAccessManager>
+#include <QNetworkReply>
 #include <QString>
+#include <QTimer>
+#include <QUrl>
 #include <QWidget>
+
+#include "serverconfig.hpp"
 
 namespace Ui {
 class LoginWidget;

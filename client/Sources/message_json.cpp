@@ -1,6 +1,5 @@
-#include "message_json.h"
+#include "message_json.hpp"
 
-#include <QJsonArray>
 
 namespace MessageJson {
 namespace {

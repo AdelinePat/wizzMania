@@ -1,6 +1,7 @@
 #ifndef MESSAGE_JSON_H
 #define MESSAGE_JSON_H
 
+#include <QJsonArray>
 #include <QJsonObject>
 
 #include "message_structure.hpp"

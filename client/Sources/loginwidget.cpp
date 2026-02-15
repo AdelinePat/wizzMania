@@ -1,14 +1,5 @@
-#include "loginwidget.h"
+#include "loginwidget.hpp"
 
-#include <QDebug>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QMessageBox>
-#include <QNetworkReply>
-#include <QTimer>
-#include <QUrl>
-
-#include "serverconfig.h"
 #include "ui_loginwidget.h"
 
 LoginWidget::LoginWidget(QWidget* parent)

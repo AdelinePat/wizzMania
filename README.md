@@ -201,3 +201,6 @@ need to add secret.js in the same folder as index.js
 ```bash
 python3 -m http.server 8880
 ```
+
+Then, if your secret server is localhost, go to:
+http://localhost:8880/tests/draft/index.html

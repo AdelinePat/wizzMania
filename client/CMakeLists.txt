@@ -37,12 +37,12 @@ set(CLIENT_SOURCES
 
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
-    Headers/mainwindow.h
-    Headers/loginwidget.h
-    Headers/serverconfig.h
-    Headers/websocket_client.h
-    Headers/message_json.h
-    Headers/message_qt_types.h
+    Headers/mainwindow.hpp
+    Headers/loginwidget.hpp
+    Headers/serverconfig.hpp
+    Headers/websocket_client.hpp
+    Headers/message_json.hpp
+    Headers/message_qt_types.hpp
 )
 
 # Collect UI files from Forms/ directory

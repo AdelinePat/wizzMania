@@ -1,8 +1,8 @@
 #include <QApplication>
 #include <iostream>
 
-#include "mainwindow.h"
-#include "message_qt_types.h"
+#include "mainwindow.hpp"
+#include "message_qt_types.hpp"
 
 int main(int argc, char** argv) {
   std::cout << "========================================\n";
