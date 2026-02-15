@@ -21,3 +21,24 @@ uint16_t get_server_port() {
 
   return port;
 }
+
+std::string get_timestamp() {
+  auto now = std::chrono::system_clock::now();
+  std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+  std::ostringstream oss;
+  oss << std::put_time(std::gmtime(&now_time), "%Y-%m-%dT%H:%M:%S") << "Z";
+  std::string timestamp = oss.str();
+  return timestamp;
+}
+
+ServerSend::Message create_message(int64_t id_message, int64_t id_user,
+                                   const std::string& body,
+                                   const std::string& timestamp) {
+  ServerSend::Message message;
+  message.id_message = id_message;
+  message.id_sender = id_user;
+  message.body = body;
+  message.timestamp = timestamp;
+  message.is_system = id_user == 1;
+  return message;
+}

@@ -124,6 +124,9 @@ function connectWebSocket() {
         case MessageType.NEW_MESSAGE:
           handleNewMessage(data);
           break;
+        case MessageType.CHANNEL_HISTORY:
+          handleChannelHistory(data);
+          break;
         case MessageType.USER_TYPING:
           handleTypingNotification(data);
           break;
@@ -176,6 +179,7 @@ function setWsDot(state) {
 
 // ==================== INITIAL DATA ====================
 function handleInitialData(data) {
+  console.log("[INIT] raw data:", JSON.stringify(data));  // ← add temporarily
   // Populate contact cache
   if (Array.isArray(data.contacts)) {
     data.contacts.forEach(c => userCache.set(c.id_user, c.username));
@@ -184,14 +188,20 @@ function handleInitialData(data) {
   if (userId && username) userCache.set(userId, username);
 
   // Populate channel cache and sidebar
+
+  // Should be:
   if (Array.isArray(data.channels)) {
-    data.channels.forEach(ch => channelCache.set(ch.channel_id, ch));
+    data.channels.forEach(ch => {
+      channelCache.set(ch.id_channel, ch);
+      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));  // ← missing!
+    });
   }
 
   renderChannelsSidebar();
   renderContactsSidebar(data.contacts ?? []);
+  renderInvitationsSidebar(data.invitations ?? []);
 
-  console.log(`[INIT] ${userCache.size} contacts, ${channelCache.size} channels`);
+  console.log(`[INIT] ${userCache.size} contacts, ${channelCache.size} channels, ${(data.invitations ?? []).length} invitations`);
 }
 
 // ==================== SIDEBAR RENDERING ====================
@@ -207,7 +217,7 @@ function renderChannelsSidebar() {
   channelCache.forEach(ch => {
     const item = document.createElement("div");
     item.className = "sidebar-item";
-    item.dataset.id = ch.channel_id;
+    item.dataset.id = ch.id_channel;
 
     const isGroup = ch.is_group;
     const iconChar = isGroup ? "⊞" : "◈";
@@ -225,7 +235,7 @@ function renderChannelsSidebar() {
       ${unread}
     `;
 
-    item.addEventListener("click", () => selectChannel(ch.channel_id));
+    item.addEventListener("click", () => selectChannel(ch.id_channel));
     list.appendChild(item);
   });
 }
@@ -255,6 +265,60 @@ function renderContactsSidebar(contacts) {
   });
 }
 
+// ==================== INVITATIONS RENDERING ====================
+function renderInvitationsSidebar(invitations) {
+  const list = document.getElementById("invitations-list");
+  if (!list) return;
+
+  list.innerHTML = "";
+
+  if (invitations.length === 0) {
+    list.innerHTML = '<div class="empty-sidebar">No pending invitations</div>';
+    return;
+  }
+
+  invitations.forEach(inv => {
+    const inviterName = userCache.get(inv.id_inviter) ?? `User ${inv.id_inviter}`;
+    const memberNames = (inv.other_participant_ids ?? [])
+      .map(p => p.username)
+      .join(", ");
+
+    const item = document.createElement("div");
+    item.className = "invitation-item";
+
+    item.innerHTML = `
+      <div class="invitation-info">
+        <div class="invitation-title">${escapeHtml(inv.title)}</div>
+        <div class="invitation-from">From: ${escapeHtml(inviterName)}</div>
+        <div class="invitation-members">Members: ${escapeHtml(memberNames)}</div>
+      </div>
+      <div class="invitation-actions">
+        <button class="inv-btn accept-btn" data-id="${inv.id_channel}">✓</button>
+        <button class="inv-btn reject-btn" data-id="${inv.id_channel}">✗</button>
+      </div>
+    `;
+
+    item.querySelector(".accept-btn").addEventListener("click", () => {
+      acceptInvitation(inv.id_channel);
+    });
+    item.querySelector(".reject-btn").addEventListener("click", () => {
+      rejectInvitation(inv.id_channel);
+    });
+
+    list.appendChild(item);
+  });
+}
+
+function acceptInvitation(id_channel) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: MessageType.ACCEPT_INVITATION, id_channel }));
+}
+
+function rejectInvitation(id_channel) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({ type: MessageType.REJECT_INVITATION, id_channel }));
+}
+
 // ==================== CHANNEL SELECTION ====================
 function selectChannel(channelId) {
   activeChannelId = channelId;
@@ -281,8 +345,19 @@ function selectChannel(channelId) {
     if (badge) badge.remove();
   }
 
-  // For now, all messages broadcast to everyone so messages are already shown
-  // TODO: request channel history when per-channel broadcast is implemented
+  // Clear messages and request history from server
+  document.getElementById("messages-container").innerHTML = "";
+  requestChannelHistory(channelId, 0);
+}
+
+function requestChannelHistory(channelId, beforeMessageId) {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  ws.send(JSON.stringify({
+    type: MessageType.REQUEST_CHANNEL_HISTORY,
+    id_channel: channelId,
+    before_id_message: beforeMessageId,
+    limit: 50
+  }));
 }
 
 // ==================== NEW MESSAGE ====================
@@ -291,22 +366,21 @@ function handleNewMessage(data) {
 
   const msg = data.message;
   const isMe = msg.id_sender === userId;
-  // const isSystem = msg.is_system;
-  const isSystem = false;
+  const isSystem = msg.is_system;
   const sender = isSystem
     ? "System"
     : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
 
-  // Update channel last message preview in sidebar
-  const chData = channelCache.get(data.channel_id);
+  // Always update sidebar preview + unread badge
+  const chData = channelCache.get(data.id_channel);
   if (chData) {
     chData.last_message = msg;
-    const item = document.querySelector(`.sidebar-item[data-id="${data.channel_id}"]`);
+    const item = document.querySelector(`.sidebar-item[data-id="${data.id_channel}"]`);
     const preview = item?.querySelector(".item-preview");
     if (preview) preview.textContent = msg.body;
 
-    // If not the active channel, bump unread badge
-    if (data.channel_id !== activeChannelId) {
+    // Only bump unread if not the active channel
+    if (data.id_channel !== activeChannelId) {
       if (item) {
         let badge = item.querySelector(".unread-badge");
         if (!badge) {
@@ -318,8 +392,12 @@ function handleNewMessage(data) {
           badge.textContent = parseInt(badge.textContent) + 1;
         }
       }
+      return; // Don't display message - channel not open
     }
   }
+
+  // Only display if this is the active channel
+  if (data.id_channel !== activeChannelId) return;
 
   if (isSystem) addSystemMessage(msg.body);
   else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);
@@ -332,6 +410,46 @@ function handleTypingNotification(data) {
   console.log(data.is_typing ? `${name} is typing...` : `${name} stopped typing`);
 }
 
+// ==================== CHANNEL HISTORY ====================
+function handleChannelHistory(data) {
+  // Ignore if user switched channels while waiting for response
+  if (data.id_channel !== activeChannelId) return;
+
+  const container = document.getElementById("messages-container");
+  container.innerHTML = "";
+
+  if (!data.messages || data.messages.length === 0) {
+    addSystemMessage("No messages yet. Say hello!");
+    return;
+  }
+
+  data.messages.forEach(msg => {
+    const isMe = msg.id_sender === userId;
+    const isSystem = msg.is_system;
+    const sender = isSystem
+      ? "System"
+      : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
+
+    if (isSystem) addSystemMessage(msg.body);
+    else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);
+    else addReceivedMessage(msg.body, sender, msg.timestamp);
+  });
+
+  // TODO: if data.has_more, show "load older messages" button at top
+  if (data.has_more) {
+    const loadMore = document.createElement("div");
+    loadMore.className = "date-sep";
+    loadMore.style.cursor = "pointer";
+    loadMore.style.color = "var(--accent)";
+    loadMore.textContent = "↑ Load older messages";
+    loadMore.addEventListener("click", () => {
+      const oldest = data.messages[0]?.id_message ?? 0;
+      requestChannelHistory(activeChannelId, oldest);
+    });
+    container.prepend(loadMore);
+  }
+}
+
 // ==================== MESSAGING ====================
 function sendMessage() {
   const input = document.getElementById("messageInput");
@@ -339,7 +457,7 @@ function sendMessage() {
   if (!message || !ws || ws.readyState !== WebSocket.OPEN) return;
 
   const channelId = activeChannelId ?? 1;
-  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, channel_id: channelId, body: message }));
+  ws.send(JSON.stringify({ type: MessageType.SEND_MESSAGE, id_channel: channelId, body: message }));
   input.value = "";
 }
 

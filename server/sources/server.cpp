@@ -114,8 +114,13 @@ int main() {
             break;
           }
 
+          case WizzMania::MessageType::REQUEST_CHANNEL_HISTORY: {
+            msg_handler.send_history(conn, id_user, json_msg);
+            break;
+          }
+
           case WizzMania::MessageType::CREATE_CHANNEL: {
-            msg_handler.create_channel(conn, json_msg);
+            msg_handler.create_channel(conn, id_user, json_msg);
             break;
           }
 
@@ -132,7 +137,7 @@ int main() {
             }
 
             std::cout << "[TYPING] User " << id_user << " in channel "
-                      << req->channel_id << ": "
+                      << req->id_channel << ": "
                       << (req->is_typing ? "start" : "stop") << "\n";
 
             // TODO: Broadcast typing

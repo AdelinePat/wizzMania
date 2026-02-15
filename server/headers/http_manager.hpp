@@ -10,6 +10,7 @@
 
 #include "auth.hpp"
 #include "database.hpp"
+#include "helpers.hpp"
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 // using WSConn = crow::websocket::connection*;

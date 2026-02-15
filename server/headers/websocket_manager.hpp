@@ -4,6 +4,7 @@
 #include <crow.h>
 
 #include <mutex>
+#include <unordered_set>  // SHOULD APPEAR BEFORE CROW, ELSE EVERYTHING BREAKS !!!!!!
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -29,7 +30,7 @@ class WebSocketManager {
   // enough since I'll never access it using an index?
   // std::vector<WSConn> get_all_connections();
   void broadcast_to_all(const std::string& message);
-  void broadcast_to_users(const std::vector<int64_t>& id_users,
+  void broadcast_to_users(const std::unordered_set<int64_t>& id_users,
                           const std::string& message);
 
   bool is_user_online(int64_t id_user);  // might not use this one

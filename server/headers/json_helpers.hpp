@@ -80,7 +80,7 @@ inline std::optional<::AuthMessages::LogoutRequest> parse_logout_request(
 namespace ClientSend {
 inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
     const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("channel_id") || !json.has("body")) {
+  if (!json.has("type") || !json.has("id_channel") || !json.has("body")) {
     return std::nullopt;
   }
   int type_int = json["type"].i();
@@ -89,8 +89,29 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
   }
 
   ::ClientSend::SendMessageRequest req;
-  req.channel_id = json["channel_id"].i();
+  req.id_channel = json["id_channel"].i();
   req.body = json["body"].s();
+  return req;
+}
+
+inline std::optional<::ClientSend::RequestChannelHistoryRequest>
+parse_request_channel_history(const crow::json::rvalue& json) {
+  if (!json.has("type") || !json.has("id_channel") || !json.has("limit")) {
+    return std::nullopt;
+  }
+
+  int type_int = json["type"].i();
+  if (type_int !=
+      static_cast<int>(WizzMania::MessageType::REQUEST_CHANNEL_HISTORY)) {
+    return std::nullopt;
+  }
+
+  ::ClientSend::RequestChannelHistoryRequest req;
+  req.id_channel = json["id_channel"].i();
+  req.before_id_message =
+      json.has("before_id_message") ? json["before_id_message"].i() : 0;
+  req.limit = json["limit"].i();
+
   return req;
 }
 
@@ -119,7 +140,7 @@ inline std::optional<::ClientSend::CreateChannelRequest> parse_create_channel(
 
 inline std::optional<::ClientSend::TypingRequest> parse_typing(
     const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("channel_id") || !json.has("is_typing")) {
+  if (!json.has("type") || !json.has("id_channel") || !json.has("is_typing")) {
     return std::nullopt;
   }
   int type_int = json["type"].i();
@@ -131,14 +152,14 @@ inline std::optional<::ClientSend::TypingRequest> parse_typing(
 
   ::ClientSend::TypingRequest req;
   req.type = static_cast<WizzMania::MessageType>(type_int);
-  req.channel_id = json["channel_id"].i();
+  req.id_channel = json["id_channel"].i();
   req.is_typing = json["is_typing"].b();
   return req;
 }
 
 inline std::optional<::ClientSend::AcceptInvitationRequest>
 parse_accept_invitation(const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("channel_id")) {
+  if (!json.has("type") || !json.has("id_channel")) {
     return std::nullopt;
   }
   int type_int = json["type"].i();
@@ -147,13 +168,13 @@ parse_accept_invitation(const crow::json::rvalue& json) {
   }
 
   ::ClientSend::AcceptInvitationRequest req;
-  req.channel_id = json["channel_id"].i();
+  req.id_channel = json["id_channel"].i();
   return req;
 }
 
 inline std::optional<::ClientSend::LeaveChannelRequest> parse_leave_channel(
     const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("channel_id")) {
+  if (!json.has("type") || !json.has("id_channel")) {
     return std::nullopt;
   }
   int type_int = json["type"].i();
@@ -162,7 +183,7 @@ inline std::optional<::ClientSend::LeaveChannelRequest> parse_leave_channel(
   }
 
   ::ClientSend::LeaveChannelRequest req;
-  req.channel_id = json["channel_id"].i();
+  req.id_channel = json["id_channel"].i();
   return req;
 }
 }  // namespace ClientSend
@@ -192,7 +213,7 @@ inline crow::json::wvalue to_json(const ::ServerSend::Contact& contact) {
 // TO JSON CHANNEL INFO
 inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
   crow::json::wvalue json;
-  json["channel_id"] = ch.channel_id;
+  json["id_channel"] = ch.id_channel;
   json["title"] = ch.title;
   json["is_group"] = ch.is_group;
   json["created_by"] = ch.created_by;
@@ -201,10 +222,27 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInfo& ch) {
   json["last_message"] = to_json(ch.last_message);
 
   crow::json::wvalue::list participants_list;
-  for (const int64_t id : ch.participants) {
-    participants_list.push_back(id);
+  for (const ::ServerSend::Contact& participant : ch.participants) {
+    participants_list.push_back(to_json(participant));
   }
   json["participants"] = std::move(participants_list);
+
+  return json;
+}
+
+// TO JSON CHANNEL INVITATION
+inline crow::json::wvalue to_json(const ::ServerSend::ChannelInvitation& inv) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(inv.type);
+  json["id_channel"] = inv.id_channel;
+  json["id_inviter"] = inv.id_inviter;
+  json["title"] = inv.title;
+
+  crow::json::wvalue::list participants_list;
+  for (const ::ServerSend::Contact& p : inv.other_participant_ids) {
+    participants_list.push_back(to_json(p));
+  }
+  json["other_participant_ids"] = std::move(participants_list);
 
   return json;
 }
@@ -213,7 +251,7 @@ inline crow::json::wvalue to_json(
     const ::ServerSend::NewMessageBroadcast& broadcast) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(broadcast.type);  // Cast enum to int
-  json["channel_id"] = broadcast.channel_id;
+  json["id_channel"] = broadcast.id_channel;
   json["message"] = to_json(broadcast.message);
   return json;
 }
@@ -222,7 +260,7 @@ inline crow::json::wvalue to_json(
     const ::ServerSend::UserTypingNotification& notif) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(notif.type);  // Cast enum to int
-  json["channel_id"] = notif.channel_id;
+  json["id_channel"] = notif.id_channel;
   json["id_user"] = notif.id_user;
   json["username"] = notif.username;
   json["is_typing"] = notif.is_typing;
@@ -241,7 +279,7 @@ inline crow::json::wvalue to_json(
     const ::ServerSend::ChannelCreatedResponse& resp) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(resp.type);  // Cast enum to int
-  json["channel_id"] = resp.channel_id;
+  json["id_channel"] = resp.id_channel;
   json["already_existed"] = resp.already_existed;
   json["channel"] = to_json(resp.channel);
   return json;
@@ -267,14 +305,31 @@ inline crow::json::wvalue to_json(
   json["channels"] = std::move(channels_list);
 
   // Invitations (TODO later)
-  // crow::json::wvalue::list invitations_list;
-  // for (const auto& inv : resp.invitations) {
-  //   invitations_list.push_back(to_json(inv));
-  // }
-  // json["invitations"] = std::move(invitations_list);
+  crow::json::wvalue::list invitations_list;
+  for (const auto& inv : resp.invitations) {
+    invitations_list.push_back(to_json(inv));
+  }
+  json["invitations"] = std::move(invitations_list);
 
   return json;
 }
+
+inline crow::json::wvalue to_json(
+    const ::ServerSend::ChannelHistoryResponse& resp) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(resp.type);
+  json["id_channel"] = resp.id_channel;
+  json["has_more"] = resp.has_more;
+
+  crow::json::wvalue::list messages_list;
+  for (const auto& msg : resp.messages) {
+    messages_list.push_back(to_json(msg));  // reuse existing Message -> JSON
+  }
+  json["messages"] = std::move(messages_list);
+
+  return json;
+}
+
 }  // namespace ServerSend
 
 }  // namespace JsonHelpers

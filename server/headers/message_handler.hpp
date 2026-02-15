@@ -7,6 +7,7 @@
 
 #include "auth.hpp"
 #include "database.hpp"
+#include "helpers.hpp"
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 #include "messages.hpp"
@@ -34,13 +35,17 @@ class MessageHandler {
   void send_message(crow::websocket::connection& conn, int64_t id_user,
                     const crow::json::rvalue& json_msg);
 
+
   void authenticate_ws(crow::websocket::connection& conn,
                        const crow::json::rvalue& json_msg);
 
   void initial_data(crow::websocket::connection& conn);
 
-  void create_channel(crow::websocket::connection& conn,
+  void create_channel(crow::websocket::connection& conn, int64_t id_user,
                       const crow::json::rvalue& json_msg);
+
+  void send_history(crow::websocket::connection& conn, int64_t id_user,
+                    const crow::json::rvalue& json_msg);
 
   // TODO: Implement
 };

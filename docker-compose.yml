@@ -10,7 +10,6 @@ services:
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      # DB_HOST: tcp://mysql:${DB_PORT}
       DB_HOST: mysql-db # service name!
     ports:
       - "${DB_PORT}:3306"

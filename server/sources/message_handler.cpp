@@ -3,8 +3,6 @@
 void MessageHandler::send_message(crow::websocket::connection& conn,
                                   int64_t id_user,
                                   const crow::json::rvalue& json_msg) {
-  //    Shouldn't this part be inside this function???
-
   std::optional<::ClientSend::SendMessageRequest> req =
       JsonHelpers::ClientSend::parse_send_message(json_msg);
   if (!req.has_value()) {
@@ -12,34 +10,47 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
     return;
   }
 
-  std::cout << "[MSG] User " << id_user << " -> Channel " << req->channel_id
+  std::cout << "[MSG] User " << id_user << " -> Channel " << req->id_channel
             << ": " << req->body << "\n";
 
   // TODO: Validate channel access
-  // TODO: Store message in database
+  int64_t id_channel = req->id_channel;
+  bool is_system_user = (id_user == 1);
+  bool has_channel_access = db.has_channel_access(id_user, id_channel);
+  std::cout << "[DBG] has_channel_access(" << id_user << ", " << id_channel
+            << ") = " << has_channel_access << "\n";
+  if (!is_system_user && !has_channel_access) {
+    std::cerr << "[INIT] Error: user has no access to this channel !\n";
+    send_error(conn, "INVALID_USER",
+               "User has no permission to SEND_MESSAGE to this channel");
+    return;
+  }
 
-  // TEMP : ECHO MSG BACK
-  ServerSend::NewMessageBroadcast broadcast;             // outer struct
-  broadcast.type = WizzMania::MessageType::NEW_MESSAGE;  // ✅ this exists here
-  broadcast.channel_id = req->channel_id;
+  std::string body = req->body;
+  std::string timestamp = get_timestamp();
 
-  // fill the inner message
-  broadcast.message.id_message = 0;  // fake id for now TODO get from DB!!
-  broadcast.message.id_sender = id_user;
-  //   broadcast.message.sender_username = "whatever";
-  broadcast.message.body = req->body;
+  std::optional<int64_t> id_message_opt =
+      db.save_message(id_user, id_channel, body, timestamp);
+  if (!id_message_opt.has_value()) {
+    std::cerr << "[INIT] Error: message could not be save in db\n";
+    return;
+  }
+  int64_t id_message = id_message_opt.value();
 
-  // timestamp as string
-  auto now = std::chrono::system_clock::now();
-  std::time_t now_time = std::chrono::system_clock::to_time_t(now);
-  std::ostringstream oss;
-  oss << std::put_time(std::localtime(&now_time), "%Y-%m-%dT%H:%M:%S");
-  broadcast.message.timestamp = oss.str();
-
-  broadcast.message.is_system = id_user == 1;
+  ServerSend::NewMessageBroadcast broadcast;
+  broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
+  broadcast.id_channel = id_channel;
+  broadcast.message = create_message(id_message, id_user, body, timestamp);
+  // broadcast.message.id_message = id_message;
+  // broadcast.message.id_sender = id_user;
+  // broadcast.message.body = body;
+  // broadcast.message.timestamp = timestamp;
+  // broadcast.message.is_system = id_user == 1;
 
   std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
-  ws_manager.broadcast_to_all(json_str);
+  std::unordered_set<int64_t> participants =
+      db.get_channel_participants(id_channel);
+  ws_manager.broadcast_to_users(participants, json_str);
 }
 
 void MessageHandler::send_error(crow::websocket::connection& conn,
@@ -129,6 +140,7 @@ void MessageHandler::initial_data(crow::websocket::connection& conn) {
 }
 
 void MessageHandler::create_channel(crow::websocket::connection& conn,
+                                    int64_t id_user,
                                     const crow::json::rvalue& json_msg) {
   std::optional<::ClientSend::CreateChannelRequest> req =
       JsonHelpers::ClientSend::parse_create_channel(json_msg);
@@ -141,4 +153,34 @@ void MessageHandler::create_channel(crow::websocket::connection& conn,
   //           << req->participant_ids.size() << " participants\n";
 
   // TODO: Create channel
+}
+
+void MessageHandler::send_history(crow::websocket::connection& conn,
+                                  int64_t id_user,
+                                  const crow::json::rvalue& json_msg) {
+  std::optional<::ClientSend::RequestChannelHistoryRequest> req =
+      JsonHelpers::ClientSend::parse_request_channel_history(json_msg);
+
+  if (!req.has_value()) {
+    this->send_error(conn, "INVALID_FORMAT",
+                     "Invalid REQUEST_CHANNEL_HISTORY format");
+    return;
+  }
+
+  std::cout << "[HISTORY] User " << id_user << " -> Channel " << req->id_channel
+            << "\n";
+
+  std::vector<ServerSend::Message> messages = db.get_channel_history(
+      req->id_channel, req->before_id_message, req->limit);
+  if (messages.empty()) {
+    std::cerr << "[HISTORY] : messages could not be retrieve in db\n";
+    // actually possible to have no history, but I want to have a log about it
+  }
+
+  ServerSend::ChannelHistoryResponse res;
+  res.type = WizzMania::MessageType::CHANNEL_HISTORY;
+  res.id_channel = req->id_channel;
+  res.messages = messages;
+  res.has_more = messages.size() == req->limit;
+  conn.send_text(JsonHelpers::ServerSend::to_json(res).dump());
 }
