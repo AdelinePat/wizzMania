@@ -126,15 +126,15 @@ struct Contact {
 };
 
 struct ChannelInfo {
-  int64_t id_channel;
+  int64_t id_channel = 0;
   std::string title;
   bool is_group;
-  int64_t created_by;
+  int64_t created_by = 0;
   std::vector<Contact> participants;
   // std::unordered_set<int64_t> participants;
   Message last_message;  // display preview of last message
-  int64_t unread_count;
-  int64_t last_read_id_message;
+  int64_t unread_count = 0;
+  int64_t last_read_id_message = 0;
 };
 
 struct ChannelCreatedResponse {
@@ -160,10 +160,9 @@ struct ChannelInvitation {
 //   std::string username;
 // };
 
-
 struct InvitationAcceptedResponse {
-    WizzMania::MessageType type;  // INVITATION_ACCEPTED
-    ChannelInfo channel;  
+  WizzMania::MessageType type;  // INVITATION_ACCEPTED
+  ChannelInfo channel;
 };
 
 struct InvitationRejectedNotification {
@@ -227,6 +226,7 @@ struct InitialDataResponse {
   std::vector<Contact> contacts;
   std::vector<ChannelInfo> channels;
   std::vector<ChannelInvitation> invitations;
+  std::vector<ChannelInfo> outgoing_invitations;
 };
 
 struct ChannelHistoryResponse {

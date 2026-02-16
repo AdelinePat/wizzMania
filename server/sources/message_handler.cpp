@@ -34,16 +34,17 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
     return;
   }
   int64_t id_message = id_message_opt.value();
+  this->broadcast_new_message(id_channel, id_message, id_user, body, timestamp);
 
-  ServerSend::NewMessageBroadcast broadcast;
-  broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
-  broadcast.id_channel = id_channel;
-  broadcast.message = create_message(id_message, id_user, body, timestamp);
+  // ServerSend::NewMessageBroadcast broadcast;
+  // broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
+  // broadcast.id_channel = id_channel;
+  // broadcast.message = create_message(id_message, id_user, body, timestamp);
 
-  std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
-  std::unordered_set<int64_t> participants =
-      db.get_channel_participants(id_channel);
-  ws_manager.broadcast_to_users(participants, json_str);
+  // std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
+  // std::unordered_set<int64_t> participants =
+  //     db.get_channel_participants(id_channel);
+  // ws_manager.broadcast_to_users(participants, json_str);
 }
 
 void MessageHandler::send_error(crow::websocket::connection& conn,
@@ -204,6 +205,9 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
   std::string channel_info_str = JsonHelpers::ServerSend::to_json(resp).dump();
   conn.send_text(channel_info_str);
 
+  broadcast_joined_notification(id_user, req->id_channel,
+                                resp.channel.participants);
+
   std::string body = "User @" + std::to_string(id_user) + " joined the chat!";
 
   std::string timestamp = get_timestamp();
@@ -214,13 +218,46 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
     return;
   }
   int64_t id_message = id_message_opt.value();
+  this->broadcast_new_message(req->id_channel, id_message, 1, body, timestamp);
+}
 
+void MessageHandler::broadcast_new_message(const int64_t id_channel,
+                                           const int64_t id_message,
+                                           const int64_t id_user,
+                                           const std::string& body,
+                                           const std::string& timestamp) {
   ServerSend::NewMessageBroadcast broadcast;
   broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
-  broadcast.id_channel = req->id_channel;
-  broadcast.message = create_message(id_message, 1, body, timestamp);   
-  std::string broadcast_json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
+  broadcast.id_channel = id_channel;
+  broadcast.message = create_message(id_message, id_user, body, timestamp);
+  std::string broadcast_json_str =
+      JsonHelpers::ServerSend::to_json(broadcast).dump();
   std::unordered_set<int64_t> participants =
-      db.get_channel_participants(req->id_channel);
+      db.get_channel_participants(id_channel);
   ws_manager.broadcast_to_users(participants, broadcast_json_str);
+}
+
+void MessageHandler::broadcast_joined_notification(
+    const int64_t id_user, const int64_t id_channel,
+    std::vector<ServerSend::Contact>& participants) {
+  ServerSend::UserJoinedNotification joined_notification;
+  joined_notification.type = WizzMania::MessageType::USER_JOINED;
+  joined_notification.id_channel = id_channel;
+  joined_notification.contact.id_user = id_user;
+  std::string new_username = "";
+  for (const ServerSend::Contact& participant : participants) {
+    if (participant.id_user == id_user) {
+      new_username = participant.username;
+      break;
+    }
+  }
+  joined_notification.contact.username = new_username;
+
+  std::string joined_json =
+      JsonHelpers::ServerSend::to_json(joined_notification).dump();
+  std::unordered_set<int64_t> participants_set =
+      db.get_channel_participants(id_channel);
+
+  participants_set.erase(id_user);
+  ws_manager.broadcast_to_users(participants_set, joined_json);
 }

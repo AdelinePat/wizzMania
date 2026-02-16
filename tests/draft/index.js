@@ -7,8 +7,9 @@ let username = null;
 let ws = null;
 let activeChannelId = null;
 
-const userCache = new Map();  // id_user -> username
-const channelCache = new Map();  // id_channel -> ChannelInfo
+const userCache = new Map();      // id_user -> username
+const channelCache = new Map();   // id_channel -> ChannelInfo
+const outgoingCache = new Map();  // id_channel -> ChannelInfo (pending sent invitations)
 
 const SERVER_URL = `http://${SERVER_IP ?? "192.168.0.117"}:${SERVER_PORT ?? "8080"}`;
 const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
@@ -94,7 +95,6 @@ function showApp() {
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app-screen").classList.add("visible");
 
-  // Populate user info in sidebar
   const initials = username?.slice(0, 2).toUpperCase() ?? "??";
   document.getElementById("user-avatar-initials").textContent = initials;
   document.getElementById("sidebar-username").textContent = username;
@@ -129,6 +129,12 @@ function connectWebSocket() {
           break;
         case MessageType.USER_TYPING:
           handleTypingNotification(data);
+          break;
+        case MessageType.INVITATION_ACCEPTED:
+          handleInvitationAccepted(data);
+          break;
+        case MessageType.USER_JOINED:
+          handleUserJoined(data);
           break;
         case MessageType.ERROR:
           addSystemMessage(`Server Error: ${data.message} (${data.error_code})`);
@@ -179,29 +185,34 @@ function setWsDot(state) {
 
 // ==================== INITIAL DATA ====================
 function handleInitialData(data) {
-  console.log("[INIT] raw data:", JSON.stringify(data));  // ← add temporarily
-  // Populate contact cache
+  console.log("[INIT] raw data:", JSON.stringify(data));
+  console.log(`[INIT] outgoing:`, outgoingCache.size, [...outgoingCache.keys()]);
+
   if (Array.isArray(data.contacts)) {
     data.contacts.forEach(c => userCache.set(c.id_user, c.username));
   }
-  // Always add self
   if (userId && username) userCache.set(userId, username);
 
-  // Populate channel cache and sidebar
-
-  // Should be:
   if (Array.isArray(data.channels)) {
     data.channels.forEach(ch => {
       channelCache.set(ch.id_channel, ch);
-      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));  // ← missing!
+      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+    });
+  }
+
+  if (Array.isArray(data.outgoing_invitations)) {
+    data.outgoing_invitations.forEach(ch => {
+      outgoingCache.set(ch.id_channel, ch);
+      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
     });
   }
 
   renderChannelsSidebar();
   renderContactsSidebar(data.contacts ?? []);
   renderInvitationsSidebar(data.invitations ?? []);
+  renderOutgoingInvitationsSidebar();
 
-  console.log(`[INIT] ${userCache.size} contacts, ${channelCache.size} channels, ${(data.invitations ?? []).length} invitations`);
+  console.log(`[INIT] ${userCache.size} users cached, ${channelCache.size} channels, ${(data.invitations ?? []).length} invitations, ${outgoingCache.size} outgoing`);
 }
 
 // ==================== SIDEBAR RENDERING ====================
@@ -219,8 +230,7 @@ function renderChannelsSidebar() {
     item.className = "sidebar-item";
     item.dataset.id = ch.id_channel;
 
-    const isGroup = ch.is_group;
-    const iconChar = isGroup ? "⊞" : "◈";
+    const iconChar = ch.is_group ? "⊞" : "◈";
     const preview = ch.last_message?.body ?? "";
     const unread = ch.unread_count > 0
       ? `<div class="unread-badge">${ch.unread_count}</div>`
@@ -252,7 +262,6 @@ function renderContactsSidebar(contacts) {
   contacts.forEach(c => {
     const item = document.createElement("div");
     item.className = "sidebar-item";
-
     const initials = c.username.slice(0, 2).toUpperCase();
     item.innerHTML = `
       <div class="item-icon" style="border-radius:50%; font-size:11px; font-weight:700; color:var(--accent-bright)">${initials}</div>
@@ -260,7 +269,6 @@ function renderContactsSidebar(contacts) {
         <div class="item-name">${escapeHtml(c.username)}</div>
       </div>
     `;
-
     list.appendChild(item);
   });
 }
@@ -269,7 +277,6 @@ function renderContactsSidebar(contacts) {
 function renderInvitationsSidebar(invitations) {
   const list = document.getElementById("invitations-list");
   if (!list) return;
-
   list.innerHTML = "";
 
   if (invitations.length === 0) {
@@ -279,13 +286,10 @@ function renderInvitationsSidebar(invitations) {
 
   invitations.forEach(inv => {
     const inviterName = userCache.get(inv.id_inviter) ?? `User ${inv.id_inviter}`;
-    const memberNames = (inv.other_participant_ids ?? [])
-      .map(p => p.username)
-      .join(", ");
+    const memberNames = (inv.other_participant_ids ?? []).map(p => p.username).join(", ");
 
     const item = document.createElement("div");
     item.className = "invitation-item";
-
     item.innerHTML = `
       <div class="invitation-info">
         <div class="invitation-title">${escapeHtml(inv.title)}</div>
@@ -297,14 +301,34 @@ function renderInvitationsSidebar(invitations) {
         <button class="inv-btn reject-btn" data-id="${inv.id_channel}">✗</button>
       </div>
     `;
+    item.querySelector(".accept-btn").addEventListener("click", () => acceptInvitation(inv.id_channel));
+    item.querySelector(".reject-btn").addEventListener("click", () => rejectInvitation(inv.id_channel));
+    list.appendChild(item);
+  });
+}
 
-    item.querySelector(".accept-btn").addEventListener("click", () => {
-      acceptInvitation(inv.id_channel);
-    });
-    item.querySelector(".reject-btn").addEventListener("click", () => {
-      rejectInvitation(inv.id_channel);
-    });
+function renderOutgoingInvitationsSidebar() {
+  const list = document.getElementById("outgoing-invitations-list");
+  if (!list) return;
+  list.innerHTML = "";
 
+  if (outgoingCache.size === 0) {
+    list.innerHTML = '<div class="empty-sidebar">No pending sent invitations</div>';
+    return;
+  }
+
+  outgoingCache.forEach(ch => {
+    const waitingFor = (ch.participants ?? []).map(p => p.username).join(", ");
+    const item = document.createElement("div");
+    item.className = "sidebar-item outgoing-item";
+    item.dataset.id = ch.id_channel;
+    item.innerHTML = `
+      <div class="item-icon" style="opacity:0.5">◈</div>
+      <div class="item-info">
+        <div class="item-name" style="opacity:0.6">${escapeHtml(ch.title)}</div>
+        <div class="item-preview">Waiting for: ${escapeHtml(waitingFor)}</div>
+      </div>
+    `;
     list.appendChild(item);
   });
 }
@@ -324,28 +348,23 @@ function selectChannel(channelId) {
   activeChannelId = channelId;
   const ch = channelCache.get(channelId);
 
-  // Update active state in sidebar
   document.querySelectorAll(".sidebar-item").forEach(el => {
     el.classList.toggle("active", el.dataset.id == channelId);
   });
 
-  // Update header
   document.getElementById("chat-icon").textContent = ch?.is_group ? "⊞" : "◈";
   document.getElementById("chat-title").textContent = ch?.title ?? `Channel ${channelId}`;
 
-  // Show participant count
   const participantCount = ch?.participants?.length ?? 0;
   document.getElementById("chat-sub").textContent =
     participantCount > 0 ? `${participantCount} members` : "";
 
-  // Clear unread badge
   const sidebarItem = document.querySelector(`.sidebar-item[data-id="${channelId}"]`);
   if (sidebarItem) {
     const badge = sidebarItem.querySelector(".unread-badge");
     if (badge) badge.remove();
   }
 
-  // Clear messages and request history from server
   document.getElementById("messages-container").innerHTML = "";
   requestChannelHistory(channelId, 0);
 }
@@ -371,7 +390,6 @@ function handleNewMessage(data) {
     ? "System"
     : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
 
-  // Always update sidebar preview + unread badge
   const chData = channelCache.get(data.id_channel);
   if (chData) {
     chData.last_message = msg;
@@ -379,7 +397,6 @@ function handleNewMessage(data) {
     const preview = item?.querySelector(".item-preview");
     if (preview) preview.textContent = msg.body;
 
-    // Only bump unread if not the active channel
     if (data.id_channel !== activeChannelId) {
       if (item) {
         let badge = item.querySelector(".unread-badge");
@@ -392,11 +409,10 @@ function handleNewMessage(data) {
           badge.textContent = parseInt(badge.textContent) + 1;
         }
       }
-      return; // Don't display message - channel not open
+      return;
     }
   }
 
-  // Only display if this is the active channel
   if (data.id_channel !== activeChannelId) return;
 
   if (isSystem) addSystemMessage(msg.body);
@@ -412,7 +428,6 @@ function handleTypingNotification(data) {
 
 // ==================== CHANNEL HISTORY ====================
 function handleChannelHistory(data) {
-  // Ignore if user switched channels while waiting for response
   if (data.id_channel !== activeChannelId) return;
 
   const container = document.getElementById("messages-container");
@@ -435,7 +450,6 @@ function handleChannelHistory(data) {
     else addReceivedMessage(msg.body, sender, msg.timestamp);
   });
 
-  // TODO: if data.has_more, show "load older messages" button at top
   if (data.has_more) {
     const loadMore = document.createElement("div");
     loadMore.className = "date-sep";
@@ -447,6 +461,51 @@ function handleChannelHistory(data) {
       requestChannelHistory(activeChannelId, oldest);
     });
     container.prepend(loadMore);
+  }
+}
+
+// ==================== INVITATION HANDLERS ====================
+function handleInvitationAccepted(data) {
+  const ch = data.channel;
+
+  channelCache.set(ch.id_channel, ch);
+  ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+
+  // Remove from invitations UI
+  const invItem = document.querySelector(
+    `.invitation-item button[data-id="${ch.id_channel}"]`
+  )?.closest(".invitation-item");
+  if (invItem) invItem.remove();
+
+  renderChannelsSidebar();
+}
+
+function handleUserJoined(data) {
+  const contact = data.contact;
+  userCache.set(contact.id_user, contact.username);
+
+  if (outgoingCache.has(data.id_channel)) {
+    // Bob's pending channel - dave just accepted, promote to channelCache
+    const ch = outgoingCache.get(data.id_channel);
+
+    // Remove dave from pending list (was listed as pending invitee)
+    // then add him as accepted participant - avoids duplicates
+    ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
+    ch.participants.push(contact);
+    ch.is_group = ch.participants.length > 2;
+
+    channelCache.set(data.id_channel, ch);
+    outgoingCache.delete(data.id_channel);
+    renderChannelsSidebar();
+    renderOutgoingInvitationsSidebar();
+  } else {
+    // Existing channel - someone new joined, update participants
+    const ch = channelCache.get(data.id_channel);
+    if (ch) {
+      ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
+      ch.participants.push(contact);
+      ch.is_group = ch.participants.length > 2;
+    }
   }
 }
 
@@ -468,7 +527,6 @@ function addSentMessage(text, senderName, timestamp) {
   row.className = "msg-row sent";
   const initials = senderName.slice(0, 2).toUpperCase();
   const time = formatTime(timestamp);
-
   row.innerHTML = `
     <div class="msg-avatar">${initials}</div>
     <div class="msg-bubble-wrap">
@@ -477,7 +535,6 @@ function addSentMessage(text, senderName, timestamp) {
       <div class="msg-time">${time}</div>
     </div>
   `;
-
   container.appendChild(row);
   scrollToBottom();
 }
@@ -488,7 +545,6 @@ function addReceivedMessage(text, senderName, timestamp) {
   row.className = "msg-row received";
   const initials = senderName.slice(0, 2).toUpperCase();
   const time = formatTime(timestamp);
-
   row.innerHTML = `
     <div class="msg-avatar">${initials}</div>
     <div class="msg-bubble-wrap">
@@ -497,7 +553,6 @@ function addReceivedMessage(text, senderName, timestamp) {
       <div class="msg-time">${time}</div>
     </div>
   `;
-
   container.appendChild(row);
   scrollToBottom();
 }
@@ -507,7 +562,6 @@ function addSystemMessage(text) {
   const row = document.createElement("div");
   row.className = "msg-row system";
   row.style.alignSelf = "center";
-
   row.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
   container.appendChild(row);
   scrollToBottom();

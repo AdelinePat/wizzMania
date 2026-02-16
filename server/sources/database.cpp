@@ -149,6 +149,7 @@ ServerSend::InitialDataResponse Database::get_initial_data(
   init_data.contacts = this->get_contact(id_user);
   init_data.channels = this->get_initial_channels(id_user);
   init_data.invitations = this->get_initial_invitations(id_user);
+  init_data.outgoing_invitations = this->get_outgoing_invitations(id_user);
   return init_data;
 }
 
@@ -462,6 +463,68 @@ std::vector<ServerSend::ChannelInvitation> Database::get_invitations_base(
   }
 }
 
+std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations(
+    int64_t id_user) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  std::vector<ServerSend::ChannelInfo> channels_info =
+      this->get_outgoing_invitations_base(id_user, ChannelStatus::ACCEPTED);
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
+      this->get_participants_and_channel(id_user, ChannelStatus::ACCEPTED,
+                                         ChannelStatus::PENDING);
+
+  for (ServerSend::ChannelInfo& channel : channels_info) {
+    auto it_participant = channel_participants.find(channel.id_channel);
+    if (it_participant != channel_participants.end()) {
+      channel.participants = it_participant->second;
+      channel.is_group = false;
+    } else {
+      std::cerr << "[DB] Warning: no participants found for channel "
+                << channel.id_channel << "\n";
+    }
+  }
+  return channels_info;
+}
+
+// Get outgoing invitations, meaning the channel the user created but no one
+// accepted yet
+std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations_base(
+    int64_t id_user, ChannelStatus membership) {
+  std::vector<ServerSend::ChannelInfo> channels_info;
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "SELECT c.id_channel, c.title, c.created_by FROM userChannel uc1 "
+            "JOIN channels c ON c.id_channel = uc1.id_channel "
+            "WHERE  uc1.membership = ? AND c.created_by = ? "
+            "AND (SELECT COUNT(*) FROM userChannel uc2 "
+            "WHERE uc2.id_channel = c.id_channel "
+            "AND uc2.membership = ?) = 1;"));
+
+    prep_statement->setInt(1, static_cast<int32_t>(membership));
+    prep_statement->setInt64(2, id_user);
+    prep_statement->setInt(3, static_cast<int32_t>(membership));
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    while (res->next()) {
+      ServerSend::ChannelInfo channel;
+      channel.id_channel = res->getInt64("id_channel");
+      channel.title = res->getString("title");
+      channel.created_by = res->getInt64("created_by");
+      channel.last_read_id_message = 0;  // nothing read yet!
+      channel.unread_count = 0;          // no notification yet either
+      channels_info.push_back(channel);
+    }
+    return channels_info;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channels error: " << e.what() << std::endl;
+    return channels_info;
+  }
+}
+
 // ===== SAVE MESSAGE =====
 
 // Save message in db for the right channel and returns id_message
@@ -484,7 +547,8 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
     prep_statement->setString(4, timestamp);
     prep_statement->executeUpdate();
 
-    // std::unique_ptr<sql::ResultSet> res(prep_statement->getGeneratedKeys());
+    // std::unique_ptr<sql::ResultSet>
+    // res(prep_statement->getGeneratedKeys());
     std::unique_ptr<sql::Statement> stmt(this->conn->createStatement());
     std::unique_ptr<sql::ResultSet> res(
         stmt->executeQuery("SELECT LAST_INSERT_ID()"));
@@ -649,7 +713,7 @@ int64_t Database::get_unread_count(const int64_t id_user,
             "uc1.id_channel;"));
 
     prep_statement->setInt64(1, id_user);
-    prep_statement->setInt64(2, id_user);
+    prep_statement->setInt64(2, id_channel);
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     if (res->next()) {

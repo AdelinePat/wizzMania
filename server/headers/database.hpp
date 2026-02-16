@@ -98,6 +98,10 @@ class Database {
   int64_t get_unread_count(const int64_t id_user, const int64_t id_channel);
   ServerSend::Message get_last_message(const int64_t id_user,
                                        const int64_t id_channel);
-};
 
+  std::vector<ServerSend::ChannelInfo> get_outgoing_invitations(
+      int64_t id_user);
+  std::vector<ServerSend::ChannelInfo> get_outgoing_invitations_base(
+      int64_t id_user, ChannelStatus membership);
+};
 #endif
