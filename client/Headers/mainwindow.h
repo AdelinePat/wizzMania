@@ -26,7 +26,7 @@ class MainWindow : public QMainWindow {
   void onLoginSuccessful(const QString& username, const QString& token);
   void onWsAuthenticated(int64_t idUser);
   void onInitialDataReceived(const ServerSend::InitialDataResponse& data);
-  void onNewMessageReceived(const ServerSend::NewMessageBroadcast& msg);
+  void onNewMessageReceived(const ServerSend::SendMessageResponse& msg);
   void onWsError(const QString& code, const QString& message);
   void onWsDisconnected(const QString& reason);
   void onChatSelected(int row);

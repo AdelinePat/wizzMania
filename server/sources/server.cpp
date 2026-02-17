@@ -130,30 +130,30 @@ int main() {
           }
 
           case WizzMania::MessageType::CREATE_CHANNEL: {
-            msg_handler.create_channel(conn, id_user, json_msg);
+            // msg_handler.create_channel(conn, id_user, json_msg);
             break;
           }
 
-          case WizzMania::MessageType::TYPING_START:
-          case WizzMania::MessageType::TYPING_STOP: {
-            auto req = JsonHelpers::ClientSend::parse_typing(json_msg);
-            if (!req.has_value()) {
-              ServerSend::ErrorResponse err;
-              err.type = WizzMania::MessageType::ERROR;
-              err.message = "Invalid TYPING format";
-              err.error_code = "INVALID_FORMAT";
-              conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
-              return;
-            }
+          // case WizzMania::MessageType::TYPING_START:
+          // case WizzMania::MessageType::TYPING_STOP: {
+          //   auto req = JsonHelpers::ClientSend::parse_typing(json_msg);
+          //   if (!req.has_value()) {
+          //     ServerSend::ErrorResponse err;
+          //     err.type = WizzMania::MessageType::ERROR;
+          //     err.message = "Invalid TYPING format";
+          //     err.error_code = "INVALID_FORMAT";
+          //     conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+          //     return;
+          //   }
 
-            std::cout << "[TYPING] User " << id_user << " in channel "
-                      << req->id_channel << ": "
-                      << (req->is_typing ? "start" : "stop") << "\n";
+          //   std::cout << "[TYPING] User " << id_user << " in channel "
+          //             << req->id_channel << ": "
+          //             << (req->is_typing ? "start" : "stop") << "\n";
 
-            // TODO: Broadcast typing
+          //   // TODO: Broadcast typing
 
-            break;
-          }
+          //   break;
+          // }
 
           case WizzMania::MessageType::LOGOUT: {
             auto req = JsonHelpers::Auth::parse_logout_request(json_msg);

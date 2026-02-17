@@ -84,7 +84,7 @@ bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
   return true;
 }
 
-bool from_json(const QJsonObject& obj, ServerSend::NewMessageBroadcast& out) {
+bool from_json(const QJsonObject& obj, ServerSend::SendMessageResponse& out) {
   if (!obj.contains("type") || !obj.contains("id_channel") ||
       !obj.contains("message")) {
     return false;

@@ -248,15 +248,17 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInvitation& inv) {
 }
 
 // TO JSON Invitation Accepted Response
-inline crow::json::wvalue to_json(const ::ServerSend::InvitationAcceptedResponse& invitation_response) {
+inline crow::json::wvalue to_json(
+    const ::ServerSend::InvitationAcceptedResponse& invitation_response) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(invitation_response.type);
   json["channel"] = to_json(invitation_response.channel);
   return json;
 }
 
-// TO JSON 
-inline crow::json::wvalue to_json(const ::ServerSend::UserJoinedNotification& joined_notification) {
+// TO JSON
+inline crow::json::wvalue to_json(
+    const ::ServerSend::UserJoinedNotification& joined_notification) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(joined_notification.type);
   json["id_channel"] = joined_notification.id_channel;
@@ -265,7 +267,7 @@ inline crow::json::wvalue to_json(const ::ServerSend::UserJoinedNotification& jo
 }
 
 inline crow::json::wvalue to_json(
-    const ::ServerSend::NewMessageBroadcast& broadcast) {
+    const ::ServerSend::SendMessageResponse& broadcast) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(broadcast.type);  // Cast enum to int
   json["id_channel"] = broadcast.id_channel;
@@ -321,7 +323,7 @@ inline crow::json::wvalue to_json(
   }
   json["channels"] = std::move(channels_list);
 
-  // Invitations 
+  // Invitations
   crow::json::wvalue::list invitations_list;
   for (const auto& inv : resp.invitations) {
     invitations_list.push_back(to_json(inv));
@@ -330,7 +332,8 @@ inline crow::json::wvalue to_json(
 
   // Outgoing invitation
   crow::json::wvalue::list outgoint_invitations;
-  for (const ::ServerSend::ChannelInfo& outgoing_invitation : resp.outgoing_invitations) {
+  for (const ::ServerSend::ChannelInfo& outgoing_invitation :
+       resp.outgoing_invitations) {
     outgoint_invitations.push_back(to_json(outgoing_invitation));
   }
   json["outgoing_invitations"] = std::move(outgoint_invitations);

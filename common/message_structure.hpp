@@ -104,22 +104,22 @@ struct ChannelOpenRequest {
 // ===== SERVER -> CLIENT Messages =====
 namespace ServerSend {
 struct Message {
-  int64_t id_message;
-  int64_t id_sender;
+  int64_t id_message = 0;
+  int64_t id_sender = 0;
   // std::string sender_username; // client caches id_user <-> username ?
   std::string body;
   std::string timestamp;
   bool is_system;
 };
 
-struct NewMessageBroadcast {
+struct SendMessageResponse {
   WizzMania::MessageType type;  // NEW_MESSAGE
   Message message;
   int64_t id_channel;
 };
 
 struct Contact {
-  int64_t id_user;
+  int64_t id_user = 0;
   std::string username;
   // ChannelStatus status;
   // bool is_online;

@@ -95,7 +95,7 @@ void MainWindow::onInitialDataReceived(
 }
 
 void MainWindow::onNewMessageReceived(
-    const ServerSend::NewMessageBroadcast& msg) {
+    const ServerSend::SendMessageResponse& msg) {
   if (msg.id_channel != currentChannelId) {
     return;
   }

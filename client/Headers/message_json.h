@@ -11,7 +11,7 @@ QJsonObject to_json(const ClientSend::SendMessageRequest& req);
 QJsonObject to_json(const ClientSend::ChannelOpenRequest& req);
 
 bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out);
-bool from_json(const QJsonObject& obj, ServerSend::NewMessageBroadcast& out);
+bool from_json(const QJsonObject& obj, ServerSend::SendMessageResponse& out);
 bool from_json(const QJsonObject& obj, ServerSend::InitialDataResponse& out);
 bool from_json(const QJsonObject& obj, ServerSend::ErrorResponse& out);
 }  // namespace MessageJson

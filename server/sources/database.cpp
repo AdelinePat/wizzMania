@@ -477,7 +477,7 @@ std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations(
     auto it_participant = channel_participants.find(channel.id_channel);
     if (it_participant != channel_participants.end()) {
       channel.participants = it_participant->second;
-      channel.is_group = false;
+      channel.is_group = channel.participants.size() > 2;
     } else {
       std::cerr << "[DB] Warning: no participants found for channel "
                 << channel.id_channel << "\n";

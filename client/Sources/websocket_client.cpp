@@ -91,7 +91,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
   }
 
   if (type == static_cast<int>(WizzMania::MessageType::NEW_MESSAGE)) {
-    ServerSend::NewMessageBroadcast msg;
+    ServerSend::SendMessageResponse msg;
     if (MessageJson::from_json(obj, msg)) {
       emit newMessageReceived(msg);
       return;

@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
 
   qRegisterMetaType<AuthMessages::WSAuthResponse>();
   qRegisterMetaType<ServerSend::InitialDataResponse>();
-  qRegisterMetaType<ServerSend::NewMessageBroadcast>();
+  qRegisterMetaType<ServerSend::SendMessageResponse>();
   qRegisterMetaType<ServerSend::ErrorResponse>();
 
   MainWindow window;

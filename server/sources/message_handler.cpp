@@ -36,7 +36,7 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
   int64_t id_message = id_message_opt.value();
   this->broadcast_new_message(id_channel, id_message, id_user, body, timestamp);
 
-  // ServerSend::NewMessageBroadcast broadcast;
+  // ServerSend::SendMessageResponse broadcast;
   // broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
   // broadcast.id_channel = id_channel;
   // broadcast.message = create_message(id_message, id_user, body, timestamp);
@@ -226,7 +226,7 @@ void MessageHandler::broadcast_new_message(const int64_t id_channel,
                                            const int64_t id_user,
                                            const std::string& body,
                                            const std::string& timestamp) {
-  ServerSend::NewMessageBroadcast broadcast;
+  ServerSend::SendMessageResponse broadcast;
   broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
   broadcast.id_channel = id_channel;
   broadcast.message = create_message(id_message, id_user, body, timestamp);
