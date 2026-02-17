@@ -30,19 +30,35 @@ set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
     Sources/loginwidget.cpp
-    Sources/serverconfig.cpp
-    Sources/websocket_client.cpp
-    Sources/message_json.cpp
+    Sources/services/apiclient.cpp
+    Sources/services/authmanager.cpp
+    Sources/services/serverconfig.cpp
+    Sources/ws/websocket_client.cpp
+    Sources/utils/message_json.cpp
+    Sources/models/messagemodel.cpp
+    Sources/models/channelmodel.cpp
+    Sources/widgets/messageitemwidget.cpp
+    Sources/widgets/channelrowwidget.cpp
+    Sources/widgets/channelpanelwidget.cpp
+    Sources/widgets/rightpanelwidget.cpp
 )
 
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
     Headers/mainwindow.hpp
     Headers/loginwidget.hpp
-    Headers/serverconfig.hpp
-    Headers/websocket_client.hpp
-    Headers/message_json.hpp
-    Headers/message_qt_types.hpp
+    Headers/services/apiclient.hpp
+    Headers/services/authmanager.hpp
+    Headers/services/serverconfig.hpp
+    Headers/ws/websocket_client.hpp
+    Headers/utils/message_json.hpp
+    Headers/utils/message_qt_types.hpp
+    Headers/models/messagemodel.hpp
+    Headers/models/channelmodel.hpp
+    Headers/widgets/messageitemwidget.hpp
+    Headers/widgets/channelrowwidget.hpp
+    Headers/widgets/channelpanelwidget.hpp
+    Headers/widgets/rightpanelwidget.hpp
 )
 
 # Collect UI files from Forms/ directory
@@ -77,6 +93,16 @@ endif()
 target_include_directories(wizzmania-client PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Headers
     ${CMAKE_CURRENT_SOURCE_DIR}/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/ws
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/widgets
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/ws
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/widgets
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms
     ${CMAKE_CURRENT_SOURCE_DIR}/../common
     ${CMAKE_CURRENT_BINARY_DIR}  # For generated UI headers (ui_*.h)

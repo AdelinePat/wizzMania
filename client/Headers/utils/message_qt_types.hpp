@@ -7,6 +7,7 @@
 
 Q_DECLARE_METATYPE(AuthMessages::WSAuthResponse)
 Q_DECLARE_METATYPE(ServerSend::InitialDataResponse)
+Q_DECLARE_METATYPE(ServerSend::ChannelHistoryResponse)
 Q_DECLARE_METATYPE(ServerSend::NewMessageBroadcast)
 Q_DECLARE_METATYPE(ServerSend::ErrorResponse)
 

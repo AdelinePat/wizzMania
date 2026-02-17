@@ -183,6 +183,12 @@ test a response
 ```bash
 curl http://localhost:8888/PATH
 ```
+si 405 Method not allowed:
+```bash
+curl -X POST http://localhost:8888/login \
+    -H "Content-Type: application/json" \
+    -d '{"username":"alice","password":"hash"}'
+```
 
 
 ## test queries 

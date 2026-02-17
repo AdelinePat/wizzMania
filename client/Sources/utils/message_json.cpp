@@ -1,5 +1,4 @@
-#include "message_json.hpp"
-
+#include "utils/message_json.hpp"
 
 namespace MessageJson {
 namespace {
@@ -66,6 +65,15 @@ QJsonObject to_json(const ClientSend::ChannelOpenRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  return obj;
+}
+
+QJsonObject to_json(const ClientSend::RequestChannelHistoryRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  obj["before_id_message"] = static_cast<qint64>(req.before_id_message);
+  obj["limit"] = req.limit;
   return obj;
 }
 
@@ -136,6 +144,36 @@ bool from_json(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
       ServerSend::ChannelInfo channel;
       if (parse_channel(val.toObject(), channel)) {
         out.channels.push_back(channel);
+      }
+    }
+  }
+
+  return true;
+}
+
+bool from_json(const QJsonObject& obj,
+               ServerSend::ChannelHistoryResponse& out) {
+  if (!obj.contains("type") || !obj.contains("id_channel")) {
+    return false;
+  }
+  const int type = obj.value("type").toInt();
+  if (type != type_to_int(WizzMania::MessageType::CHANNEL_HISTORY)) {
+    return false;
+  }
+  out.type = WizzMania::MessageType::CHANNEL_HISTORY;
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  out.has_more = obj.value("has_more").toBool(false);
+
+  out.messages.clear();
+  if (obj.contains("messages") && obj.value("messages").isArray()) {
+    const QJsonArray arr = obj.value("messages").toArray();
+    for (const QJsonValue& val : arr) {
+      if (!val.isObject()) {
+        continue;
+      }
+      ServerSend::Message msg;
+      if (parse_message(val.toObject(), msg)) {
+        out.messages.push_back(msg);
       }
     }
   }

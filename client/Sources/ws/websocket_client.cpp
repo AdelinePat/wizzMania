@@ -1,12 +1,34 @@
-#include "websocket_client.hpp"
+#include "ws/websocket_client.hpp"
 
-WebSocketClient::WebSocketClient(QObject* parent) : QObject(parent) {
+#include <QTimer>
+
+WebSocketClient::WebSocketClient(QObject* parent)
+    : QObject(parent), reconnectTimer(new QTimer(this)), retryCount(0) {
   connect(&socket, &QWebSocket::connected, this, &WebSocketClient::onConnected);
   connect(&socket, &QWebSocket::disconnected, this,
           &WebSocketClient::onDisconnected);
   connect(&socket, &QWebSocket::textMessageReceived, this,
           &WebSocketClient::onTextMessageReceived);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
   connect(&socket, &QWebSocket::errorOccurred, this, &WebSocketClient::onError);
+#else
+  connect(&socket,
+          static_cast<void (QWebSocket::*)(QAbstractSocket::SocketError)>(
+              &QWebSocket::error),
+          this, &WebSocketClient::onError);
+#endif
+
+  // Set up reconnect timer
+  reconnectTimer->setSingleShot(true);
+  connect(reconnectTimer, &QTimer::timeout, this,
+          &WebSocketClient::onReconnectTimer);
+}
+
+WebSocketClient::~WebSocketClient() {
+  if (reconnectTimer) {
+    reconnectTimer->stop();
+  }
+  socket.close();
 }
 
 void WebSocketClient::connectWithToken(const QString& token) {
@@ -41,21 +63,28 @@ void WebSocketClient::openChannel(int64_t channelId) {
     return;
   }
 
-  ClientSend::ChannelOpenRequest req;
-  req.type = WizzMania::MessageType::CHANNEL_OPEN;
+  ClientSend::RequestChannelHistoryRequest req;
+  req.type = WizzMania::MessageType::REQUEST_CHANNEL_HISTORY;
   req.id_channel = channelId;
+  req.before_id_message = 0;
+  req.limit = 50;
 
   const QJsonDocument doc(MessageJson::to_json(req));
   socket.sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
 }
 
 void WebSocketClient::onConnected() {
+  resetReconnectState();
   emit connected();
   sendAuth();
 }
 
 void WebSocketClient::onDisconnected() {
   emit disconnected("Disconnected from server.");
+  // Start reconnect timer if we have a token
+  if (!authToken.isEmpty()) {
+    startReconnectTimer();
+  }
 }
 
 void WebSocketClient::onTextMessageReceived(const QString& message) {
@@ -84,6 +113,14 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
+  if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_HISTORY)) {
+    ServerSend::ChannelHistoryResponse history;
+    if (MessageJson::from_json(obj, history)) {
+      emit channelHistoryReceived(history);
+      return;
+    }
+  }
+
   if (type == static_cast<int>(WizzMania::MessageType::NEW_MESSAGE)) {
     ServerSend::NewMessageBroadcast msg;
     if (MessageJson::from_json(obj, msg)) {
@@ -100,11 +137,42 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
       return;
     }
   }
+
+  // Unknown or unimplemented message type
+  emit errorReceived("NOT_IMPLEMENTED",
+                     QString("Message type %1 not implemented").arg(type));
 }
 
 void WebSocketClient::onError(QAbstractSocket::SocketError error) {
   Q_UNUSED(error);
   emit errorReceived("WS_ERROR", socket.errorString());
+}
+
+void WebSocketClient::onReconnectTimer() {
+  if (retryCount < maxRetries) {
+    ++retryCount;
+    socket.open(QUrl(ServerConfig::webSocketUrl()));
+  } else {
+    emit errorReceived("RECONNECT_FAILED",
+                       "Failed to reconnect after 5 attempts.");
+  }
+}
+
+void WebSocketClient::startReconnectTimer() {
+  if (retryCount >= maxRetries) {
+    return;  // Already exhausted retries
+  }
+
+  // Exponential backoff: 1s, 2s, 4s, 8s, 16s
+  int delayMs = initialDelayMs * (1 << retryCount);  // 2^retryCount
+  reconnectTimer->start(delayMs);
+}
+
+void WebSocketClient::resetReconnectState() {
+  retryCount = 0;
+  if (reconnectTimer->isActive()) {
+    reconnectTimer->stop();
+  }
 }
 
 void WebSocketClient::sendAuth() {

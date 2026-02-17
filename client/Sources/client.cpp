@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include "mainwindow.hpp"
-#include "message_qt_types.hpp"
+#include "utils/message_qt_types.hpp"
 
 int main(int argc, char** argv) {
   std::cout << "========================================\n";
@@ -13,6 +13,7 @@ int main(int argc, char** argv) {
 
   qRegisterMetaType<AuthMessages::WSAuthResponse>();
   qRegisterMetaType<ServerSend::InitialDataResponse>();
+  qRegisterMetaType<ServerSend::ChannelHistoryResponse>();
   qRegisterMetaType<ServerSend::NewMessageBroadcast>();
   qRegisterMetaType<ServerSend::ErrorResponse>();
 
