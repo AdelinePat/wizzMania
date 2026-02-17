@@ -190,7 +190,7 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
     return;
   }
 
-  std::cout << "[INVITATION] User " << id_user << " -> Channel "
+  std::cout << "[INVITATION] User " << id_user << " -> accepts to Channel "
             << req->id_channel << "\n";
 
   bool accepted = db.accept_invitation(id_user, req->id_channel);
@@ -224,26 +224,26 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
   this->broadcast_new_message(req->id_channel, id_message, 1, body, timestamp);
 }
 
-void MessageHandler::accept_invitation(crow::websocket::connection& conn,
+void MessageHandler::reject_invitation(crow::websocket::connection& conn,
                                        int64_t id_user,
                                        const crow::json::rvalue& json_msg) {
   std::optional<::ClientSend::RejectInvitationRequest> req =
-      JsonHelpers::ClientSend::parse_accept_invitation(json_msg);
+      JsonHelpers::ClientSend::parse_reject_invitation(json_msg);
 
-  // if (!req.has_value()) {
-  //   std::cerr << "[INVALID_FORMAT] : Invalid ACCEPT_INVITATION format\n";
-  //   return;
-  // }
+  if (!req.has_value()) {
+    std::cerr << "[INVALID_FORMAT] : Invalid REJECT_INVITATION format\n";
+    return;
+  }
 
-  // std::cout << "[INVITATION] User " << id_user << " -> Channel "
-  //           << req->id_channel << "\n";
+  std::cout << "[INVITATION] User " << id_user << " -> rejects to Channel "
+            << req->id_channel << "\n";
 
-  // bool accepted = db.accept_invitation(id_user, req->id_channel);
-  // if (!accepted) {
-  //   this->send_error(conn, "[INVITATION ERROR]",
-  //                    "Couldn't accept the invitation");
-  //   return;
-  // }
+  bool rejected = db.reject_invitation(id_user, req->id_channel);
+  if (!rejected) {
+    this->send_error(conn, "[INVITATION ERROR]",
+                     "Couldn't reject the invitation");
+    return;
+  }
   // ServerSend::AcceptInvitationResponse resp;
   // resp.type = WizzMania::MessageType::INVITATION_ACCEPTED;
   // resp.channel = db.get_channel(id_user, req->id_channel);
@@ -254,19 +254,17 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
   // broadcast_joined_notification(id_user, req->id_channel,
   //                               resp.channel.participants);
 
-  // std::string body = "User @" + std::to_string(id_user) + " joined the
-  // chat!";
+  std::string body = "User @" + std::to_string(id_user) + " rejected the chat!";
 
-  // std::string timestamp = get_timestamp();
-  // std::optional<int64_t> id_message_opt =
-  //     db.save_message(1, req->id_channel, body, timestamp);
-  // if (!id_message_opt.has_value()) {
-  //   std::cerr << "[INIT] Error: message could not be save in db\n";
-  //   return;
-  // }
-  // int64_t id_message = id_message_opt.value();
-  // this->broadcast_new_message(req->id_channel, id_message, 1, body,
-  // timestamp);
+  std::string timestamp = get_timestamp();
+  std::optional<int64_t> id_message_opt =
+      db.save_message(1, req->id_channel, body, timestamp);
+  if (!id_message_opt.has_value()) {
+    std::cerr << "[INIT] Error: message could not be save in db\n";
+    return;
+  }
+  int64_t id_message = id_message_opt.value();
+  this->broadcast_new_message(req->id_channel, id_message, 1, body, timestamp);
 }
 
 void MessageHandler::broadcast_new_message(const int64_t id_channel,

@@ -77,6 +77,8 @@ inline std::optional<::AuthMessages::LogoutRequest> parse_logout_request(
 }  // namespace Auth
 
 // ===== ClientSend Helpers =====
+
+// FROM JSON SEND MESSAGE REQUEST
 namespace ClientSend {
 inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
     const crow::json::rvalue& json) {
@@ -94,6 +96,7 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
   return req;
 }
 
+// FROM JSON CHANNEL HISTORY REQUEST
 inline std::optional<::ClientSend::ChannelHistoryRequest>
 parse_request_channel_history(const crow::json::rvalue& json) {
   if (!json.has("type") || !json.has("id_channel") || !json.has("limit")) {
@@ -138,25 +141,27 @@ inline std::optional<::ClientSend::CreateChannelRequest> parse_create_channel(
   return req;
 }
 
-inline std::optional<::ClientSend::TypingRequest> parse_typing(
-    const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("id_channel") || !json.has("is_typing")) {
-    return std::nullopt;
-  }
-  int type_int = json["type"].i();
-  auto msg_type = static_cast<WizzMania::MessageType>(type_int);
-  if (msg_type != WizzMania::MessageType::TYPING_START &&
-      msg_type != WizzMania::MessageType::TYPING_STOP) {
-    return std::nullopt;
-  }
+// inline std::optional<::ClientSend::TypingRequest> parse_typing(
+//     const crow::json::rvalue& json) {
+//   if (!json.has("type") || !json.has("id_channel") || !json.has("is_typing"))
+//   {
+//     return std::nullopt;
+//   }
+//   int type_int = json["type"].i();
+//   auto msg_type = static_cast<WizzMania::MessageType>(type_int);
+//   if (msg_type != WizzMania::MessageType::TYPING_START &&
+//       msg_type != WizzMania::MessageType::TYPING_STOP) {
+//     return std::nullopt;
+//   }
 
-  ::ClientSend::TypingRequest req;
-  req.type = static_cast<WizzMania::MessageType>(type_int);
-  req.id_channel = json["id_channel"].i();
-  req.is_typing = json["is_typing"].b();
-  return req;
-}
+//   ::ClientSend::TypingRequest req;
+//   req.type = static_cast<WizzMania::MessageType>(type_int);
+//   req.id_channel = json["id_channel"].i();
+//   req.is_typing = json["is_typing"].b();
+//   return req;
+// }
 
+// FROM JSON ACCEPT INVITATION REQUEST
 inline std::optional<::ClientSend::AcceptInvitationRequest>
 parse_accept_invitation(const crow::json::rvalue& json) {
   if (!json.has("type") || !json.has("id_channel")) {
@@ -168,6 +173,22 @@ parse_accept_invitation(const crow::json::rvalue& json) {
   }
 
   ::ClientSend::AcceptInvitationRequest req;
+  req.id_channel = json["id_channel"].i();
+  return req;
+}
+
+// FROM JSON REJECT INVITATION REQUEST
+inline std::optional<::ClientSend::RejectInvitationRequest>
+parse_reject_invitation(const crow::json::rvalue& json) {
+  if (!json.has("type") || !json.has("id_channel")) {
+    return std::nullopt;
+  }
+  int type_int = json["type"].i();
+  if (type_int != static_cast<int>(WizzMania::MessageType::REJECT_INVITATION)) {
+    return std::nullopt;
+  }
+
+  ::ClientSend::RejectInvitationRequest req;
   req.id_channel = json["id_channel"].i();
   return req;
 }
@@ -275,16 +296,16 @@ inline crow::json::wvalue to_json(
   return json;
 }
 
-inline crow::json::wvalue to_json(
-    const ::ServerSend::UserTypingNotification& notif) {
-  crow::json::wvalue json;
-  json["type"] = static_cast<int>(notif.type);  // Cast enum to int
-  json["id_channel"] = notif.id_channel;
-  json["id_user"] = notif.id_user;
-  json["username"] = notif.username;
-  json["is_typing"] = notif.is_typing;
-  return json;
-}
+// inline crow::json::wvalue to_json(
+//     const ::ServerSend::UserTypingNotification& notif) {
+//   crow::json::wvalue json;
+//   json["type"] = static_cast<int>(notif.type);  // Cast enum to int
+//   json["id_channel"] = notif.id_channel;
+//   json["id_user"] = notif.id_user;
+//   json["username"] = notif.username;
+//   json["is_typing"] = notif.is_typing;
+//   return json;
+// }
 
 inline crow::json::wvalue to_json(const ::ServerSend::ErrorResponse& err) {
   crow::json::wvalue json;
@@ -295,7 +316,7 @@ inline crow::json::wvalue to_json(const ::ServerSend::ErrorResponse& err) {
 }
 
 inline crow::json::wvalue to_json(
-    const ::ServerSend::ChannelCreatedResponse& resp) {
+    const ::ServerSend::CreateChannelResponse& resp) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(resp.type);  // Cast enum to int
   json["id_channel"] = resp.id_channel;
