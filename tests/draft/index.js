@@ -133,14 +133,14 @@ function connectWebSocket() {
     try {
       const data = JSON.parse(event.data);
       switch (data.type) {
-        case MessageType.WS_AUTH_SUCCESS:    onAuthSuccess(); break;
-        case MessageType.INITIAL_DATA:       handleInitialData(data); break;
-        case MessageType.NEW_MESSAGE:        handleNewMessage(data); break;
-        case MessageType.CHANNEL_HISTORY:    handleChannelHistory(data); break;
-        case MessageType.USER_TYPING:        handleTypingNotification(data); break;
+        case MessageType.WS_AUTH_SUCCESS: onAuthSuccess(); break;
+        case MessageType.INITIAL_DATA: handleInitialData(data); break;
+        case MessageType.NEW_MESSAGE: handleNewMessage(data); break;
+        case MessageType.CHANNEL_HISTORY: handleChannelHistory(data); break;
+        case MessageType.USER_TYPING: handleTypingNotification(data); break;
         case MessageType.INVITATION_ACCEPTED: handleInvitationAccepted(data); break;
-        case MessageType.USER_JOINED:        handleUserJoined(data); break;
-        case MessageType.ERROR:              addSystemMessage(`Server Error: ${data.message} (${data.error_code})`); break;
+        case MessageType.USER_JOINED: handleUserJoined(data); break;
+        case MessageType.ERROR: addSystemMessage(`Server Error: ${data.message} (${data.error_code})`); break;
         default: console.log("Unhandled message type:", data.type, data);
       }
     } catch (e) { console.error("Error parsing message:", e); }
@@ -525,7 +525,7 @@ function addSentMessage(text, senderName, timestamp) {
   const row = document.createElement("div");
   row.className = "msg-row sent";
   row.innerHTML = `
-    <div class="msg-avatar">${senderName.slice(0,2).toUpperCase()}</div>
+    <div class="msg-avatar">${senderName.slice(0, 2).toUpperCase()}</div>
     <div class="msg-bubble-wrap">
       <div class="msg-sender">${escapeHtml(senderName)}</div>
       <div class="msg-bubble">${escapeHtml(text)}</div>
@@ -541,7 +541,7 @@ function addReceivedMessage(text, senderName, timestamp) {
   const row = document.createElement("div");
   row.className = "msg-row received";
   row.innerHTML = `
-    <div class="msg-avatar">${senderName.slice(0,2).toUpperCase()}</div>
+    <div class="msg-avatar">${senderName.slice(0, 2).toUpperCase()}</div>
     <div class="msg-bubble-wrap">
       <div class="msg-sender">${escapeHtml(senderName)}</div>
       <div class="msg-bubble">${escapeHtml(text)}</div>
@@ -564,7 +564,7 @@ function addSystemMessage(text) {
 
 // ==================== UTILS ====================
 function scrollToBottom() { const c = document.getElementById("messages-container"); c.scrollTop = c.scrollHeight; }
-function formatTime(ts) { if (!ts) return new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); return new Date(ts).toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"}); }
+function formatTime(ts) { if (!ts) return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
 function escapeHtml(text) { const d = document.createElement("div"); d.textContent = text ?? ""; return d.innerHTML; }
 
 // ==================== EVENT LISTENERS ====================

@@ -88,7 +88,7 @@ struct TypingRequest {
   bool is_typing;
 };
 
-struct RequestChannelHistoryRequest {
+struct ChannelHistoryRequest {
   WizzMania::MessageType type;  // REQUEST_CHANNEL_HISTORY
   int64_t id_channel;
   int64_t before_id_message;
@@ -137,7 +137,7 @@ struct ChannelInfo {
   int64_t last_read_id_message = 0;
 };
 
-struct ChannelCreatedResponse {
+struct CreateChannelResponse {
   WizzMania::MessageType type;  // CHANNEL_CREATED
   int64_t id_channel;
   bool already_existed;
@@ -160,12 +160,12 @@ struct ChannelInvitation {
 //   std::string username;
 // };
 
-struct InvitationAcceptedResponse {
+struct AcceptInvitationResponse {
   WizzMania::MessageType type;  // INVITATION_ACCEPTED
   ChannelInfo channel;
 };
 
-struct InvitationRejectedNotification {
+struct RejectInvitation {
   WizzMania::MessageType type;  // INVITATION_REJECTED
   int64_t id_channel;
   Contact contact;

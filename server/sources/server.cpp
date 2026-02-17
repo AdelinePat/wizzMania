@@ -125,7 +125,7 @@ int main() {
           }
 
           case WizzMania::MessageType::REJECT_INVITATION: {
-            // msg_handler.reject_invitation(conn, id_user, json_msg);
+            msg_handler.reject_invitation(conn, id_user, json_msg);
             break;
           }
 

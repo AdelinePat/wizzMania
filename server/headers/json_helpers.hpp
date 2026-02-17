@@ -94,7 +94,7 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
   return req;
 }
 
-inline std::optional<::ClientSend::RequestChannelHistoryRequest>
+inline std::optional<::ClientSend::ChannelHistoryRequest>
 parse_request_channel_history(const crow::json::rvalue& json) {
   if (!json.has("type") || !json.has("id_channel") || !json.has("limit")) {
     return std::nullopt;
@@ -106,7 +106,7 @@ parse_request_channel_history(const crow::json::rvalue& json) {
     return std::nullopt;
   }
 
-  ::ClientSend::RequestChannelHistoryRequest req;
+  ::ClientSend::ChannelHistoryRequest req;
   req.id_channel = json["id_channel"].i();
   req.before_id_message =
       json.has("before_id_message") ? json["before_id_message"].i() : 0;
@@ -249,7 +249,7 @@ inline crow::json::wvalue to_json(const ::ServerSend::ChannelInvitation& inv) {
 
 // TO JSON Invitation Accepted Response
 inline crow::json::wvalue to_json(
-    const ::ServerSend::InvitationAcceptedResponse& invitation_response) {
+    const ::ServerSend::AcceptInvitationResponse& invitation_response) {
   crow::json::wvalue json;
   json["type"] = static_cast<int>(invitation_response.type);
   json["channel"] = to_json(invitation_response.channel);
