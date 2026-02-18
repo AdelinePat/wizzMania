@@ -1,4 +1,4 @@
-#include "services/authmanager.hpp"
+#include "services/auth_manager.hpp"
 
 AuthManager::AuthManager(QObject* parent) : QObject(parent) {}
 

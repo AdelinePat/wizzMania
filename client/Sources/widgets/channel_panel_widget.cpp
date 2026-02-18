@@ -1,4 +1,4 @@
-#include "widgets/channelpanelwidget.hpp"
+#include "widgets/channel_panel_widget.hpp"
 
 ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* rootLayout = new QVBoxLayout(this);

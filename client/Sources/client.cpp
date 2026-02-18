@@ -1,7 +1,7 @@
 #include <QApplication>
 #include <iostream>
 
-#include "mainwindow.hpp"
+#include "main_window.hpp"
 #include "utils/message_qt_types.hpp"
 
 int main(int argc, char** argv) {

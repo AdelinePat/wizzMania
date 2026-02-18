@@ -1,4 +1,4 @@
-#include "services/serverconfig.hpp"
+#include "services/server_config.hpp"
 
 QString ServerConfig::baseUrl() {
   const QString configPath =

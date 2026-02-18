@@ -8,7 +8,7 @@
 #include <QWidget>
 
 #include "message_structure.hpp"
-#include "widgets/channelrowwidget.hpp"
+#include "widgets/channel_row_widget.hpp"
 
 class ChannelPanelWidget : public QWidget {
   Q_OBJECT

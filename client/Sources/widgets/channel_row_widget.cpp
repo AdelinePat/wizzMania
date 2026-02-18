@@ -1,4 +1,4 @@
-#include "widgets/channelrowwidget.hpp"
+#include "widgets/channel_row_widget.hpp"
 
 ChannelRowWidget::ChannelRowWidget(const QString& title, const QString& preview,
                                    int unreadCount, bool isGroup,

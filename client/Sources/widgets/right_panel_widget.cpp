@@ -1,4 +1,4 @@
-#include "widgets/rightpanelwidget.hpp"
+#include "widgets/right_panel_widget.hpp"
 
 RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* rootLayout = new QVBoxLayout(this);

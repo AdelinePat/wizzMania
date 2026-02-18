@@ -8,7 +8,7 @@
 #include <QString>
 
 #include "message_structure.hpp"
-#include "services/apiclient.hpp"
+#include "services/api_client.hpp"
 
 class AuthManager : public QObject {
   Q_OBJECT

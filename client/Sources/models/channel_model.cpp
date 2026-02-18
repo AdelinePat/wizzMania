@@ -1,4 +1,4 @@
-#include "models/channelmodel.hpp"
+#include "models/channel_model.hpp"
 
 #include <QString>
 

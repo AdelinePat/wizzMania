@@ -29,42 +29,42 @@ find_package(Qt6 REQUIRED COMPONENTS
 set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
-    Sources/loginwidget.cpp
-    Sources/services/apiclient.cpp
-    Sources/services/authmanager.cpp
-    Sources/services/serverconfig.cpp
+    Sources/login_widget.cpp
+    Sources/services/api_client.cpp
+    Sources/services/auth_manager.cpp
+    Sources/services/server_config.cpp
     Sources/ws/websocket_client.cpp
     Sources/utils/message_json.cpp
-    Sources/models/messagemodel.cpp
-    Sources/models/channelmodel.cpp
-    Sources/widgets/messageitemwidget.cpp
-    Sources/widgets/channelrowwidget.cpp
-    Sources/widgets/channelpanelwidget.cpp
-    Sources/widgets/rightpanelwidget.cpp
+    Sources/models/message_model.cpp
+    Sources/models/channel_model.cpp
+    Sources/widgets/message_item_widget.cpp
+    Sources/widgets/channel_row_widget.cpp
+    Sources/widgets/channel_panel_widget.cpp
+    Sources/widgets/right_panel_widget.cpp
 )
 
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
     Headers/mainwindow.hpp
-    Headers/loginwidget.hpp
-    Headers/services/apiclient.hpp
-    Headers/services/authmanager.hpp
-    Headers/services/serverconfig.hpp
+    Headers/login_widget.hpp
+    Headers/services/api_client.hpp
+    Headers/services/auth_manager.hpp
+    Headers/services/server_config.hpp
     Headers/ws/websocket_client.hpp
     Headers/utils/message_json.hpp
     Headers/utils/message_qt_types.hpp
-    Headers/models/messagemodel.hpp
-    Headers/models/channelmodel.hpp
-    Headers/widgets/messageitemwidget.hpp
-    Headers/widgets/channelrowwidget.hpp
-    Headers/widgets/channelpanelwidget.hpp
-    Headers/widgets/rightpanelwidget.hpp
+    Headers/models/message_model.hpp
+    Headers/models/channel_model.hpp
+    Headers/widgets/message_item_widget.hpp
+    Headers/widgets/channel_row_widget.hpp
+    Headers/widgets/channel_panel_widget.hpp
+    Headers/widgets/right_panel_widget.hpp
 )
 
 # Collect UI files from Forms/ directory
 set(CLIENT_UI_FILES
     Forms/mainwindow.ui
-    Forms/loginwidget.ui
+    Forms/login_widget.ui
 )
 
 # Collect resource files (.qrc for images, icons, etc.)

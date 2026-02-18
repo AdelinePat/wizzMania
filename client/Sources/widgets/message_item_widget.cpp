@@ -1,4 +1,4 @@
-#include "widgets/messageitemwidget.hpp"
+#include "widgets/message_item_widget.hpp"
 
 MessageItemWidget::MessageItemWidget(const ServerSend::Message& message,
                                      int64_t currentUserId,

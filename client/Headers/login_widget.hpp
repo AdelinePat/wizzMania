@@ -4,7 +4,7 @@
 #include <QString>
 #include <QWidget>
 
-#include "services/authmanager.hpp"
+#include "services/auth_manager.hpp"
 
 namespace Ui {
 class LoginWidget;

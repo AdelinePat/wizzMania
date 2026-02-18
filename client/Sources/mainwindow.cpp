@@ -72,6 +72,9 @@ void MainWindow::onLoginSuccessful(const QString& username,
   currentUser = username;
   authToken = token;
 
+  qInfo().noquote() << "[UI][LOGIN] username=" << username
+                    << " token_len=" << token.size();
+
   rightPanel->setChatTitle("Connecting to server...");
   setChatEnabled(false);
 
@@ -85,6 +88,7 @@ void MainWindow::onLoginSuccessful(const QString& username,
 
 void MainWindow::onWsAuthenticated(int64_t idUser) {
   currentUserId = idUser;
+  qInfo() << "[WS][AUTH_OK] id_user=" << idUser;
   userNamesById.insert(currentUserId, currentUser);
   setChatEnabled(true);
   rightPanel->setChatTitle("Select a chat to start messaging");
@@ -92,6 +96,9 @@ void MainWindow::onWsAuthenticated(int64_t idUser) {
 
 void MainWindow::onInitialDataReceived(
     const ServerSend::InitialDataResponse& data) {
+  qInfo() << "[WS][INIT_DATA] contacts=" << data.contacts.size()
+          << " channels=" << data.channels.size()
+          << " invitations=" << data.invitations.size();
   cacheKnownUsers(data);
   populateChannels(data.channels);
 
@@ -103,6 +110,9 @@ void MainWindow::onInitialDataReceived(
 
 void MainWindow::onChannelHistoryReceived(
     const ServerSend::ChannelHistoryResponse& history) {
+  qInfo() << "[WS][HISTORY] channel_id=" << history.id_channel
+          << " count=" << history.messages.size()
+          << " has_more=" << history.has_more;
   if (history.id_channel != currentChannelId) {
     return;
   }
@@ -122,6 +132,11 @@ void MainWindow::onChannelHistoryReceived(
 
 void MainWindow::onNewMessageReceived(
     const ServerSend::NewMessageBroadcast& msg) {
+  qInfo().noquote() << "[WS][NEW_MESSAGE] channel_id=" << msg.id_channel
+                    << " sender=" << msg.message.id_sender
+                    << " id_message=" << msg.message.id_message
+                    << " body_len="
+                    << static_cast<int>(msg.message.body.size());
   if (msg.id_channel != currentChannelId) {
     return;
   }
@@ -156,6 +171,8 @@ void MainWindow::populateChannels(
 
 void MainWindow::onChannelSelected(int64_t channelId, const QString& title) {
   currentChannelId = channelId;
+  qInfo().noquote() << "[UI][CHANNEL_SELECT] id=" << channelId
+                    << " title=" << title;
   rightPanel->setChatTitle(title);
 
   rightPanel->clearMessages();
@@ -178,6 +195,9 @@ void MainWindow::onSendMessageRequested(const QString& message) {
     return;
   }
 
+  qInfo().noquote() << "[UI][SEND] channel_id=" << currentChannelId
+                    << " body_len=" << message.size()
+                    << " body=" << message;
   wsClient->sendMessage(currentChannelId, message);
   rightPanel->focusInput();
 

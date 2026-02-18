@@ -1,4 +1,4 @@
-#include "models/messagemodel.hpp"
+#include "models/message_model.hpp"
 
 #include <QString>
 

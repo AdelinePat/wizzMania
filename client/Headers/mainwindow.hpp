@@ -10,12 +10,13 @@
 #include <QWidget>
 #include <algorithm>
 #include <cstdint>
+#include <QDebug>
 
-#include "loginwidget.hpp"
+#include "login_widget.hpp"
 #include "message_structure.hpp"
-#include "widgets/channelpanelwidget.hpp"
-#include "widgets/messageitemwidget.hpp"
-#include "widgets/rightpanelwidget.hpp"
+#include "widgets/channel_panel_widget.hpp"
+#include "widgets/message_item_widget.hpp"
+#include "widgets/right_panel_widget.hpp"
 #include "ws/websocket_client.hpp"
 
 class LoginWidget;

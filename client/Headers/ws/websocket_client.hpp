@@ -7,9 +7,10 @@
 #include <QTimer>
 #include <QUrl>
 #include <QWebSocket>
+#include <QDebug>
 
 #include "message_structure.hpp"
-#include "services/serverconfig.hpp"
+#include "services/server_config.hpp"
 #include "utils/message_json.hpp"
 
 class WebSocketClient : public QObject {

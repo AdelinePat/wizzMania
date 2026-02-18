@@ -10,7 +10,7 @@
 #include <QString>
 #include <QUrl>
 
-#include "services/serverconfig.hpp"
+#include "services/server_config.hpp"
 
 class ApiClient : public QObject {
   Q_OBJECT
