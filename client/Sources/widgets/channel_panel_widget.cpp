@@ -13,7 +13,7 @@ ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
   channelsList = new QListWidget(this);
   channelsList->setStyleSheet(
       "QListWidget {"
-      "  background-color: rgb(0, 27, 41);"
+      // "  background-color: rgb(0, 27, 41);"
       "  color: rgb(200, 200, 200);"
       "  border: none;"
       "  border-radius: 4px;"
@@ -58,7 +58,7 @@ void ChannelPanelWidget::setChannels(
     const QString title = QString::fromStdString(channel.title);
     const QString preview = QString::fromStdString(channel.last_message.body);
 
-    QListWidgetItem* item = new QListWidgetItem(channelsList);
+    QListWidgetItem* item = new QListWidgetItem();
     item->setData(Qt::UserRole, static_cast<qint64>(channel.id_channel));
     item->setData(Qt::UserRole + 1, title);
 

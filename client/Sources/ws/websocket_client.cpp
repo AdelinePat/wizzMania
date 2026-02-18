@@ -33,8 +33,7 @@ WebSocketClient::~WebSocketClient() {
 
 void WebSocketClient::connectWithToken(const QString& token) {
   authToken = token;
-  qInfo().noquote() << "[WS][CONNECT] url="
-                    << ServerConfig::webSocketUrl()
+  qInfo().noquote() << "[WS][CONNECT] url=" << ServerConfig::webSocketUrl()
                     << " token_len=" << authToken.size();
   socket.open(QUrl(ServerConfig::webSocketUrl()));
 }
@@ -57,8 +56,7 @@ void WebSocketClient::sendMessage(int64_t channelId, const QString& body) {
   req.body = body.toStdString();
 
   const QJsonDocument doc(MessageJson::to_json(req));
-  const QString payload =
-      QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+  const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
   qInfo().noquote() << "[WS][SEND] type=SEND_MESSAGE channel_id=" << channelId
                     << " body_len=" << body.size() << " payload=" << payload;
   socket.sendTextMessage(payload);
@@ -77,8 +75,7 @@ void WebSocketClient::openChannel(int64_t channelId) {
   req.limit = 50;
 
   const QJsonDocument doc(MessageJson::to_json(req));
-  const QString payload =
-      QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+  const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
   qInfo().noquote() << "[WS][SEND] type=REQUEST_CHANNEL_HISTORY channel_id="
                     << channelId << " payload=" << payload;
   socket.sendTextMessage(payload);
@@ -136,10 +133,15 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
   }
 
   if (type == static_cast<int>(WizzMania::MessageType::NEW_MESSAGE)) {
+    qInfo().noquote() << "[WS][NEW_MESSAGE] type=NEW_MESSAGE channel_id="
+                      << obj.value("id_channel").toInt();
     ServerSend::NewMessageBroadcast msg;
     if (MessageJson::from_json(obj, msg)) {
+      qInfo() << "[WS][NEW_MESSAGE] parsed ok, emitting signal";
       emit newMessageReceived(msg);
       return;
+    } else {
+      qInfo() << "[WS][NEW_MESSAGE] PARSE_FAILED";
     }
   }
 
@@ -202,9 +204,8 @@ void WebSocketClient::sendAuth() {
   req.token = authToken.toStdString();
 
   const QJsonDocument doc(MessageJson::to_json(req));
-  const QString payload =
-      QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
-  qInfo().noquote() << "[WS][SEND] type=WS_AUTH token_len="
-                    << authToken.size() << " payload=" << payload;
+  const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+  qInfo().noquote() << "[WS][SEND] type=WS_AUTH token_len=" << authToken.size()
+                    << " payload=" << payload;
   socket.sendTextMessage(payload);
 }

@@ -5,6 +5,11 @@ project(WizzManiaClient VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Default to Release build type if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 # Qt configuration
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -74,15 +79,15 @@ set(CLIENT_RESOURCES
 
 # Create executable
 if(WIN32)
-    add_executable(wizzmania-client WIN32 
-        ${CLIENT_SOURCES} 
+    add_executable(wizzmania-client WIN32
+        ${CLIENT_SOURCES}
         ${CLIENT_HEADERS}
         ${CLIENT_UI_FILES}
         ${CLIENT_RESOURCES}
     )
 else()
-    add_executable(wizzmania-client 
-        ${CLIENT_SOURCES} 
+    add_executable(wizzmania-client
+        ${CLIENT_SOURCES}
         ${CLIENT_HEADERS}
         ${CLIENT_UI_FILES}
         ${CLIENT_RESOURCES}
@@ -120,7 +125,7 @@ target_link_libraries(wizzmania-client PRIVATE
 # Windows-specific settings
 if(WIN32)
     set_target_properties(wizzmania-client PROPERTIES
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>
     )
     
     # MinGW specific: ensure proper entry point linkage

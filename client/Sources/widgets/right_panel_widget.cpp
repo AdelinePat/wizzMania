@@ -96,6 +96,13 @@ void RightPanelWidget::addPlainMessage(const QString& text) {
 }
 
 void RightPanelWidget::addMessageWidget(QWidget* widget) {
+  if (!widget) {
+    return;
+  }
+
+  widget->setParent(messagesList);
+  widget->adjustSize();
+
   QListWidgetItem* item = new QListWidgetItem();
   item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
   item->setSizeHint(widget->sizeHint());
