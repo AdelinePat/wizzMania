@@ -146,7 +146,7 @@ bool Database::has_channel_access(int64_t id_user, int64_t id_channel) {
 ServerSend::InitialDataResponse Database::get_initial_data(
     const int64_t id_user) {
   ServerSend::InitialDataResponse init_data;
-  init_data.contacts = this->get_contact(id_user);
+  init_data.contacts = this->get_contacts(id_user);
   init_data.channels = this->get_initial_channels(id_user);
   init_data.invitations = this->get_initial_invitations(id_user);
   init_data.outgoing_invitations = this->get_outgoing_invitations(id_user);
@@ -156,7 +156,7 @@ ServerSend::InitialDataResponse Database::get_initial_data(
 // ===== GET INITIAL CONTACT =====
 
 // Get contact list for a user
-std::vector<ServerSend::Contact> Database::get_contact(
+std::vector<ServerSend::Contact> Database::get_contacts(
     const int64_t id_user, ChannelStatus membership) {
   std::lock_guard<std::mutex> lock(db_mutex);
 
@@ -501,11 +501,15 @@ std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations_base(
             "WHERE  uc1.membership = ? AND c.created_by = ? "
             "AND (SELECT COUNT(*) FROM userChannel uc2 "
             "WHERE uc2.id_channel = c.id_channel "
-            "AND uc2.membership = ?) = 1;"));
+            "AND uc2.membership = ?) = 1 "
+            "AND (SELECT COUNT(*) FROM userChannel uc3 "
+            "WHERE uc3.id_channel = c.id_channel "
+            "AND uc3.membership = ?) >= 1;"));
 
     prep_statement->setInt(1, static_cast<int32_t>(membership));
     prep_statement->setInt64(2, id_user);
     prep_statement->setInt(3, static_cast<int32_t>(membership));
+    prep_statement->setInt(4, static_cast<int32_t>(ChannelStatus::PENDING));
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     while (res->next()) {
@@ -796,3 +800,53 @@ bool Database::accept_invitation(int64_t id_user, int64_t id_channel) {
 bool Database::reject_invitation(int64_t id_user, int64_t id_channel) {
   return this->update_invitation(id_user, id_channel, ChannelStatus::REJECTED);
 };
+
+std::optional<int64_t> Database::get_channel_creator(int64_t id_channel) {
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("SELECT created_by FROM channels "
+                                     "WHERE id_channel = ?;"));
+
+    prep_statement->setInt64(1, id_channel);
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    if (res->next()) {
+      return res->getInt64("created_by");
+    }
+    return std::nullopt;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channel_creator error: " << e.what() << std::endl;
+    return std::nullopt;
+  }
+}
+
+// ===== CONTACT =====
+
+// Get contact list for a user
+std::optional<ServerSend::Contact> Database::get_contact(
+    const int64_t id_user) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("SELECT id_user, username FROM users "
+                                     "WHERE id_user = ?;"));
+
+    prep_statement->setInt64(1, id_user);
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    if (res->next()) {
+      ServerSend::Contact contact;
+      contact.id_user = res->getInt64("id_user");
+      contact.username = res->getString("username");
+      return contact;
+    }
+    return std::nullopt;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_contact error: " << e.what() << std::endl;
+    return std::nullopt;
+  }
+}

@@ -277,6 +277,16 @@ inline crow::json::wvalue to_json(
   return json;
 }
 
+// TO JSON Invitation Rejected Response
+inline crow::json::wvalue to_json(
+    const ::ServerSend::RejectInvitationResponse& invitation_response) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(invitation_response.type);
+  json["id_channel"] = invitation_response.id_channel;
+  json["contact"] = to_json(invitation_response.contact);
+  return json;
+}
+
 // TO JSON
 inline crow::json::wvalue to_json(
     const ::ServerSend::UserJoinedNotification& joined_notification) {

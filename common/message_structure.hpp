@@ -165,12 +165,10 @@ struct AcceptInvitationResponse {
   ChannelInfo channel;
 };
 
-struct RejectInvitation {
+struct RejectInvitationResponse {
   WizzMania::MessageType type;  // INVITATION_REJECTED
   int64_t id_channel;
   Contact contact;
-  // int64_t id_user;
-  // std::string username;
 };
 
 struct UserJoinedNotification {

@@ -48,7 +48,7 @@ class Database {
   ~Database();
 
   int64_t verify_user(const std::string& username, const std::string& password);
-  std::vector<ServerSend::Contact> get_contact(
+  std::vector<ServerSend::Contact> get_contacts(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
   std::map<int64_t, ServerSend::Message> get_last_messages(
@@ -103,5 +103,7 @@ class Database {
       int64_t id_user);
   std::vector<ServerSend::ChannelInfo> get_outgoing_invitations_base(
       int64_t id_user, ChannelStatus membership);
+  std::optional<int64_t> get_channel_creator(int64_t id_channel);
+  std::optional<ServerSend::Contact> get_contact(const int64_t id_user);
 };
 #endif

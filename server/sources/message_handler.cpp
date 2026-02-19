@@ -205,7 +205,8 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
   resp.type = WizzMania::MessageType::INVITATION_ACCEPTED;
   resp.channel = db.get_channel(id_user, req->id_channel);
   std::string channel_info_str = JsonHelpers::ServerSend::to_json(resp).dump();
-  conn.send_text(channel_info_str);
+  // conn.send_text(channel_info_str);
+  ws_manager.send_to_user(id_user, channel_info_str);
 
   // send new participant list to all current participant of channel
   broadcast_joined_notification(id_user, req->id_channel,
@@ -235,8 +236,15 @@ void MessageHandler::reject_invitation(crow::websocket::connection& conn,
     return;
   }
 
-  std::cout << "[INVITATION] User " << id_user << " -> rejects to Channel "
-            << req->id_channel << "\n";
+  std::optional<int64_t> id_creator_opt =
+      db.get_channel_creator(req->id_channel);
+
+  if (!id_creator_opt.has_value() || id_creator_opt.value() == id_user) {
+    std::cerr << "[INIT] Error: message could not be save in db\n";
+    // SEND ERROR TO CLIENT (conn) AND TELL THEM AN ERROR OCCURED OR SOMETHING
+    return;
+  }
+  int64_t id_creator = id_creator_opt.value();
 
   bool rejected = db.reject_invitation(id_user, req->id_channel);
   if (!rejected) {
@@ -244,6 +252,22 @@ void MessageHandler::reject_invitation(crow::websocket::connection& conn,
                      "Couldn't reject the invitation");
     return;
   }
+  std::cout << "[INVITATION] User " << id_user << " -> declined the invitation "
+            << req->id_channel << "\n";
+
+  ServerSend::RejectInvitationResponse resp;
+  resp.type = WizzMania::MessageType::INVITATION_REJECTED;
+  resp.id_channel = req->id_channel;
+  std::optional<ServerSend::Contact> rejecter_opt = db.get_contact(id_user);
+  resp.contact = rejecter_opt.value();
+
+  std::string resp_json = JsonHelpers::ServerSend::to_json(resp).dump();
+
+  ws_manager.send_to_user(id_user, resp_json);
+  ws_manager.send_to_user(id_creator, resp_json);
+
+  // ws_manager.send_to_user(id_creator, )
+
   // ServerSend::AcceptInvitationResponse resp;
   // resp.type = WizzMania::MessageType::INVITATION_ACCEPTED;
   // resp.channel = db.get_channel(id_user, req->id_channel);

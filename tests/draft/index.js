@@ -139,6 +139,7 @@ function connectWebSocket() {
         case MessageType.CHANNEL_HISTORY: handleChannelHistory(data); break;
         case MessageType.USER_TYPING: handleTypingNotification(data); break;
         case MessageType.INVITATION_ACCEPTED: handleInvitationAccepted(data); break;
+        case MessageType.INVITATION_REJECTED: handleInvitationRejected(data); break;
         case MessageType.USER_JOINED: handleUserJoined(data); break;
         case MessageType.ERROR: addSystemMessage(`Server Error: ${data.message} (${data.error_code})`); break;
         default: console.log("Unhandled message type:", data.type, data);
@@ -482,6 +483,8 @@ function handleInvitationAccepted(data) {
   selectChannel(ch.id_channel); // go straight to the channel
 }
 
+
+
 function handleUserJoined(data) {
   const contact = data.contact;
   userCache.set(contact.id_user, contact.username);
@@ -508,6 +511,26 @@ function handleUserJoined(data) {
       ch.is_group = ch.participants.length > 2;
     }
   }
+}
+
+function handleInvitationRejected(data) {
+  const { id_channel, contact } = data;
+  const iAmRejecter = contact.id_user === userId;
+
+  if (iAmRejecter) {
+    // Remove from incoming invitations list
+    const card = document.querySelector(`#home-invitations-content .inv-card:not(.outgoing)[data-id="${id_channel}"]`);
+    if (card) card.remove();
+  } else {
+    // I'm the creator — contact tells me who rejected
+    userCache.set(contact.id_user, contact.username);
+    outgoingCache.delete(id_channel);
+
+    const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
+    if (card) card.remove();
+  }
+
+  updateInvitationsBadge();
 }
 
 // ==================== MESSAGING ====================
@@ -557,9 +580,18 @@ function addSystemMessage(text) {
   const row = document.createElement("div");
   row.className = "msg-row system";
   row.style.alignSelf = "center";
-  row.innerHTML = `<div class="msg-bubble">${escapeHtml(text)}</div>`;
+  const resolved = resolveAtMentions(text);  // resolve before escaping
+  row.innerHTML = `<div class="msg-bubble">${escapeHtml(resolved)}</div>`;
   container.appendChild(row);
   scrollToBottom();
+}
+
+
+function resolveAtMentions(text) {
+  return text.replace(/@(\d+)/g, (match, rawId) => {
+    const name = userCache.get(parseInt(rawId));
+    return name ? `@${name}` : match; // fallback to @id if unknown
+  });
 }
 
 // ==================== UTILS ====================
