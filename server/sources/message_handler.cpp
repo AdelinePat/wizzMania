@@ -35,16 +35,6 @@ void MessageHandler::send_message(crow::websocket::connection& conn,
   }
   int64_t id_message = id_message_opt.value();
   this->broadcast_new_message(id_channel, id_message, id_user, body, timestamp);
-
-  // ServerSend::SendMessageResponse broadcast;
-  // broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
-  // broadcast.id_channel = id_channel;
-  // broadcast.message = create_message(id_message, id_user, body, timestamp);
-
-  // std::string json_str = JsonHelpers::ServerSend::to_json(broadcast).dump();
-  // std::unordered_set<int64_t> participants =
-  //     db.get_channel_participants(id_channel);
-  // ws_manager.broadcast_to_users(participants, json_str);
 }
 
 void MessageHandler::send_error(crow::websocket::connection& conn,

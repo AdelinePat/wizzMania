@@ -38,7 +38,9 @@ int main() {
 
   WebSocketManager ws_manager;
   MessageHandler msg_handler(db, ws_manager);
-  HttpManager http_manager;
+  // UserService user_service(db);
+  UserController user_controller(db);
+
 
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
@@ -54,8 +56,8 @@ int main() {
 
   // ===== POST /login endpoint =====
   CROW_ROUTE(app, "/login")
-      .methods("POST"_method)([&db, &http_manager](const crow::request& req) {
-        return http_manager.login(db, req);
+      .methods("POST"_method)([&user_controller](const crow::request& req) {
+        return user_controller.login(req);
       });
 
   // ===== WebSocket endpoint =====

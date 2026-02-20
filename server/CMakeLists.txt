@@ -27,21 +27,29 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 # ============================================
 if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
+        sources/user_controller.cpp
         sources/server.cpp
         sources/auth.cpp
+        sources/database_channels.cpp
+        sources/database_core.cpp
+        sources/database_invitations.cpp
+        sources/database_messages.cpp
+        sources/database_users.cpp
         sources/database.cpp
         sources/helpers.cpp
-        sources/http_manager.cpp
+        sources/user_service.cpp
         sources/message_handler.cpp
         sources/websocket_manager.cpp
         )
 
     set(SERVER_HEADERS
+        headers/user_controller.hpp
         headers/server.hpp
         headers/auth.hpp
         headers/database.hpp
+        headers/exception.hpp
         headers/helpers.hpp
-        headers/http_manager.hpp
+        headers/user_service.hpp
         headers/json_helpers.hpp
         headers/message_handler.hpp
         headers/websocket_manager.hpp

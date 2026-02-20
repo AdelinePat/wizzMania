@@ -9,13 +9,13 @@
 #include <string>
 #include <thread>
 
-
 #include "database.hpp"
 #include "helpers.hpp"
-#include "http_manager.hpp"
 #include "json_helpers.hpp"
 #include "message_handler.hpp"
 #include "message_structure.hpp"
+#include "user_controller.hpp"
+#include "user_service.hpp"
 #include "websocket_manager.hpp"
 
 using WSConn = crow::websocket::connection*;

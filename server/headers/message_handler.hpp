@@ -12,12 +12,14 @@
 #include "message_structure.hpp"
 #include "messages.hpp"
 #include "websocket_manager.hpp"
+
 // class WebSocketManager;
 
 class MessageHandler {
  private:
   Database& db;
   WebSocketManager& ws_manager;
+  
   void send_error(crow::websocket::connection& conn,
                   const std::string& error_code,
                   const std::string& error_message);

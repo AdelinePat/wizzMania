@@ -44,27 +44,11 @@ void WebSocketManager::broadcast_to_all(const std::string& message) {
   }
 }
 
-// V2 with type a bit less readable I think
-// void WebSocketManager::broadcast_to_all(const std::string& message) {
-//   std::lock_guard<std::mutex> lock(ws_mutex_);
-
-//   for (const std::pair<WSConn, int64_t>& entry : socket_to_user_) {
-//     WSConn conn = entry.first;
-//     entry.first->send_text(message);
-//   }
-// }
-
 void WebSocketManager::broadcast_to_users(
     const std::unordered_set<int64_t>& id_users, const std::string& message) {
   std::lock_guard<std::mutex> lock(ws_mutex);
   for (int64_t id_user : id_users) {
     this->send_to_user_(id_user, message);
-    // auto it = this->user_sockets.find(id_user);
-    // if (it != this->user_sockets.end()) {
-    //   for (WSConn conn : it->second) {
-    //     conn->send_text(message);
-    //   }
-    // }
   }
 }
 
