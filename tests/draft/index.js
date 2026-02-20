@@ -85,19 +85,23 @@ function showHome() {
   document.getElementById("chat-title").textContent = "Home";
   document.getElementById("chat-sub").textContent = "";
 
-  // Deactivate all sidebar channel items
   document.querySelectorAll("#channels-list .sidebar-item").forEach(el => el.classList.remove("active"));
-
-  // Highlight user pill
   document.getElementById("user-pill").classList.add("active");
 }
 
 function showChat(channelId) {
   document.getElementById("home-view").classList.add("hidden");
   document.getElementById("chat-view").classList.remove("hidden");
-
-  // De-highlight user pill
   document.getElementById("user-pill").classList.remove("active");
+}
+
+// ==================== DM TITLE RESOLUTION ====================
+// Use at render time only — cache always keeps the server title
+function getChannelDisplayTitle(ch) {
+  if (ch.is_group) return ch.title;
+  // For DM: find the other participant (not me)
+  const other = ch.participants?.find(p => p.id_user !== userId);
+  return other?.username ?? ch.title;
 }
 
 // ==================== HOME TABS ====================
@@ -141,7 +145,9 @@ function connectWebSocket() {
         case MessageType.INVITATION_ACCEPTED: handleInvitationAccepted(data); break;
         case MessageType.INVITATION_REJECTED: handleInvitationRejected(data); break;
         case MessageType.USER_JOINED: handleUserJoined(data); break;
-        case MessageType.ERROR: addSystemMessage(`Server Error: ${data.message} (${data.error_code})`); break;
+        case MessageType.CHANNEL_CREATED: handleChannelCreated(data); break;
+        case MessageType.ERROR: handleServerError(data); break;
+        case MessageType.CHANNEL_INVITATION: handleChannelInvitation(data); break;
         default: console.log("Unhandled message type:", data.type, data);
       }
     } catch (e) { console.error("Error parsing message:", e); }
@@ -176,6 +182,18 @@ function setWsDot(state) {
   if (state === "connected") { dot.classList.add("connected"); dot.title = "Connected"; }
   else if (state === "error") { dot.classList.add("error"); dot.title = "Error"; }
   else { dot.title = "Disconnected"; }
+}
+
+// ==================== SERVER ERROR ====================
+function handleServerError(data) {
+  // If modal is open, show error there. Otherwise show as system message.
+  const modal = document.getElementById("createChannelModal");
+  if (modal.classList.contains("open")) {
+    setModalError(data.message ?? "An error occurred");
+    document.getElementById("submitCreateChannelBtn").disabled = false;
+  } else {
+    addSystemMessage(`Server Error: ${data.message} (${data.error_code})`);
+  }
 }
 
 // ==================== INITIAL DATA ====================
@@ -223,13 +241,14 @@ function renderChannelsSidebar() {
     item.dataset.id = ch.id_channel;
 
     const iconChar = ch.is_group ? "⊞" : "◈";
+    const displayTitle = getChannelDisplayTitle(ch);
     const preview = ch.last_message?.body ?? "";
     const unread = ch.unread_count > 0 ? `<div class="unread-badge">${ch.unread_count}</div>` : "";
 
     item.innerHTML = `
       <div class="item-icon">${iconChar}</div>
       <div class="item-info">
-        <div class="item-name">${escapeHtml(ch.title)}</div>
+        <div class="item-name">${escapeHtml(displayTitle)}</div>
         <div class="item-preview">${escapeHtml(preview)}</div>
       </div>
       ${unread}
@@ -281,7 +300,6 @@ function renderHomeContacts(contacts) {
         <div class="contact-sub">Click to open chat</div>
       </div>
     `;
-    // Find their shared DM channel and open it
     card.addEventListener("click", () => {
       const dmChannel = [...channelCache.values()].find(ch =>
         !ch.is_group && ch.participants?.some(p => p.id_user === c.id_user)
@@ -305,7 +323,6 @@ function renderHomeInvitations(incoming, outgoing) {
     return;
   }
 
-  // Incoming
   if (hasIncoming) {
     const title = document.createElement("div");
     title.className = "inv-section-title";
@@ -315,7 +332,6 @@ function renderHomeInvitations(incoming, outgoing) {
     incoming.forEach(inv => {
       const inviterName = userCache.get(inv.id_inviter) ?? `User ${inv.id_inviter}`;
       const memberNames = (inv.other_participant_ids ?? []).map(p => p.username).join(", ");
-
       const card = document.createElement("div");
       card.className = "inv-card";
       card.dataset.id = inv.id_channel;
@@ -336,31 +352,43 @@ function renderHomeInvitations(incoming, outgoing) {
     });
   }
 
-  // Outgoing
   if (hasOutgoing) {
     const title = document.createElement("div");
     title.className = "inv-section-title";
     title.textContent = "Sent";
     container.appendChild(title);
 
-    outgoing.forEach(ch => {
-      const waitingFor = (ch.participants ?? []).map(p => p.username).join(", ");
-      const card = document.createElement("div");
-      card.className = "inv-card outgoing";
-      card.dataset.id = ch.id_channel;
-      card.innerHTML = `
-        <div class="inv-avatar">⏳</div>
-        <div class="inv-info">
-          <div class="inv-title">${escapeHtml(ch.title)}</div>
-          <div class="inv-meta">Waiting for: ${escapeHtml(waitingFor || "...")}</div>
-        </div>
-        <span class="outgoing-tag">Pending</span>
-      `;
-      container.appendChild(card);
-    });
+    outgoing.forEach(ch => appendOutgoingCard(container, ch));
   }
 
   updateInvitationsBadge();
+}
+
+// Append a single outgoing invitation card — reused by handleChannelCreated
+function appendOutgoingCard(container, ch) {
+  // Ensure "Sent" section title exists
+  let sentTitle = container.querySelector(".inv-section-title[data-section='sent']");
+  if (!sentTitle) {
+    sentTitle = document.createElement("div");
+    sentTitle.className = "inv-section-title";
+    sentTitle.dataset.section = "sent";
+    sentTitle.textContent = "Sent";
+    container.appendChild(sentTitle);
+  }
+
+  const waitingFor = (ch.participants ?? []).map(p => p.username).join(", ");
+  const card = document.createElement("div");
+  card.className = "inv-card outgoing";
+  card.dataset.id = ch.id_channel;
+  card.innerHTML = `
+    <div class="inv-avatar">⏳</div>
+    <div class="inv-info">
+      <div class="inv-title">${escapeHtml(ch.title)}</div>
+      <div class="inv-meta">Waiting for: ${escapeHtml(waitingFor || "...")}</div>
+    </div>
+    <span class="outgoing-tag">Pending</span>
+  `;
+  container.appendChild(card);
 }
 
 function acceptInvitation(id_channel) {
@@ -384,8 +412,9 @@ function selectChannel(channelId) {
     el.classList.toggle("active", el.dataset.id == channelId);
   });
 
+  const displayTitle = ch ? getChannelDisplayTitle(ch) : `Channel ${channelId}`;
   document.getElementById("chat-icon").textContent = ch?.is_group ? "⊞" : "◈";
-  document.getElementById("chat-title").textContent = ch?.title ?? `Channel ${channelId}`;
+  document.getElementById("chat-title").textContent = displayTitle;
   const participantCount = ch?.participants?.length ?? 0;
   document.getElementById("chat-sub").textContent = participantCount > 0 ? `${participantCount} members` : "";
 
@@ -474,16 +503,13 @@ function handleInvitationAccepted(data) {
   channelCache.set(ch.id_channel, ch);
   ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
 
-  // Remove from home invitations UI
   const card = document.querySelector(`#home-invitations-content .inv-card[data-id="${ch.id_channel}"]`);
   if (card) card.remove();
   updateInvitationsBadge();
 
   renderChannelsSidebar();
-  selectChannel(ch.id_channel); // go straight to the channel
+  selectChannel(ch.id_channel);
 }
-
-
 
 function handleUserJoined(data) {
   const contact = data.contact;
@@ -497,7 +523,6 @@ function handleUserJoined(data) {
     channelCache.set(data.id_channel, ch);
     outgoingCache.delete(data.id_channel);
 
-    // Remove outgoing card from home
     const card = document.querySelector(`#home-invitations-content .inv-card[data-id="${data.id_channel}"]`);
     if (card) card.remove();
     updateInvitationsBadge();
@@ -512,25 +537,124 @@ function handleUserJoined(data) {
     }
   }
 }
-
 function handleInvitationRejected(data) {
   const { id_channel, contact } = data;
   const iAmRejecter = contact.id_user === userId;
 
   if (iAmRejecter) {
-    // Remove from incoming invitations list
     const card = document.querySelector(`#home-invitations-content .inv-card:not(.outgoing)[data-id="${id_channel}"]`);
     if (card) card.remove();
   } else {
-    // I'm the creator — contact tells me who rejected
+    // I'm the creator — remove only this person from the pending list
     userCache.set(contact.id_user, contact.username);
-    outgoingCache.delete(id_channel);
 
-    const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
-    if (card) card.remove();
+    const ch = outgoingCache.get(id_channel);
+    if (ch) {
+      ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
+
+      if (ch.participants.length === 0) {
+        // Nobody left pending — remove entirely
+        outgoingCache.delete(id_channel);
+        const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
+        if (card) card.remove();
+      } else {
+        // Still waiting on others — just update the card text
+        const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
+        if (card) {
+          const meta = card.querySelector(".inv-meta");
+          if (meta) meta.textContent = `Waiting for: ${ch.participants.map(p => p.username).join(", ")}`;
+        }
+      }
+    }
   }
 
   updateInvitationsBadge();
+}
+
+function handleChannelCreated(data) {
+  const ch = data.channel;
+
+  // Store in outgoing cache — it becomes a real channel once someone accepts
+  outgoingCache.set(ch.id_channel, ch);
+  ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+
+  // Add outgoing card to invitations tab
+  const container = document.getElementById("home-invitations-content");
+  // Remove empty state if present
+  const empty = container.querySelector(".empty-home");
+  if (empty) empty.remove();
+
+  appendOutgoingCard(container, ch);
+  updateInvitationsBadge();
+
+  // Switch to invitations tab so they see it
+  switchTab("invitations");
+
+  // Close modal
+  closeCreateChannelModal();
+}
+
+function handleChannelInvitation(data) {
+  // data is a ChannelInvitation: { type, id_channel, id_inviter, other_participant_ids, title }
+  const inviterName = userCache.get(data.id_inviter) ?? `User ${data.id_inviter}`;
+  data.other_participant_ids?.forEach(p => userCache.set(p.id_user, p.username));
+
+  const container = document.getElementById("home-invitations-content");
+  const empty = container.querySelector(".empty-home");
+  if (empty) empty.remove();
+
+  // Ensure "Incoming" section title exists
+  let incomingTitle = container.querySelector(".inv-section-title[data-section='incoming']");
+  if (!incomingTitle) {
+    incomingTitle = document.createElement("div");
+    incomingTitle.className = "inv-section-title";
+    incomingTitle.dataset.section = "incoming";
+    incomingTitle.textContent = "Incoming";
+    container.prepend(incomingTitle); // incoming goes above outgoing
+  }
+
+  const memberNames = (data.other_participant_ids ?? []).map(p => p.username).join(", ");
+  const card = document.createElement("div");
+  card.className = "inv-card";
+  card.dataset.id = data.id_channel;
+  card.innerHTML = `
+    <div class="inv-avatar">✉</div>
+    <div class="inv-info">
+      <div class="inv-title">${escapeHtml(data.title)}</div>
+      <div class="inv-meta">From ${escapeHtml(inviterName)}${memberNames ? ` · ${escapeHtml(memberNames)}` : ""}</div>
+    </div>
+    <div class="inv-actions">
+      <button class="inv-btn accept-btn" data-id="${data.id_channel}">Accept</button>
+      <button class="inv-btn reject-btn" data-id="${data.id_channel}">Decline</button>
+    </div>
+  `;
+  card.querySelector(".accept-btn").addEventListener("click", () => acceptInvitation(data.id_channel));
+  card.querySelector(".reject-btn").addEventListener("click", () => rejectInvitation(data.id_channel));
+
+  // Insert after the incoming title
+  incomingTitle.insertAdjacentElement("afterend", card);
+  updateInvitationsBadge();
+  switchTab("invitations"); // bring attention to it
+}
+
+// ==================== CREATE CHANNEL ====================
+function sendCreateChannel() {
+  if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
+  const usernames = [...tagState.tags];
+  if (usernames.length === 0) return;
+
+  const title = document.getElementById("channelTitleInput").value.trim();
+
+  setModalError("");
+  document.getElementById("submitCreateChannelBtn").disabled = true;
+
+  ws.send(JSON.stringify({
+    type: MessageType.CREATE_CHANNEL,
+    usernames,
+    title
+  }));
+  // Button re-enabled by handleChannelCreated or handleServerError
 }
 
 // ==================== MESSAGING ====================
@@ -580,18 +704,83 @@ function addSystemMessage(text) {
   const row = document.createElement("div");
   row.className = "msg-row system";
   row.style.alignSelf = "center";
-  const resolved = resolveAtMentions(text);  // resolve before escaping
+  const resolved = resolveAtMentions(text);
   row.innerHTML = `<div class="msg-bubble">${escapeHtml(resolved)}</div>`;
   container.appendChild(row);
   scrollToBottom();
 }
 
-
 function resolveAtMentions(text) {
   return text.replace(/@(\d+)/g, (match, rawId) => {
     const name = userCache.get(parseInt(rawId));
-    return name ? `@${name}` : match; // fallback to @id if unknown
+    return name ? `@${name}` : match;
   });
+}
+
+// ==================== MODAL ====================
+// Tag state — lives outside DOM so it's easy to read on submit
+const tagState = { tags: new Set() };
+
+function openCreateChannelModal() {
+  tagState.tags.clear();
+  document.getElementById("tagInputWrap").querySelectorAll(".tag-pill").forEach(p => p.remove());
+  document.getElementById("tagTextInput").value = "";
+  document.getElementById("channelTitleInput").value = "";
+  setModalError("");
+  document.getElementById("submitCreateChannelBtn").disabled = true;
+  document.getElementById("createChannelModal").classList.add("open");
+  document.getElementById("tagTextInput").focus();
+}
+
+function closeCreateChannelModal() {
+  document.getElementById("createChannelModal").classList.remove("open");
+  document.getElementById("submitCreateChannelBtn").disabled = false;
+}
+
+function setModalError(msg) {
+  document.getElementById("createChannelError").textContent = msg;
+}
+
+function commitTag() {
+  const input = document.getElementById("tagTextInput");
+  const value = input.value.trim().replace(/^@/, "").replace(/,$/, "");
+  if (!value) return;
+
+  if (value === username) {
+    setModalError("You can't invite yourself.");
+    input.value = "";
+    return;
+  }
+
+  if (tagState.tags.has(value)) {
+    input.value = "";
+    return; // silently ignore duplicate
+  }
+
+  tagState.tags.add(value);
+
+  const pill = document.createElement("div");
+  pill.className = "tag-pill";
+  pill.dataset.username = value;
+  pill.innerHTML = `
+    <span>${escapeHtml(value)}</span>
+    <button class="tag-pill-remove" title="Remove">×</button>
+  `;
+  pill.querySelector(".tag-pill-remove").addEventListener("click", () => {
+    tagState.tags.delete(value);
+    pill.remove();
+    updateSubmitButton();
+  });
+
+  const wrap = document.getElementById("tagInputWrap");
+  wrap.insertBefore(pill, input);
+  input.value = "";
+  setModalError("");
+  updateSubmitButton();
+}
+
+function updateSubmitButton() {
+  document.getElementById("submitCreateChannelBtn").disabled = tagState.tags.size === 0;
 }
 
 // ==================== UTILS ====================
@@ -607,11 +796,48 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("password").addEventListener("keypress", e => { if (e.key === "Enter") login(); });
   document.getElementById("messageInput").addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 
-  // User pill → go home
   document.getElementById("user-pill").addEventListener("click", showHome);
 
-  // Tab switching
   document.querySelectorAll(".home-tab").forEach(tab => {
     tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+  });
+
+  // Modal open/close
+  document.getElementById("openCreateChannelBtn").addEventListener("click", openCreateChannelModal);
+  document.getElementById("cancelCreateChannelBtn").addEventListener("click", closeCreateChannelModal);
+  document.getElementById("submitCreateChannelBtn").addEventListener("click", sendCreateChannel);
+
+  // Close modal on overlay click
+  document.getElementById("createChannelModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("createChannelModal")) closeCreateChannelModal();
+  });
+
+  // Close modal on Escape
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeCreateChannelModal();
+  });
+
+  // Tag input: commit on Space, comma, or Enter
+  document.getElementById("tagTextInput").addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "," || e.key === "Enter") {
+      e.preventDefault();
+      commitTag();
+    }
+    // Backspace on empty input removes last tag
+    if (e.key === "Backspace" && e.target.value === "") {
+      const lastTag = [...tagState.tags].at(-1);
+      if (lastTag) {
+        tagState.tags.delete(lastTag);
+        const wrap = document.getElementById("tagInputWrap");
+        const pill = wrap.querySelector(`.tag-pill[data-username="${CSS.escape(lastTag)}"]`);
+        if (pill) pill.remove();
+        updateSubmitButton();
+      }
+    }
+  });
+
+  // Clicking anywhere in the tag wrap focuses the input
+  document.getElementById("tagInputWrap").addEventListener("click", () => {
+    document.getElementById("tagTextInput").focus();
   });
 });

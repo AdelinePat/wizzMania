@@ -120,7 +120,7 @@ parse_request_channel_history(const crow::json::rvalue& json) {
 
 inline std::optional<::ClientSend::CreateChannelRequest> parse_create_channel(
     const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("participant_ids")) {
+  if (!json.has("type") || !json.has("usernames")) {
     return std::nullopt;
   }
   int type_int = json["type"].i();
@@ -130,14 +130,19 @@ inline std::optional<::ClientSend::CreateChannelRequest> parse_create_channel(
 
   ::ClientSend::CreateChannelRequest req;
 
-  auto participants = json["participant_ids"];
-  for (size_t i = 0; i < participants.size(); i++) {
-    req.participant_ids.push_back(participants[i].i());
+  auto usernames = json["usernames"];
+  for (size_t i = 0; i < usernames.size(); i++) {
+    req.usernames.insert(usernames[i].s());
+  }
+
+  if (req.usernames.empty()) {
+    return std::nullopt;
   }
 
   if (json.has("title")) {
     req.title = json["title"].s();
   }
+
   return req;
 }
 

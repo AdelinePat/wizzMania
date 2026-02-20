@@ -84,8 +84,19 @@
     .sidebar-scroll::-webkit-scrollbar { width: 4px; }
     .sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
     .sidebar-scroll::-webkit-scrollbar-thumb { background: var(--bg-hover); border-radius: 2px; }
-    .sidebar-section { padding: 16px 16px 4px; }
+    .sidebar-section { padding: 16px 16px 4px; display: flex; align-items: center; justify-content: space-between; }
     .sidebar-section-title { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 4px; }
+
+    /* + button next to Channels */
+    .sidebar-add-btn {
+      width: 20px; height: 20px; border-radius: 5px; background: transparent;
+      border: 1px solid var(--border); color: var(--text-muted); font-size: 14px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      line-height: 1; padding: 0; margin-bottom: 4px;
+    }
+    .sidebar-add-btn:hover { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-bright); }
+
     .sidebar-item { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: 8px; cursor: pointer; transition: background 0.15s; margin: 1px 6px; position: relative; }
     .sidebar-item:hover { background: var(--bg-hover); }
     .sidebar-item.active { background: var(--accent-dim); }
@@ -234,6 +245,89 @@
     .empty-sidebar { padding: 8px 16px; font-size: 12px; color: var(--text-muted); font-style: italic; }
     .date-sep { display: flex; align-items: center; gap: 12px; margin: 12px 0; color: var(--text-muted); font-size: 11px; }
     .date-sep::before, .date-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ===================== MODAL ===================== */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100; backdrop-filter: blur(4px);
+      opacity: 0; pointer-events: none; transition: opacity 0.2s;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .modal {
+      background: var(--bg-surface); border: 1px solid var(--border);
+      border-radius: 16px; padding: 28px 28px 24px; width: 440px; max-width: 90vw;
+      transform: translateY(12px); transition: transform 0.2s;
+    }
+    .modal-overlay.open .modal { transform: translateY(0); }
+
+    .modal-title {
+      font-family: var(--font-mono); font-size: 15px; font-weight: 700;
+      color: var(--accent-bright); margin-bottom: 4px;
+    }
+    .modal-subtitle { font-size: 12px; color: var(--text-muted); margin-bottom: 22px; }
+
+    .modal-field-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--text-secondary); margin-bottom: 6px; display: block;
+    }
+
+    /* Tag input */
+    .tag-input-wrap {
+      background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 10px; padding: 8px 10px; display: flex; flex-wrap: wrap;
+      gap: 6px; align-items: center; cursor: text; transition: border-color 0.2s;
+      min-height: 44px;
+    }
+    .tag-input-wrap:focus-within { border-color: var(--accent); }
+
+    .tag-pill {
+      background: var(--accent-dim); border: 1px solid var(--accent);
+      color: var(--accent-bright); border-radius: 6px; padding: 3px 8px 3px 10px;
+      font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+    }
+    .tag-pill-remove {
+      background: none; border: none; color: var(--accent-bright);
+      cursor: pointer; font-size: 14px; line-height: 1; padding: 0;
+      opacity: 0.6; transition: opacity 0.15s;
+    }
+    .tag-pill-remove:hover { opacity: 1; }
+
+    .tag-text-input {
+      background: transparent; border: none; outline: none;
+      color: var(--text-primary); font-family: var(--font-ui); font-size: 13px;
+      flex: 1; min-width: 120px;
+    }
+    .tag-text-input::placeholder { color: var(--text-muted); }
+
+    .modal-input {
+      width: 100%; background: var(--bg-elevated); border: 1px solid var(--border);
+      border-radius: 10px; color: var(--text-primary); font-family: var(--font-ui);
+      font-size: 14px; padding: 10px 14px; outline: none; transition: border-color 0.2s;
+    }
+    .modal-input:focus { border-color: var(--accent); }
+    .modal-input::placeholder { color: var(--text-muted); }
+
+    .modal-hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    .modal-error {
+      color: var(--danger); font-size: 12px; min-height: 18px;
+      margin-top: 10px; margin-bottom: 2px;
+    }
+
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+    .modal-btn {
+      border: none; border-radius: 8px; padding: 9px 20px; cursor: pointer;
+      font-family: var(--font-ui); font-size: 13px; font-weight: 600;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .modal-btn:active { transform: scale(0.97); }
+    .modal-btn-cancel { background: var(--bg-elevated); color: var(--text-secondary); border: 1px solid var(--border); }
+    .modal-btn-cancel:hover { background: var(--bg-hover); }
+    .modal-btn-create { background: var(--accent); color: #fff; }
+    .modal-btn-create:hover { background: var(--accent-bright); }
+    .modal-btn-create:disabled { background: var(--text-muted); cursor: not-allowed; }
   </style>
 </head>
 <body>
@@ -270,6 +364,7 @@
       <div class="sidebar-scroll">
         <div class="sidebar-section">
           <div class="sidebar-section-title">Channels</div>
+          <button class="sidebar-add-btn" id="openCreateChannelBtn" title="New channel">+</button>
         </div>
         <div id="channels-list"></div>
 
@@ -342,6 +437,30 @@
         </div>
       </div>
 
+    </div>
+  </div>
+
+  <!-- CREATE CHANNEL MODAL -->
+  <div class="modal-overlay" id="createChannelModal">
+    <div class="modal">
+      <div class="modal-title">New Channel</div>
+      <div class="modal-subtitle">Invite people by username to start a conversation</div>
+
+      <label class="modal-field-label">Participants</label>
+      <div class="tag-input-wrap" id="tagInputWrap">
+        <input class="tag-text-input" id="tagTextInput" placeholder="username — press Space, comma or Enter to add" />
+      </div>
+      <div class="modal-hint">Add at least one username. You can add multiple.</div>
+
+      <label class="modal-field-label" style="margin-top:16px;">Title <span style="color:var(--text-muted);font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <input class="modal-input" type="text" id="channelTitleInput" placeholder="Leave blank to auto-generate from usernames" />
+
+      <div class="modal-error" id="createChannelError"></div>
+
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="cancelCreateChannelBtn">Cancel</button>
+        <button class="modal-btn modal-btn-create" id="submitCreateChannelBtn" disabled>Create</button>
+      </div>
     </div>
   </div>
 

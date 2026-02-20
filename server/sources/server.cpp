@@ -130,7 +130,7 @@ int main() {
           }
 
           case WizzMania::MessageType::CREATE_CHANNEL: {
-            // msg_handler.create_channel(conn, id_user, json_msg);
+            msg_handler.create_channel(conn, id_user, json_msg);
             break;
           }
 

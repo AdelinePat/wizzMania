@@ -39,6 +39,7 @@ class Database {
   void ensure_connection();
 
   bool update_invitation(int64_t id_user, int64_t id_channel,
+                         const std::string& responded_at,
                          ChannelStatus membership);
 
  public:
@@ -80,9 +81,11 @@ class Database {
 
   bool has_channel_access(int64_t id_user, int64_t id_channel);
 
-  bool accept_invitation(int64_t id_user, int64_t id_channel);
+  bool accept_invitation(int64_t id_user, int64_t id_channel,
+                         const std::string& responded_at);
 
-  bool reject_invitation(int64_t id_user, int64_t id_channel);
+  bool reject_invitation(int64_t id_user, int64_t id_channel,
+                         const std::string& responded_at);
 
   ServerSend::ChannelInfo get_channel(
       int64_t id_user, int64_t id_channel,
@@ -105,5 +108,18 @@ class Database {
       int64_t id_user, ChannelStatus membership);
   std::optional<int64_t> get_channel_creator(int64_t id_channel);
   std::optional<ServerSend::Contact> get_contact(const int64_t id_user);
+
+  std::optional<int64_t> get_id_user(const std::string& username);
+  std::optional<int64_t> create_channel(const int64_t created_by,
+                                        const std::string& title,
+                                        const std::string& created_at);
+  bool create_user_channels(const int64_t id_creator, const int64_t id_channel,
+                            const std::unordered_set<int64_t>& participants);
+  std::optional<int64_t> create_channel_with_participants(
+      const int64_t id_creator, const std::string& title,
+      const std::string& created_at,
+      const std::unordered_set<int64_t>& participants);
+  std::vector<ServerSend::Contact> get_channel_contacts(
+      int64_t id_channel, ChannelStatus membership);
 };
 #endif

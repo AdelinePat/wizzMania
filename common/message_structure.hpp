@@ -51,7 +51,7 @@ struct SendMessageRequest {
 
 struct CreateChannelRequest {
   WizzMania::MessageType type;  // CREATE_CHANNEL
-  std::vector<int64_t> participant_ids;
+  std::unordered_set<std::string> usernames;
   std::string title;
 };
 
@@ -148,7 +148,6 @@ struct ChannelInvitation {
   WizzMania::MessageType type;  // CHANNEL_INVITATION
   int64_t id_channel;
   int64_t id_inviter;
-  // std::string inviter_username;
   std::vector<Contact> other_participant_ids;
   std::string title;
 };

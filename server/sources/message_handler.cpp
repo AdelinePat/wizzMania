@@ -133,6 +133,7 @@ void MessageHandler::initial_data(crow::websocket::connection& conn) {
             << init_data.invitations.size() << " invitations\n";
 }
 
+// Handle a transaction, yay
 void MessageHandler::create_channel(crow::websocket::connection& conn,
                                     int64_t id_user,
                                     const crow::json::rvalue& json_msg) {
@@ -143,10 +144,60 @@ void MessageHandler::create_channel(crow::websocket::connection& conn,
     return;
   }
 
-  // std::cout << "[CHANNEL] User " << id_user << " creating with "
-  //           << req->participant_ids.size() << " participants\n";
+  // Step 1 : get users id, send error with username if id not found !
+  std::unordered_set<int64_t> participants;
+  for (const std::string& username : req->usernames) {
+    std::optional<int64_t> id_opt = db.get_id_user(username);
+    if (!id_opt.has_value()) {
+      std::string error_msg = "Invalid username : " + username + " not found";
+      this->send_error(conn, "INVALID_USERNAME", error_msg);
+      return;
+    }
+    participants.insert(id_opt.value());
+  }
+  // Step 2 : if all ids ok, create channel title (concat all name, truncate
+  std::string title = req->title;
+  if (title.empty()) {
+    for (const std::string& username : req->usernames) {
+      title += title.empty() ? username : ", " + username;
+    }
+  }
+  if (title.size() >= 60) {
+    std::string truncatedTitle = title.substr(0, 55);
+    title = truncatedTitle + "...";
+  }
+  std::string created_at = get_timestamp();
 
-  // TODO: Create channel
+  std::optional<int64_t> id_channel_opt = db.create_channel_with_participants(
+      id_user, title, created_at, participants);
+  if (!id_channel_opt.has_value()) {
+    // std::string error_msg = "Invalid username : " + username + " not found";
+    this->send_error(conn, "ERROR",
+                     "An error occured, channel couldn't be created");
+    std::cerr << "ERROR an error occured, channel couldn't be created";
+    return;
+  }
+
+  int64_t id_channel = id_channel_opt.value();
+
+  std::vector<ServerSend::Contact> contacts =
+      db.get_channel_contacts(id_channel, ChannelStatus::PENDING);
+
+  ServerSend::ChannelInvitation invitation_message =
+      create_invitation_struct(id_channel, id_user, contacts, title);
+  ws_manager.broadcast_to_users(
+      participants,
+      JsonHelpers::ServerSend::to_json(invitation_message).dump());
+
+  ServerSend::CreateChannelResponse resp;
+  resp.type = WizzMania::MessageType::CHANNEL_CREATED;
+  resp.id_channel = id_channel;
+  resp.already_existed = false;  // TODO !! MAKE A CHECK IF A CHANNEL WITH THESE
+                                 // PARTICIPANT ALREADY EXIST OR NOT
+  resp.channel =
+      create_empty_channel_info_struct(id_channel, id_user, contacts, title);
+  ws_manager.send_to_user(id_user,
+                          JsonHelpers::ServerSend::to_json(resp).dump());
 }
 
 void MessageHandler::send_history(crow::websocket::connection& conn,
@@ -192,8 +243,8 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
 
   std::cout << "[INVITATION] User " << id_user << " -> accepts to Channel "
             << req->id_channel << "\n";
-
-  bool accepted = db.accept_invitation(id_user, req->id_channel);
+  std::string responded_at = get_timestamp();
+  bool accepted = db.accept_invitation(id_user, req->id_channel, responded_at);
   if (!accepted) {
     this->send_error(conn, "[INVITATION ERROR]",
                      "Couldn't accept the invitation");
@@ -214,15 +265,15 @@ void MessageHandler::accept_invitation(crow::websocket::connection& conn,
 
   std::string body = "User @" + std::to_string(id_user) + " joined the chat!";
 
-  std::string timestamp = get_timestamp();
   std::optional<int64_t> id_message_opt =
-      db.save_message(1, req->id_channel, body, timestamp);
+      db.save_message(1, req->id_channel, body, responded_at);
   if (!id_message_opt.has_value()) {
     std::cerr << "[INIT] Error: message could not be save in db\n";
     return;
   }
   int64_t id_message = id_message_opt.value();
-  this->broadcast_new_message(req->id_channel, id_message, 1, body, timestamp);
+  this->broadcast_new_message(req->id_channel, id_message, 1, body,
+                              responded_at);
 }
 
 void MessageHandler::reject_invitation(crow::websocket::connection& conn,
@@ -246,7 +297,8 @@ void MessageHandler::reject_invitation(crow::websocket::connection& conn,
   }
   int64_t id_creator = id_creator_opt.value();
 
-  bool rejected = db.reject_invitation(id_user, req->id_channel);
+  std::string responded_at = get_timestamp();
+  bool rejected = db.reject_invitation(id_user, req->id_channel, responded_at);
   if (!rejected) {
     this->send_error(conn, "[INVITATION ERROR]",
                      "Couldn't reject the invitation");
@@ -266,29 +318,17 @@ void MessageHandler::reject_invitation(crow::websocket::connection& conn,
   ws_manager.send_to_user(id_user, resp_json);
   ws_manager.send_to_user(id_creator, resp_json);
 
-  // ws_manager.send_to_user(id_creator, )
-
-  // ServerSend::AcceptInvitationResponse resp;
-  // resp.type = WizzMania::MessageType::INVITATION_ACCEPTED;
-  // resp.channel = db.get_channel(id_user, req->id_channel);
-  // std::string channel_info_str =
-  // JsonHelpers::ServerSend::to_json(resp).dump();
-  // conn.send_text(channel_info_str);
-
-  // broadcast_joined_notification(id_user, req->id_channel,
-  //                               resp.channel.participants);
-
   std::string body = "User @" + std::to_string(id_user) + " rejected the chat!";
 
-  std::string timestamp = get_timestamp();
   std::optional<int64_t> id_message_opt =
-      db.save_message(1, req->id_channel, body, timestamp);
+      db.save_message(1, req->id_channel, body, responded_at);
   if (!id_message_opt.has_value()) {
     std::cerr << "[INIT] Error: message could not be save in db\n";
     return;
   }
   int64_t id_message = id_message_opt.value();
-  this->broadcast_new_message(req->id_channel, id_message, 1, body, timestamp);
+  this->broadcast_new_message(req->id_channel, id_message, 1, body,
+                              responded_at);
 }
 
 void MessageHandler::broadcast_new_message(const int64_t id_channel,
