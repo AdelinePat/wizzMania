@@ -9,9 +9,12 @@
 #include <string>
 #include <thread>
 
+#include "channel_controller.hpp"
 #include "database.hpp"
 #include "helpers.hpp"
+#include "invitation_controller.hpp"
 #include "json_helpers.hpp"
+#include "message_controller.hpp"
 #include "message_handler.hpp"
 #include "message_structure.hpp"
 #include "user_controller.hpp"

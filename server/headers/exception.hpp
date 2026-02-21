@@ -23,4 +23,15 @@ class HttpError : public std::exception {
   std::string get_full_message() const { return full_message; }
 };
 
+class WsError : public std::exception {
+ private:
+  std::string message;
+
+ public:
+  WsError(const std::string& msg) : message(msg) {}
+
+  const char* what() const noexcept override { return message.c_str(); }
+  std::string get_message() const { return message; }
+};
+
 #endif

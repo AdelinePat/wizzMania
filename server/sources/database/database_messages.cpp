@@ -138,9 +138,9 @@ std::vector<ServerSend::Message> Database::get_channel_history(
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     while (res->next()) {
-      ServerSend::Message message =
-          create_message(res->getInt64("id_message"), res->getInt64("id_user"),
-                         res->getString("body"), res->getString("timestamp"));
+      ServerSend::Message message = create_message_struct(
+          res->getInt64("id_message"), res->getInt64("id_user"),
+          res->getString("body"), res->getString("timestamp"));
       messages.push_back(message);
     }
     return messages;

@@ -1,5 +1,5 @@
-#ifndef HTTP_MANAGER_H
-#define HTTP_MANAGER_H
+#ifndef USER_SERVICE_H
+#define USER_SERVICE_H
 
 #include <crow.h>
 
@@ -20,8 +20,8 @@ class UserService {
   Database& db;
 
  private:
-  // crow::response send_login_error(const int code, const std::string& message);
-  // crow::response send_login_response(const int64_t id_user,
+  // crow::response send_login_error(const int code, const std::string&
+  // message); crow::response send_login_response(const int64_t id_user,
   //                                    const std::string& username,
   //                                    const std::string& token);
 
@@ -30,6 +30,12 @@ class UserService {
 
   // crow::response login(Database& db, const crow::request& req);
   int64_t login(AuthMessages::LoginRequest login_request);
+
+  bool has_access(int64_t id_user, int64_t id_channel);
+  std::unordered_set<int64_t> get_users_by_channel(int64_t id_channel);
+  std::optional<ServerSend::Contact> get_contact(int64_t id_user);
+  int64_t get_id_user(const std::string& username);
+  std::vector<ServerSend::Contact> get_contacts_from_channel(int64_t id_channel);
 };
 
 #endif

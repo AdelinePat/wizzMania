@@ -26,7 +26,6 @@ class Database {
  private:
   sql::Driver* driver;
   std::unique_ptr<sql::Connection> conn;
-  std::mutex db_mutex;
 
   std::string host;
   std::string user;
@@ -47,6 +46,7 @@ class Database {
   Database(const std::string& host, const std::string& user,
            const std::string& password, const std::string& database);
   ~Database();
+  std::mutex db_mutex;
 
   int64_t verify_user(const std::string& username, const std::string& password);
   std::vector<ServerSend::Contact> get_contacts(

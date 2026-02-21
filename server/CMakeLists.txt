@@ -30,13 +30,19 @@ if(NOT BUILD_TESTS)
         sources/user_controller.cpp
         sources/server.cpp
         sources/auth.cpp
-        sources/database_channels.cpp
-        sources/database_core.cpp
-        sources/database_invitations.cpp
-        sources/database_messages.cpp
-        sources/database_users.cpp
-        sources/database.cpp
+        sources/database/database_channels.cpp
+        sources/database/database_core.cpp
+        sources/database/database_invitations.cpp
+        sources/database/database_messages.cpp
+        sources/database/database_users.cpp
+        sources/database/database.cpp
         sources/helpers.cpp
+        sources/message_controller.cpp
+        sources/message_service.cpp
+        sources/invitation_controller.cpp
+        sources/invitation_service.cpp
+        sources/channel_controller.cpp
+        sources/channel_service.cpp
         sources/user_service.cpp
         sources/message_handler.cpp
         sources/websocket_manager.cpp
@@ -49,6 +55,12 @@ if(NOT BUILD_TESTS)
         headers/database.hpp
         headers/exception.hpp
         headers/helpers.hpp
+        headers/message_controller.hpp
+        headers/message_service.hpp
+        headers/invitation_controller.hpp
+        headers/invitation_service.hpp
+        headers/channel_controller.hpp
+        headers/channel_service.hpp
         headers/user_service.hpp
         headers/json_helpers.hpp
         headers/message_handler.hpp

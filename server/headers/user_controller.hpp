@@ -1,3 +1,6 @@
+#ifndef USER_CONTROLLER_H
+#define USER_CONTROLLER_H
+
 #include <crow.h>
 
 #include <string>
@@ -33,3 +36,5 @@ class UserController {
                                      const std::string& username,
                                      const std::string& token);
 };
+
+#endif

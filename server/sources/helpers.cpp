@@ -31,9 +31,9 @@ std::string get_timestamp() {
   return timestamp;
 }
 
-ServerSend::Message create_message(int64_t id_message, int64_t id_user,
-                                   const std::string& body,
-                                   const std::string& timestamp) {
+ServerSend::Message create_message_struct(int64_t id_message, int64_t id_user,
+                                          const std::string& body,
+                                          const std::string& timestamp) {
   ServerSend::Message message;
   message.id_message = id_message;
   message.id_sender = id_user;
@@ -45,7 +45,8 @@ ServerSend::Message create_message(int64_t id_message, int64_t id_user,
 
 ServerSend::ChannelInvitation create_invitation_struct(
     int64_t id_channel, int64_t id_inviter,
-    const std::vector<ServerSend::Contact>& other_participants, std::string& title) {
+    const std::vector<ServerSend::Contact>& other_participants,
+    std::string& title) {
   ServerSend::ChannelInvitation invitation;
   invitation.type = WizzMania::MessageType::CHANNEL_INVITATION;
   invitation.id_channel = id_channel;
@@ -57,7 +58,8 @@ ServerSend::ChannelInvitation create_invitation_struct(
 
 ServerSend::ChannelInfo create_empty_channel_info_struct(
     int64_t id_channel, int64_t created_by,
-    const std::vector<ServerSend::Contact>& other_participants, std::string& title) {
+    const std::vector<ServerSend::Contact>& other_participants,
+    std::string& title) {
   ServerSend::ChannelInfo info;
   info.id_channel = id_channel;
   info.title = title;
@@ -65,4 +67,15 @@ ServerSend::ChannelInfo create_empty_channel_info_struct(
   info.is_group = info.participants.size() > 2;
   info.created_by = created_by;
   return info;
+}
+
+void send_error(crow::websocket::connection& conn,
+                const std::string& error_code,
+                const std::string& error_message) {
+  ServerSend::ErrorResponse err;
+  err.type = WizzMania::MessageType::ERROR;
+  err.error_code = error_code;
+  err.message = error_message;
+
+  conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
 }

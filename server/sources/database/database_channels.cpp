@@ -44,22 +44,22 @@ std::vector<ServerSend::ChannelInfo> Database::get_initial_channels(
   return channels_info;
 }
 
-// ==== CHANNEL INFO
+// // ==== CHANNEL INFO
 
-// get entire channel info for a channel id
-ServerSend::ChannelInfo Database::get_channel(int64_t id_user,
-                                              int64_t id_channel,
-                                              ChannelStatus membership,
-                                              ChannelStatus other_membership) {
-  ServerSend::ChannelInfo channel =
-      this->get_channel_info(id_user, id_channel, membership);
-  channel.participants =
-      this->get_participants(id_user, id_channel, membership, other_membership);
-  channel.unread_count = this->get_unread_count(id_user, id_channel);
-  channel.last_message = this->get_last_message(id_user, id_channel);
-  channel.is_group = channel.participants.size() > 2;
-  return channel;
-}
+// // get entire channel info for a channel id
+// ServerSend::ChannelInfo Database::get_channel(int64_t id_user,
+//                                               int64_t id_channel,
+//                                               ChannelStatus membership,
+//                                               ChannelStatus other_membership) {
+//   ServerSend::ChannelInfo channel =
+//       this->get_channel_info(id_user, id_channel, membership);
+//   channel.participants =
+//       this->get_participants(id_user, id_channel, membership, other_membership);
+//   channel.unread_count = this->get_unread_count(id_user, id_channel);
+//   channel.last_message = this->get_last_message(id_user, id_channel);
+//   channel.is_group = channel.participants.size() > 2;
+//   return channel;
+// }
 
 // Populate most of channel info for a specific user and channel
 ServerSend::ChannelInfo Database::get_channel_info(int64_t id_user,
