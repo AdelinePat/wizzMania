@@ -1,33 +1,5 @@
 #include "database.hpp"
 
-
-
-// ===== GET INITIAL INVITATION =====
-
-// Populate ChannelInvitation structs for a user
-std::vector<ServerSend::ChannelInvitation> Database::get_initial_invitations(
-    const int64_t id_user) {
-  std::lock_guard<std::mutex> lock(db_mutex);
-
-  std::vector<ServerSend::ChannelInvitation> channels_invitations =
-      this->get_invitations_base(id_user);
-  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
-      this->get_participants_and_channel(id_user, ChannelStatus::PENDING,
-                                         ChannelStatus::ACCEPTED);
-
-  for (ServerSend::ChannelInvitation& channel : channels_invitations) {
-    auto it_participant = channel_participants.find(channel.id_channel);
-    if (it_participant != channel_participants.end()) {
-      channel.other_participant_ids = it_participant->second;
-    } else {
-      std::cerr << "[DB] Warning: no participants found for channel "
-                << channel.id_channel << "\n";
-    }
-  }
-
-  return channels_invitations;
-}
-
 // Populate part of ChannelInvitation structs for a user, missing participants
 // vector
 std::vector<ServerSend::ChannelInvitation> Database::get_invitations_base(
@@ -59,29 +31,6 @@ std::vector<ServerSend::ChannelInvitation> Database::get_invitations_base(
     std::cerr << "[DB] get_channels error: " << e.what() << std::endl;
     return channels_invitations;
   }
-}
-
-std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations(
-    int64_t id_user) {
-  std::lock_guard<std::mutex> lock(db_mutex);
-
-  std::vector<ServerSend::ChannelInfo> channels_info =
-      this->get_outgoing_invitations_base(id_user, ChannelStatus::ACCEPTED);
-  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
-      this->get_participants_and_channel(id_user, ChannelStatus::ACCEPTED,
-                                         ChannelStatus::PENDING);
-
-  for (ServerSend::ChannelInfo& channel : channels_info) {
-    auto it_participant = channel_participants.find(channel.id_channel);
-    if (it_participant != channel_participants.end()) {
-      channel.participants = it_participant->second;
-      channel.is_group = channel.participants.size() > 2;
-    } else {
-      std::cerr << "[DB] Warning: no participants found for channel "
-                << channel.id_channel << "\n";
-    }
-  }
-  return channels_info;
 }
 
 // Get outgoing invitations, meaning the channel the user created but no one

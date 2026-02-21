@@ -38,9 +38,6 @@ int main() {
 
   WebSocketManager ws_manager;
 
-  // TO DO DELETE
-  MessageHandler msg_handler(db, ws_manager);
-  // UserService user_service(db);
   UserController user_controller(db, ws_manager);
   MessageController message_controller(db, ws_manager);
   InvitationController invitation_controller(db, ws_manager);
@@ -133,13 +130,13 @@ int main() {
           }
 
           case WizzMania::MessageType::ACCEPT_INVITATION: {
-            // TO DO HTTP
+            // TODO HTTP
             invitation_controller.accept_invitation(conn, id_user, json_msg);
             break;
           }
 
           case WizzMania::MessageType::REJECT_INVITATION: {
-            // TO DO HTTP
+            // TODO HTTP
             invitation_controller.reject_invitation(conn, id_user, json_msg);
             break;
           }

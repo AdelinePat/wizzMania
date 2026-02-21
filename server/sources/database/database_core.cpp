@@ -64,15 +64,3 @@ void Database::ensure_connection() {
     throw;
   }
 }
-
-// ===== GET INITIAL DATA =====
-
-// ServerSend::InitialDataResponse Database::get_initial_data(
-//     const int64_t id_user) {
-//   ServerSend::InitialDataResponse init_data;
-//   init_data.contacts = this->get_contacts(id_user);
-//   init_data.channels = this->get_initial_channels(id_user);
-//   init_data.invitations = this->get_initial_invitations(id_user);
-//   init_data.outgoing_invitations = this->get_outgoing_invitations(id_user);
-//   return init_data;
-// }

@@ -46,10 +46,10 @@ class Database {
   Database(const std::string& host, const std::string& user,
            const std::string& password, const std::string& database);
   ~Database();
-  std::mutex db_mutex; // controllers need to access this!!
+  std::mutex db_mutex;  // controllers need to access this!!
 
   int64_t verify_user(const std::string& username, const std::string& password);
-  std::vector<ServerSend::Contact> get_contacts(
+  std::vector<ServerSend::Contact> get_user_contacts(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
   std::map<int64_t, ServerSend::Message> get_last_messages(
@@ -62,9 +62,9 @@ class Database {
   std::vector<ServerSend::ChannelInfo> get_channels(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
-  std::vector<ServerSend::ChannelInfo> get_initial_channels(
-      const int64_t id_user);
-//   ServerSend::InitialDataResponse get_initial_data(const int64_t id_user);
+//   std::vector<ServerSend::ChannelInfo> get_initial_channels(
+//       const int64_t id_user);
+  //   ServerSend::InitialDataResponse get_initial_data(const int64_t id_user);
   std::optional<int64_t> save_message(int64_t id_user, int64_t id_channel,
                                       const std::string& body,
                                       const std::string& timestamp);
@@ -76,8 +76,8 @@ class Database {
 
   std::vector<ServerSend::ChannelInvitation> get_invitations_base(
       const int64_t id_user, ChannelStatus membership = ChannelStatus::PENDING);
-  std::vector<ServerSend::ChannelInvitation> get_initial_invitations(
-      const int64_t id_user);
+//   std::vector<ServerSend::ChannelInvitation> get_incoming_invitations(
+//       const int64_t id_user);
 
   bool has_channel_access(int64_t id_user, int64_t id_channel);
 
@@ -87,10 +87,10 @@ class Database {
   bool reject_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at);
 
-  ServerSend::ChannelInfo get_channel(
-      int64_t id_user, int64_t id_channel,
-      ChannelStatus membership = ChannelStatus::ACCEPTED,
-      ChannelStatus other_membership = ChannelStatus::ACCEPTED);
+//   ServerSend::ChannelInfo get_channel(
+//       int64_t id_user, int64_t id_channel,
+//       ChannelStatus membership = ChannelStatus::ACCEPTED,
+//       ChannelStatus other_membership = ChannelStatus::ACCEPTED);
 
   ServerSend::ChannelInfo get_channel_info(int64_t id_user, int64_t id_channel,
                                            ChannelStatus membership);
@@ -102,8 +102,8 @@ class Database {
   ServerSend::Message get_last_message(const int64_t id_user,
                                        const int64_t id_channel);
 
-  std::vector<ServerSend::ChannelInfo> get_outgoing_invitations(
-      int64_t id_user);
+//   std::vector<ServerSend::ChannelInfo> get_outgoing_invitations(
+//       int64_t id_user);
   std::vector<ServerSend::ChannelInfo> get_outgoing_invitations_base(
       int64_t id_user, ChannelStatus membership);
   std::optional<int64_t> get_channel_creator(int64_t id_channel);

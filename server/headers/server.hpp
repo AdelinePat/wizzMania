@@ -15,7 +15,6 @@
 #include "invitation_controller.hpp"
 #include "json_helpers.hpp"
 #include "message_controller.hpp"
-#include "message_handler.hpp"
 #include "message_structure.hpp"
 #include "user_controller.hpp"
 #include "user_service.hpp"

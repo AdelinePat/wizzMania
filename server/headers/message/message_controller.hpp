@@ -38,7 +38,6 @@ class MessageController {
   void send_message_internal(int64_t id_user, int64_t id_channel,
                              std::string& body, std::string& timestamp);
 
-  // TODO SEND HISTORY
   void send_history(crow::websocket::connection& conn, int64_t id_user,
                     const crow::json::rvalue& json_msg);
 

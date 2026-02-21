@@ -34,7 +34,9 @@ class UserService {
   std::unordered_set<int64_t> get_users_by_channel(int64_t id_channel);
   std::optional<ServerSend::Contact> get_contact(int64_t id_user);
   int64_t get_id_user(const std::string& username);
-  std::vector<ServerSend::Contact> get_contacts_from_channel(int64_t id_channel);
+  std::vector<ServerSend::Contact> get_contacts_from_channel(
+      int64_t id_channel);
+  std::vector<ServerSend::Contact> get_all_user_contacts(int64_t id_user);
 };
 
 #endif

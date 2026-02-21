@@ -20,10 +20,17 @@ class InvitationService {
  private:
  public:
   explicit InvitationService(Database& db) : db(db) {}
+  
   void accept_invitation(int64_t id_user, int64_t id_channel,
                          std::string& responded_at);
   void reject_invitation(int64_t id_user, int64_t id_channel,
                          std::string& responded_at);
+
+  std::vector<ServerSend::ChannelInvitation> get_all_user_incoming_invitations(
+      int64_t id_user);
+
+  std::vector<ServerSend::ChannelInfo> get_all_outgoing_invitations(
+      int64_t id_user);
 };
 
 #endif

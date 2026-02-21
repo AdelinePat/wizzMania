@@ -5,12 +5,11 @@ int64_t UserService::login(AuthMessages::LoginRequest login_request) {
             << "\n";
   int64_t id_user =
       db.verify_user(login_request.username, login_request.password);
-      // TODO ADD EMAIL POSSIBILITY !!!!
+  // TODO ADD EMAIL POSSIBILITY !!!!
 
   if (id_user < 0) {
     std::cout << "[LOGIN] Invalid credentials for: " << login_request.username
               << "\n";
-    // return this->send_login_error(401, "Invalid username or password");
     throw HttpError(401, "Invalid username or password");
   }
   return id_user;
@@ -21,21 +20,11 @@ bool UserService::has_access(int64_t id_user, int64_t id_channel) {
 
   bool has_channel_access = db.has_channel_access(id_user, id_channel);
   return (is_system_user || has_channel_access);
-  // if (!is_system_user && !has_channel_access) {
-  //   std::cerr << "[INIT] Error: user has no access to this channel !\n";
-  //   // send_error(conn, "INVALID_USER",
-  //   //            "User has no permission to SEND_MESSAGE to this channel");
-  //   throw WsError(
-  //       "{INVALID_USER] User has no permission to SEND_MESSAGE to this "
-  //       "channel");
-  // }
-  // return true;
 }
 
 std::unordered_set<int64_t> UserService::get_users_by_channel(
     int64_t id_channel) {
-  return db.get_channel_participants(
-      id_channel);  // PARTICIPANT CHANNEL SERVICE OU USER SERVICE A VOIR !
+  return db.get_channel_participants(id_channel);
 }
 
 std::optional<ServerSend::Contact> UserService::get_contact(int64_t id_user) {
@@ -50,8 +39,14 @@ int64_t UserService::get_id_user(const std::string& username) {
   return id_user.value();
 }
 
-std::vector<ServerSend::Contact> UserService::get_contacts_from_channel(int64_t id_channel) {
+std::vector<ServerSend::Contact> UserService::get_contacts_from_channel(
+    int64_t id_channel) {
   std::vector<ServerSend::Contact> contacts =
       db.get_channel_contacts(id_channel, ChannelStatus::PENDING);
   return contacts;
+}
+
+std::vector<ServerSend::Contact> UserService::get_all_user_contacts(
+    int64_t id_user) {
+  return db.get_user_contacts(id_user);
 }

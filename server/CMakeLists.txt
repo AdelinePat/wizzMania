@@ -46,7 +46,6 @@ if(NOT BUILD_TESTS)
         sources/invitation/invitation_service.cpp
         sources/channel/channel_controller.cpp
         sources/channel/channel_service.cpp
-        sources/message_handler.cpp
         sources/websocket_manager.cpp
         ../common/utils.cpp  
         )
@@ -68,7 +67,6 @@ if(NOT BUILD_TESTS)
         headers/channel/channel_controller.hpp
         headers/channel/channel_service.hpp
         headers/json_helpers.hpp
-        headers/message_handler.hpp
         headers/websocket_manager.hpp
     )
 

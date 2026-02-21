@@ -58,3 +58,50 @@ int64_t ChannelService::create_channel(
   }
   return id_channel_opt.value();
 }
+
+std::vector<ServerSend::ChannelInfo> ChannelService::get_all_user_channels(
+    int64_t id_user) {
+  // return db.get_initial_channels(id_user);
+
+  // Create ChannelInfo list for initial_data
+  // std::vector<ServerSend::ChannelInfo> Database::get_initial_channels(
+  //     const int64_t id_user) {
+    std::lock_guard<std::mutex> lock(db.db_mutex);
+
+    std::vector<ServerSend::ChannelInfo> channels_info =
+        db.get_channels(id_user);
+    std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
+        db.get_participants_and_channel(id_user);
+    std::map<int64_t, int64_t> channels_unread_count =
+        db.get_unread_count(id_user);
+    std::map<int64_t, ServerSend::Message> channels_last_message =
+        db.get_last_messages(id_user);
+
+    for (ServerSend::ChannelInfo& channel : channels_info) {
+      auto it_participant = channel_participants.find(channel.id_channel);
+      if (it_participant != channel_participants.end()) {
+        channel.participants = it_participant->second;
+        channel.is_group = channel.participants.size() > 2;
+      } else {
+        std::cerr << "[DB] Warning: no participants found for channel "
+                  << channel.id_channel << "\n";
+      }
+
+      auto it_unread_count = channels_unread_count.find(channel.id_channel);
+      if (it_unread_count != channels_unread_count.end()) {
+        channel.unread_count = it_unread_count->second;
+      } else {
+        channel.unread_count = 0;
+      }
+
+      auto it_last_message = channels_last_message.find(channel.id_channel);
+      if (it_last_message != channels_last_message.end()) {
+        channel.last_message = it_last_message->second;
+      } else {
+        std::cerr << "[DB] Warning: no last message found for channel "
+                  << channel.id_channel << "\n";
+      }
+    }
+    return channels_info;
+  
+}

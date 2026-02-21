@@ -48,7 +48,7 @@ bool Database::has_channel_access(int64_t id_user, int64_t id_channel) {
   }
 }
 
-// Get contact list for a user
+// Get contact struct for one id_user
 std::optional<ServerSend::Contact> Database::get_contact(
     const int64_t id_user) {
   std::lock_guard<std::mutex> lock(db_mutex);
@@ -143,7 +143,7 @@ Database::get_participants_and_channel(const int64_t id_user,
 }
 
 // Get contact list for a user
-std::vector<ServerSend::Contact> Database::get_contacts(
+std::vector<ServerSend::Contact> Database::get_user_contacts(
     const int64_t id_user, ChannelStatus membership) {
   std::lock_guard<std::mutex> lock(db_mutex);
 
@@ -256,8 +256,6 @@ std::vector<ServerSend::Contact> Database::get_participants(
     return channel_participants;
   }
 }
-
-
 
 std::vector<ServerSend::Contact> Database::get_channel_contacts(
     int64_t id_channel, ChannelStatus membership) {

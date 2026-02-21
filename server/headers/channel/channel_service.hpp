@@ -33,6 +33,8 @@ class ChannelService {
   int64_t create_channel(int64_t id_user, std::string& title,
                          std::string& created_at,
                          std::unordered_set<int64_t> participants);
+
+  std::vector<ServerSend::ChannelInfo> get_all_user_channels(int64_t id_user);
 };
 
 #endif
