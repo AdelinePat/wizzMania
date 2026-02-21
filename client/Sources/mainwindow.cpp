@@ -131,7 +131,7 @@ void MainWindow::onChannelHistoryReceived(
 }
 
 void MainWindow::onNewMessageReceived(
-    const ServerSend::NewMessageBroadcast& msg) {
+    const ServerSend::SendMessageResponse& msg) {
   qInfo().noquote() << "[WS][NEW_MESSAGE] channel_id=" << msg.id_channel
                     << " sender=" << msg.message.id_sender
                     << " id_message=" << msg.message.id_message

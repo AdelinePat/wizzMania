@@ -32,9 +32,7 @@ class WebSocketClient : public QObject {
   void disconnected(const QString& reason);
   void authenticated(int64_t idUser);
   void initialDataReceived(const ServerSend::InitialDataResponse& data);
-  void channelHistoryReceived(
-      const ServerSend::ChannelHistoryResponse& history);
-  void newMessageReceived(const ServerSend::NewMessageBroadcast& msg);
+  void newMessageReceived(const ServerSend::SendMessageResponse& msg);
   void errorReceived(const QString& code, const QString& message);
 
  private slots:

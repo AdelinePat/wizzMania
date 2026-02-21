@@ -54,15 +54,40 @@ void WebSocketManager::broadcast_to_all(const std::string& message) {
 //   }
 // }
 
-void WebSocketManager::broadcast_to_users(const std::unordered_set<int64_t>& id_users,
-                                          const std::string& message) {
+void WebSocketManager::broadcast_to_users(
+    const std::unordered_set<int64_t>& id_users, const std::string& message) {
   std::lock_guard<std::mutex> lock(ws_mutex);
   for (int64_t id_user : id_users) {
-    auto it = this->user_sockets.find(id_user);
-    if (it != this->user_sockets.end()) {
-      for (WSConn conn : it->second) {
-        conn->send_text(message);
-      }
+    this->send_to_user_(id_user, message);
+    // auto it = this->user_sockets.find(id_user);
+    // if (it != this->user_sockets.end()) {
+    //   for (WSConn conn : it->second) {
+    //     conn->send_text(message);
+    //   }
+    // }
+  }
+}
+
+// Private method that sends message to all user's connection, no guard lock
+void WebSocketManager::send_to_user_(int64_t id_user,
+                                     const std::string& message) {
+  // get all connections for this user, send to each
+  auto it = this->user_sockets.find(id_user);
+  if (it != this->user_sockets.end()) {
+    for (WSConn conn : it->second) {
+      conn->send_text(message);
+    }
+  }
+}
+
+// Public method that sends message to all user's connection, guard lock !
+void WebSocketManager::send_to_user(int64_t id_user,
+                                    const std::string& message) {
+  std::lock_guard<std::mutex> lock(ws_mutex);
+  auto it = this->user_sockets.find(id_user);
+  if (it != this->user_sockets.end()) {
+    for (WSConn conn : it->second) {
+      conn->send_text(message);
     }
   }
 }
@@ -73,10 +98,10 @@ bool WebSocketManager::is_user_online(int64_t id_user) {
 }
 
 std::optional<int64_t> WebSocketManager::get_user_id(WSConn conn) {
-    auto it = socket_to_user.find(conn);
-    if (it != socket_to_user.end()) {
-      return std::optional<int64_t>(it->second);
-    } else {
-      return std::nullopt;
-    }
+  auto it = socket_to_user.find(conn);
+  if (it != socket_to_user.end()) {
+    return std::optional<int64_t>(it->second);
+  } else {
+    return std::nullopt;
+  }
 }

@@ -51,7 +51,7 @@ struct SendMessageRequest {
 
 struct CreateChannelRequest {
   WizzMania::MessageType type;  // CREATE_CHANNEL
-  std::vector<int64_t> participant_ids;
+  std::unordered_set<std::string> usernames;
   std::string title;
 };
 
@@ -88,7 +88,7 @@ struct TypingRequest {
   bool is_typing;
 };
 
-struct RequestChannelHistoryRequest {
+struct ChannelHistoryRequest {
   WizzMania::MessageType type;  // REQUEST_CHANNEL_HISTORY
   int64_t id_channel;
   int64_t before_id_message;
@@ -104,40 +104,40 @@ struct ChannelOpenRequest {
 // ===== SERVER -> CLIENT Messages =====
 namespace ServerSend {
 struct Message {
-  int64_t id_message;
-  int64_t id_sender;
+  int64_t id_message = 0;
+  int64_t id_sender = 0;
   // std::string sender_username; // client caches id_user <-> username ?
   std::string body;
   std::string timestamp;
   bool is_system;
 };
 
-struct NewMessageBroadcast {
+struct SendMessageResponse {
   WizzMania::MessageType type;  // NEW_MESSAGE
   Message message;
   int64_t id_channel;
 };
 
 struct Contact {
-  int64_t id_user;
+  int64_t id_user = 0;
   std::string username;
   // ChannelStatus status;
   // bool is_online;
 };
 
 struct ChannelInfo {
-  int64_t id_channel;
+  int64_t id_channel = 0;
   std::string title;
   bool is_group;
-  int64_t created_by;
+  int64_t created_by = 0;
   std::vector<Contact> participants;
   // std::unordered_set<int64_t> participants;
   Message last_message;  // display preview of last message
-  int64_t unread_count;
-  int64_t last_read_id_message;
+  int64_t unread_count = 0;
+  int64_t last_read_id_message = 0;
 };
 
-struct ChannelCreatedResponse {
+struct CreateChannelResponse {
   WizzMania::MessageType type;  // CHANNEL_CREATED
   int64_t id_channel;
   bool already_existed;
@@ -148,30 +148,34 @@ struct ChannelInvitation {
   WizzMania::MessageType type;  // CHANNEL_INVITATION
   int64_t id_channel;
   int64_t id_inviter;
-  // std::string inviter_username;
   std::vector<Contact> other_participant_ids;
   std::string title;
 };
 
-struct InvitationAcceptedNotification {
+// struct InvitationAcceptedNotification {
+//   WizzMania::MessageType type;  // INVITATION_ACCEPTED
+//   int64_t id_channel;
+//   int64_t id_user;
+//   std::string username;
+// };
+
+struct AcceptInvitationResponse {
   WizzMania::MessageType type;  // INVITATION_ACCEPTED
-  int64_t id_channel;
-  int64_t id_user;
-  std::string username;
+  ChannelInfo channel;
 };
 
-struct InvitationRejectedNotification {
+struct RejectInvitationResponse {
   WizzMania::MessageType type;  // INVITATION_REJECTED
   int64_t id_channel;
-  int64_t id_user;
-  std::string username;
+  Contact contact;
 };
 
 struct UserJoinedNotification {
   WizzMania::MessageType type;  // USER_JOINED
   int64_t id_channel;
-  int64_t id_user;
-  std::string username;
+  ServerSend::Contact contact;
+  // int64_t id_user;
+  // std::string username;
 };
 
 struct UserLeftNotification {
@@ -219,6 +223,7 @@ struct InitialDataResponse {
   std::vector<Contact> contacts;
   std::vector<ChannelInfo> channels;
   std::vector<ChannelInvitation> invitations;
+  std::vector<ChannelInfo> outgoing_invitations;
 };
 
 struct ChannelHistoryResponse {
