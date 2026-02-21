@@ -28,7 +28,7 @@ class AuthController {
 
 //   int64_t validate_token(const std::string& token);
 
-  void authenticate_ws(crow::websocket::connection& conn,
+  int64_t authenticate_ws(crow::websocket::connection& conn,
                        const crow::json::rvalue& json_msg);
 
   void auth_success(crow::websocket::connection& conn,

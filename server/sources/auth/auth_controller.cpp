@@ -6,11 +6,12 @@ std::string AuthController::generateToken(int64_t id_user) {
   return auth_service.create_token(now, expiration, id_user);
 }
 
-void AuthController::authenticate_ws(crow::websocket::connection& conn,
+int64_t AuthController::authenticate_ws(crow::websocket::connection& conn,
                                      const crow::json::rvalue& json_msg) {
   if (ws_manager.is_authenticated(&conn)) {
-    std::cout << "[WS] User already authenticated\n";
-    return;
+    // std::cout << "[WS] User already authenticated\n";
+    // return -1;
+    throw WsError("[WS] User already authenticated\n");
   }
 
   std::cout << "[WS] Processing authentication request\n";
@@ -19,18 +20,22 @@ void AuthController::authenticate_ws(crow::websocket::connection& conn,
       JsonHelpers::Auth::parse_ws_auth_request(json_msg);
 
   if (!auth_req.has_value()) {
-    this->auth_error(conn, "Invalid authentication format");
-    return;
+    // this->auth_error(conn, "Invalid authentication format");
+    throw WsError("Invalid authentication format");
+    // return -1;
   }
 
   int64_t validated_id_user = auth_service.validate_token(auth_req->token);
 
   this->auth_success(conn, validated_id_user);
+  return validated_id_user;
 
   // TODO
+  // init_controller.initial_data(conn, validated_id_user);
   // this->initial_data(conn);
 
-  return;
+
+  // return;
 }
 
 void AuthController::auth_success(crow::websocket::connection& conn,

@@ -51,26 +51,26 @@
 //   return;
 // }
 
-void MessageHandler::initial_data(crow::websocket::connection& conn) {
-  std::optional<int64_t> id_user_opt = ws_manager.get_user_id(&conn);
-  if (!id_user_opt.has_value()) {
-    std::cerr << "[INIT] Error: user not found for connection\n";
-    return;
-  }
-  int64_t id_user = id_user_opt.value();
+// void MessageHandler::initial_data(crow::websocket::connection& conn) {
+//   std::optional<int64_t> id_user_opt = ws_manager.get_user_id(&conn);
+//   if (!id_user_opt.has_value()) {
+//     std::cerr << "[INIT] Error: user not found for connection\n";
+//     return;
+//   }
+//   int64_t id_user = id_user_opt.value();
 
-  std::cout << "[INIT] Sending initial data to user " << id_user << "\n";
+//   std::cout << "[INIT] Sending initial data to user " << id_user << "\n";
 
-  ServerSend::InitialDataResponse init_data = db.get_initial_data(id_user);
-  init_data.type = WizzMania::MessageType::INITIAL_DATA;
-  if (init_data.contacts.empty()) {
-    std::cout << "[INIT] Warning: No contacts found for user " << id_user
-              << "\n";
-  }
-  std::string json_str = JsonHelpers::ServerSend::to_json(init_data).dump();
-  conn.send_text(json_str);
+//   ServerSend::InitialDataResponse init_data = db.get_initial_data(id_user);
+//   init_data.type = WizzMania::MessageType::INITIAL_DATA;
+//   if (init_data.contacts.empty()) {
+//     std::cout << "[INIT] Warning: No contacts found for user " << id_user
+//               << "\n";
+//   }
+//   std::string json_str = JsonHelpers::ServerSend::to_json(init_data).dump();
+//   conn.send_text(json_str);
 
-  std::cout << "[INIT] Sent initial data: " << init_data.contacts.size()
-            << " contacts, " << init_data.channels.size() << " channels, "
-            << init_data.invitations.size() << " invitations\n";
-}
+//   std::cout << "[INIT] Sent initial data: " << init_data.contacts.size()
+//             << " contacts, " << init_data.channels.size() << " channels, "
+//             << init_data.invitations.size() << " invitations\n";
+// }

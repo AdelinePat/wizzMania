@@ -27,6 +27,7 @@ find_package(nlohmann_json 3.2.0 REQUIRED)
 # ============================================
 if(NOT BUILD_TESTS)
     set(SERVER_SOURCES
+        sources/initialization_controller.cpp
         sources/auth/auth_controller.cpp
         sources/auth/auth_service.cpp
         sources/user/user_controller.cpp
@@ -51,6 +52,7 @@ if(NOT BUILD_TESTS)
         )
 
     set(SERVER_HEADERS
+        headers/initialization_controller.hpp
         headers/auth/auth_controller.hpp
         headers/auth/auth_service.hpp
         headers/user/user_controller.hpp

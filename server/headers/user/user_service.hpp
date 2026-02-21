@@ -8,13 +8,12 @@
 #include <string>
 #include <vector>
 
-#include "auth_controller.hpp"
+// #include "auth_controller.hpp"
 #include "database.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
-// using WSConn = crow::websocket::connection*;
 
 class UserService {
   Database& db;

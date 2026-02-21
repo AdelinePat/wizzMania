@@ -64,7 +64,7 @@ class Database {
       ChannelStatus membership = ChannelStatus::ACCEPTED);
   std::vector<ServerSend::ChannelInfo> get_initial_channels(
       const int64_t id_user);
-  ServerSend::InitialDataResponse get_initial_data(const int64_t id_user);
+//   ServerSend::InitialDataResponse get_initial_data(const int64_t id_user);
   std::optional<int64_t> save_message(int64_t id_user, int64_t id_channel,
                                       const std::string& body,
                                       const std::string& timestamp);

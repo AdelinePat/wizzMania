@@ -46,6 +46,7 @@ int main() {
   InvitationController invitation_controller(db, ws_manager);
   ChannelController channel_controller(db, ws_manager);
   AuthController auth_controller(ws_manager);
+  InitializationController init_controller(db, ws_manager);
 
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
@@ -99,8 +100,13 @@ int main() {
 
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
-          // method in progress
-          return auth_controller.authenticate_ws(conn, json_msg);
+          try {
+            int64_t id_user = auth_controller.authenticate_ws(conn, json_msg);
+            return init_controller.initial_data(conn, id_user);
+          } catch (const WsError& e) {
+            std::cerr << e.get_message();
+            auth_controller.auth_error(conn, "Invalid authentication format");
+          }
         }
 
         // ===== ALL OTHER MESSAGES REQUIRE AUTH =====
