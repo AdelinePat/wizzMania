@@ -58,7 +58,7 @@ int main() {
         }
 
         // Generate JWT token
-        std::string token = Auth::generateToken(id_user);
+        std::string token = AuthController::generateToken(id_user);
         std::cout << "[LOGIN] Login successful! User ID: " << id_user << "\n";
         std::cout << "[LOGIN] Token generated: " << token.substr(0, 20)
                   << "...\n";
@@ -193,7 +193,7 @@ int main() {
         std::cout << "[WS] Authenticating with token: " << token.substr(0, 20)
                   << "...\n";
 
-        auto id_user = Auth::validateToken(token);
+        auto id_user = AuthController::validateToken(token);
 
         if (!id_user.has_value()) {
           std::cout << "[WS] Invalid token, closing connection\n";

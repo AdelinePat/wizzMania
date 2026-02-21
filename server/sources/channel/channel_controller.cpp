@@ -26,7 +26,7 @@ void ChannelController::create_channel(crow::websocket::connection& conn,
     std::string title = req->title;
     channel_service.generate_title(title, req->usernames);
 
-    std::string created_at = get_timestamp();
+    std::string created_at = Utils::get_timestamp();
     int64_t id_channel = channel_service.create_channel(
         id_user, title, created_at, participants);
 

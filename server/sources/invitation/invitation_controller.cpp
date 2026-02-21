@@ -14,7 +14,7 @@ void InvitationController::accept_invitation(
   std::cout << "[INVITATION] User " << id_user << " -> accepts to Channel "
             << req->id_channel << "\n";
 
-  std::string responded_at = get_timestamp();
+  std::string responded_at = Utils::get_timestamp();
 
   invitation_service.accept_invitation(id_user, req->id_channel, responded_at);
 
@@ -56,7 +56,7 @@ void InvitationController::reject_invitation(
     int64_t id_creator =
         channel_service.get_creator_id(id_user, req->id_channel);
 
-    std::string responded_at = get_timestamp();
+    std::string responded_at = Utils::get_timestamp();
 
     invitation_service.reject_invitation(id_user, req->id_channel,
                                          responded_at);

@@ -26,6 +26,8 @@ class MessageService {
   int64_t create_message(int64_t id_user, int64_t id_channel, std::string& body,
                          std::string& timestamp);
   int64_t get_creator_id(int64_t id_user, int64_t id_channel);
+  std::vector<ServerSend::Message> get_messages_history_from_channel(
+      int64_t id_channel, int64_t before_id_message, int limit);
 };
 
 #endif

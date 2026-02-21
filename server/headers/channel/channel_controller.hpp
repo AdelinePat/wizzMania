@@ -16,6 +16,7 @@
 #include "optional"                   // use
 #include "user_service.hpp"           // use
 #include "websocket_manager.hpp"      // use
+#include "utils.hpp"
 
 class ChannelController {
  private:

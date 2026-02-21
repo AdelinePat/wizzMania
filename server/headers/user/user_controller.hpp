@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include "auth.hpp"
+#include "auth_controller.hpp"
 #include "database.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"

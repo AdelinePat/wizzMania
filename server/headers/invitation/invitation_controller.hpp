@@ -17,6 +17,7 @@
 #include "optional"               // use
 #include "user_service.hpp"       // use
 #include "user_service.hpp"
+#include "utils.hpp"
 #include "websocket_manager.hpp"  // use
 
 class InvitationController {

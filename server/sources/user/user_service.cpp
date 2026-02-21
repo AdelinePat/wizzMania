@@ -5,6 +5,7 @@ int64_t UserService::login(AuthMessages::LoginRequest login_request) {
             << "\n";
   int64_t id_user =
       db.verify_user(login_request.username, login_request.password);
+      // TODO ADD EMAIL POSSIBILITY !!!!
 
   if (id_user < 0) {
     std::cout << "[LOGIN] Invalid credentials for: " << login_request.username

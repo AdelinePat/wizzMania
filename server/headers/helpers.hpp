@@ -1,18 +1,12 @@
 #ifndef HELPERS_H
 #define HELPERS_H
-#include <chrono>
-#include <cstdlib>
-#include <ctime>
-#include <iomanip>
-#include <iostream>
-#include <sstream>
+
 #include <string>
+
 #include "crow.h"
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 
-uint16_t get_server_port();
-std::string get_timestamp();
 ServerSend::Message create_message_struct(int64_t id_message, int64_t id_user,
                                           const std::string& body,
                                           const std::string& timestamp);

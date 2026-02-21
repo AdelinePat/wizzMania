@@ -30,7 +30,7 @@ int main() {
   std::cout << " WizzMania Server Starting...\n";
   std::cout << "========================================\n";
 
-  uint16_t port = get_server_port();
+  uint16_t port = Utils::get_server_port();
   Database db;
   std::cout << "[Server] Database initialized successfully" << std::endl;
 
@@ -119,22 +119,24 @@ int main() {
           }
 
           case WizzMania::MessageType::REQUEST_CHANNEL_HISTORY: {
-            msg_handler.send_history(conn, id_user, json_msg);
+            message_controller.send_history(conn, id_user, json_msg);
             break;
           }
 
           case WizzMania::MessageType::ACCEPT_INVITATION: {
+            // TO DO HTTP
             invitation_controller.accept_invitation(conn, id_user, json_msg);
             break;
           }
 
           case WizzMania::MessageType::REJECT_INVITATION: {
-            std::cout << "REJECT !!!!";
+            // TO DO HTTP
             invitation_controller.reject_invitation(conn, id_user, json_msg);
             break;
           }
 
           case WizzMania::MessageType::CREATE_CHANNEL: {
+            // TODO HTTP INSTEAD OF WS !! + check if creator invites themselves
             channel_controller.create_channel(conn, id_user, json_msg);
             break;
           }

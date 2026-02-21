@@ -19,6 +19,7 @@
 #include "message_structure.hpp"
 #include "user_controller.hpp"
 #include "user_service.hpp"
+#include "utils.hpp"
 #include "websocket_manager.hpp"
 
 using WSConn = crow::websocket::connection*;

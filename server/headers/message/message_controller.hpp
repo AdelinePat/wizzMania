@@ -15,6 +15,7 @@
 #include "optional"               // use
 #include "user_service.hpp"
 #include "websocket_manager.hpp"
+#include "utils.hpp"
 
 class MessageController {
  private:
@@ -38,8 +39,13 @@ class MessageController {
                              std::string& body, std::string& timestamp);
 
   // TODO SEND HISTORY
-//   void send_history(crow::websocket::connection& conn, int64_t id_user,
-//                     const crow::json::rvalue& json_msg);
+  void send_history(crow::websocket::connection& conn, int64_t id_user,
+                    const crow::json::rvalue& json_msg);
+
+  void send_history_response(crow::websocket::connection& conn,
+                             int64_t id_channel,
+                             std::vector<ServerSend::Message>& messages,
+                             int limit);
 };
 
 #endif

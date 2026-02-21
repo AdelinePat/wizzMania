@@ -1,34 +1,34 @@
 #include "auth.hpp"
 
-std::string Auth::generateToken(int64_t id_user) {
-  auto now = std::chrono::system_clock::now();
-  auto expiration = now + std::chrono::hours(24 * 7);  // 7 days
+// std::string Auth::generateToken(int64_t id_user) {
+//   auto now = std::chrono::system_clock::now();
+//   auto expiration = now + std::chrono::hours(24 * 7);  // 7 days
 
-  // Use basic_claim with nlohmann_json traits
-  using claim = jwt::basic_claim<jwt::traits::nlohmann_json>;
+//   // Use basic_claim with nlohmann_json traits
+//   using claim = jwt::basic_claim<jwt::traits::nlohmann_json>;
 
-  return jwt::create<jwt::traits::nlohmann_json>()
-      .set_type("JWT")
-      .set_issuer("wizzmania")
-      .set_issued_at(now)
-      .set_expires_at(expiration)
-      .set_payload_claim("id_user", claim(std::to_string(id_user)))
-      .sign(jwt::algorithm::hs256{SECRET_KEY});
-}
+//   return jwt::create<jwt::traits::nlohmann_json>()
+//       .set_type("JWT")
+//       .set_issuer("wizzmania")
+//       .set_issued_at(now)
+//       .set_expires_at(expiration)
+//       .set_payload_claim("id_user", claim(std::to_string(id_user)))
+//       .sign(jwt::algorithm::hs256{SECRET_KEY});
+// }
 
-std::optional<int64_t> Auth::validateToken(const std::string& token) {
-  try {
-    auto verifier = jwt::verify<jwt::traits::nlohmann_json>()
-                        .allow_algorithm(jwt::algorithm::hs256{SECRET_KEY})
-                        .with_issuer("wizzmania");
+// std::optional<int64_t> Auth::validateToken(const std::string& token) {
+//   try {
+//     auto verifier = jwt::verify<jwt::traits::nlohmann_json>()
+//                         .allow_algorithm(jwt::algorithm::hs256{SECRET_KEY})
+//                         .with_issuer("wizzmania");
 
-    auto decoded = jwt::decode<jwt::traits::nlohmann_json>(token);
-    verifier.verify(decoded);
+//     auto decoded = jwt::decode<jwt::traits::nlohmann_json>(token);
+//     verifier.verify(decoded);
 
-    std::string id_user_str = decoded.get_payload_claim("id_user").as_string();
-    return std::stoll(id_user_str);
+//     std::string id_user_str = decoded.get_payload_claim("id_user").as_string();
+//     return std::stoll(id_user_str);
 
-  } catch (const std::exception&) {
-    return std::nullopt;
-  }
-}
+//   } catch (const std::exception&) {
+//     return std::nullopt;
+//   }
+// }
