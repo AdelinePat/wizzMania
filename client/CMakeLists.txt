@@ -5,6 +5,11 @@ project(WizzManiaClient VERSION 1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Default to Release build type if not specified
+if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
+
 # Qt configuration
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -29,26 +34,42 @@ find_package(Qt6 REQUIRED COMPONENTS
 set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
-    Sources/loginwidget.cpp
-    Sources/serverconfig.cpp
-    Sources/websocket_client.cpp
-    Sources/message_json.cpp
+    Sources/services/api_client.cpp
+    Sources/services/auth_manager.cpp
+    Sources/services/server_config.cpp
+    Sources/ws/websocket_client.cpp
+    Sources/utils/message_json.cpp
+    Sources/models/message_model.cpp
+    Sources/models/channel_model.cpp
+    Sources/widgets/login_widget.cpp
+    Sources/widgets/message_item_widget.cpp
+    Sources/widgets/channel_row_widget.cpp
+    Sources/widgets/channel_panel_widget.cpp
+    Sources/widgets/right_panel_widget.cpp
 )
 
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
-    Headers/mainwindow.h
-    Headers/loginwidget.h
-    Headers/serverconfig.h
-    Headers/websocket_client.h
-    Headers/message_json.h
-    Headers/message_qt_types.h
+    Headers/mainwindow.hpp
+    Headers/services/api_client.hpp
+    Headers/services/auth_manager.hpp
+    Headers/services/server_config.hpp
+    Headers/ws/websocket_client.hpp
+    Headers/utils/message_json.hpp
+    Headers/utils/message_qt_types.hpp
+    Headers/models/message_model.hpp
+    Headers/models/channel_model.hpp
+    Headers/widgets/login_widget.hpp
+    Headers/widgets/message_item_widget.hpp
+    Headers/widgets/channel_row_widget.hpp
+    Headers/widgets/channel_panel_widget.hpp
+    Headers/widgets/right_panel_widget.hpp
 )
 
 # Collect UI files from Forms/ directory
 set(CLIENT_UI_FILES
     Forms/mainwindow.ui
-    Forms/loginwidget.ui
+    Forms/login_widget.ui
 )
 
 # Collect resource files (.qrc for images, icons, etc.)
@@ -58,15 +79,15 @@ set(CLIENT_RESOURCES
 
 # Create executable
 if(WIN32)
-    add_executable(wizzmania-client WIN32 
-        ${CLIENT_SOURCES} 
+    add_executable(wizzmania-client WIN32
+        ${CLIENT_SOURCES}
         ${CLIENT_HEADERS}
         ${CLIENT_UI_FILES}
         ${CLIENT_RESOURCES}
     )
 else()
-    add_executable(wizzmania-client 
-        ${CLIENT_SOURCES} 
+    add_executable(wizzmania-client
+        ${CLIENT_SOURCES}
         ${CLIENT_HEADERS}
         ${CLIENT_UI_FILES}
         ${CLIENT_RESOURCES}
@@ -77,6 +98,16 @@ endif()
 target_include_directories(wizzmania-client PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/Headers
     ${CMAKE_CURRENT_SOURCE_DIR}/Sources
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/ws
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/Headers/widgets
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/services
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/ws
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/models
+    ${CMAKE_CURRENT_SOURCE_DIR}/Sources/widgets
     ${CMAKE_CURRENT_SOURCE_DIR}/Forms
     ${CMAKE_CURRENT_SOURCE_DIR}/../common
     ${CMAKE_CURRENT_BINARY_DIR}  # For generated UI headers (ui_*.h)
@@ -94,7 +125,7 @@ target_link_libraries(wizzmania-client PRIVATE
 # Windows-specific settings
 if(WIN32)
     set_target_properties(wizzmania-client PROPERTIES
-        WIN32_EXECUTABLE TRUE
+        WIN32_EXECUTABLE $<NOT:$<CONFIG:Debug>>
     )
     
     # MinGW specific: ensure proper entry point linkage

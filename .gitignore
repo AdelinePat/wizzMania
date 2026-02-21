@@ -43,6 +43,7 @@
 # Environnement
 .env
 queries.sql
+settings.ini
 
 # Build directories
 build/

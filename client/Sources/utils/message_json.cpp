@@ -1,6 +1,4 @@
-#include "message_json.h"
-
-#include <QJsonArray>
+#include "utils/message_json.hpp"
 
 namespace MessageJson {
 namespace {
@@ -29,10 +27,10 @@ bool parse_contact(const QJsonObject& obj, ServerSend::Contact& out) {
 }
 
 bool parse_channel(const QJsonObject& obj, ServerSend::ChannelInfo& out) {
-  if (!obj.contains("channel_id") || !obj.contains("title")) {
+  if (!obj.contains("id_channel") || !obj.contains("title")) {
     return false;
   }
-  out.channel_id = obj.value("channel_id").toVariant().toLongLong();
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
   out.title = obj.value("title").toString().toStdString();
   out.is_group = obj.value("is_group").toBool(false);
   out.created_by = obj.value("created_by").toVariant().toLongLong();
@@ -58,7 +56,7 @@ QJsonObject to_json(const AuthMessages::WSAuthRequest& req) {
 QJsonObject to_json(const ClientSend::SendMessageRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
-  obj["channel_id"] = static_cast<qint64>(req.channel_id);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
   obj["body"] = QString::fromStdString(req.body);
   return obj;
 }
@@ -66,7 +64,16 @@ QJsonObject to_json(const ClientSend::SendMessageRequest& req) {
 QJsonObject to_json(const ClientSend::ChannelOpenRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
-  obj["channel_id"] = static_cast<qint64>(req.channel_id);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  return obj;
+}
+
+QJsonObject to_json(const ClientSend::ChannelHistoryRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  obj["before_id_message"] = static_cast<qint64>(req.before_id_message);
+  obj["limit"] = req.limit;
   return obj;
 }
 
@@ -84,8 +91,8 @@ bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
   return true;
 }
 
-bool from_json(const QJsonObject& obj, ServerSend::NewMessageBroadcast& out) {
-  if (!obj.contains("type") || !obj.contains("channel_id") ||
+bool from_json(const QJsonObject& obj, ServerSend::SendMessageResponse& out) {
+  if (!obj.contains("type") || !obj.contains("id_channel") ||
       !obj.contains("message")) {
     return false;
   }
@@ -94,7 +101,7 @@ bool from_json(const QJsonObject& obj, ServerSend::NewMessageBroadcast& out) {
     return false;
   }
   out.type = WizzMania::MessageType::NEW_MESSAGE;
-  out.channel_id = obj.value("channel_id").toVariant().toLongLong();
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
   if (!obj.value("message").isObject()) {
     return false;
   }
@@ -137,6 +144,36 @@ bool from_json(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
       ServerSend::ChannelInfo channel;
       if (parse_channel(val.toObject(), channel)) {
         out.channels.push_back(channel);
+      }
+    }
+  }
+
+  return true;
+}
+
+bool from_json(const QJsonObject& obj,
+               ServerSend::ChannelHistoryResponse& out) {
+  if (!obj.contains("type") || !obj.contains("id_channel")) {
+    return false;
+  }
+  const int type = obj.value("type").toInt();
+  if (type != type_to_int(WizzMania::MessageType::CHANNEL_HISTORY)) {
+    return false;
+  }
+  out.type = WizzMania::MessageType::CHANNEL_HISTORY;
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  out.has_more = obj.value("has_more").toBool(false);
+
+  out.messages.clear();
+  if (obj.contains("messages") && obj.value("messages").isArray()) {
+    const QJsonArray arr = obj.value("messages").toArray();
+    for (const QJsonValue& val : arr) {
+      if (!val.isObject()) {
+        continue;
+      }
+      ServerSend::Message msg;
+      if (parse_message(val.toObject(), msg)) {
+        out.messages.push_back(msg);
       }
     }
   }

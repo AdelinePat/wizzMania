@@ -5,9 +5,24 @@ Second year IT Bachelor group project : create a chat application with C++ and Q
 
 ```cmd
 cd client/build
-cmake .. -G Ninja -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/mingw_64"
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="C:/Qt/6.10.2/mingw_64"
 ninja
 ./wizzmania-client.exe
+```
+
+**Run client with filtered logs (no Qt noise):**
+```bash
+QT_LOGGING_RULES="qt.*=false" ./client/build/wizzmania-client.exe
+```
+
+**Run client with all logs (debug mode):**
+```bash
+QT_LOGGING_RULES="*.debug=true;*.info=true;qt.network.*=true" ./client/build/wizzmania-client.exe
+```
+
+**Run client silently (no logs):**
+```bash
+QT_LOGGING_RULES="*=false" ./client/build/wizzmania-client.exe
 ```
 
 ## Design
@@ -148,9 +163,24 @@ C:\Qt\6.10.2\mingw_64\bin
 ```bash
 powershell.exe -NoProfile -Command "& '$(cygpath -w ./client/build-client.bat)'"
 ```
+ou:
+version release
+```bash
+cmake -S client -B client/build -G "MinGW Makefiles"
+cmake --build client/build -j4
+./client/build/wizzmania-client.exe
+```
+
+version debug (logs):
+```bash
+cmake -S client -B client/build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Debug
+cmake --build client/build -j4
+QT_LOGGING_RULES="qt.*=false" ./client/build/wizzmania-client.exe
+```
+
 start client
 ```bash
-./client/build/wizzmania-client
+./client/build/wizzmania-client.exe
 ```
 
 ### Powershell
@@ -179,9 +209,19 @@ chmod +x ./client/run-client.sh
 ```bash
 docker compose up -d
 ```
+display server logs (windows):
+```bash
+docker compose logs -f server
+```
 test a response
 ```bash
 curl http://localhost:8888/PATH
+```
+si 405 Method not allowed:
+```bash
+curl -X POST http://localhost:8888/login \
+    -H "Content-Type: application/json" \
+    -d '{"username":"alice","password":"hash"}'
 ```
 
 
@@ -201,3 +241,6 @@ need to add secret.js in the same folder as index.js
 ```bash
 python3 -m http.server 8880
 ```
+
+Then, if your secret server is localhost, go to:
+http://localhost:8880/tests/draft/index.html

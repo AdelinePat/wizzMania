@@ -1,8 +1,8 @@
 #include <QApplication>
 #include <iostream>
 
-#include "mainwindow.h"
-#include "message_qt_types.h"
+#include "mainwindow.hpp"
+#include "utils/message_qt_types.hpp"
 
 int main(int argc, char** argv) {
   std::cout << "========================================\n";
@@ -13,7 +13,7 @@ int main(int argc, char** argv) {
 
   qRegisterMetaType<AuthMessages::WSAuthResponse>();
   qRegisterMetaType<ServerSend::InitialDataResponse>();
-  qRegisterMetaType<ServerSend::NewMessageBroadcast>();
+  qRegisterMetaType<ServerSend::SendMessageResponse>();
   qRegisterMetaType<ServerSend::ErrorResponse>();
 
   MainWindow window;

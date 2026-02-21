@@ -6,6 +6,13 @@ echo   WizzMania Client Build Script
 echo ========================================
 echo.
 
+set "BUILD_TYPE=Release"
+if /I "%~1"=="Debug" set "BUILD_TYPE=Debug"
+if /I "%~1"=="Release" set "BUILD_TYPE=Release"
+
+echo [INFO] Build type: %BUILD_TYPE%
+echo.
+
 REM This script is inside client/ directory
 
 REM Navigate to script's directory (client/)
@@ -180,7 +187,7 @@ echo.
 
 REM Configure with CMake using explicit tool paths
 cmake .. -G "MinGW Makefiles" ^
-    -DCMAKE_BUILD_TYPE=Release ^
+    -DCMAKE_BUILD_TYPE=%BUILD_TYPE% ^
     -DCMAKE_C_COMPILER="%QT_GCC%" ^
     -DCMAKE_CXX_COMPILER="%QT_GPP%" ^
     -DCMAKE_MAKE_PROGRAM="%QT_MAKE%" ^
@@ -209,7 +216,7 @@ echo Step 2: Building Client
 echo ========================================
 echo.
 
-cmake --build . --config Release
+cmake --build . --config %BUILD_TYPE%
 if errorlevel 1 (
     echo.
     echo [FAILED] Build failed!

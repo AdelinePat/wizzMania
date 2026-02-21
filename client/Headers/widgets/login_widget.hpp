@@ -1,9 +1,10 @@
 #ifndef LOGINWIDGET_H
 #define LOGINWIDGET_H
 
-#include <QNetworkAccessManager>
 #include <QString>
 #include <QWidget>
+
+#include "services/auth_manager.hpp"
 
 namespace Ui {
 class LoginWidget;
@@ -24,10 +25,10 @@ class LoginWidget : public QWidget {
 
  private:
   void sendLoginRequest(const QString& username, const QString& password);
-  void handleMockLogin(const QString& username, const QString& password);
+  void setErrorText(const QString& text);
 
   Ui::LoginWidget* ui;
-  QNetworkAccessManager* network;
+  AuthManager* authManager;
 };
 
 #endif  // LOGINWIDGET_H

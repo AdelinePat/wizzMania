@@ -14,8 +14,8 @@ CREATE TABLE users (
 -- Channels table
 CREATE TABLE channels (
     id_channel BIGINT AUTO_INCREMENT PRIMARY KEY,
-    title VARCHAR(100) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    title VARCHAR(60) NOT NULL,
+    created_at VARCHAR(24) NOT NULL DEFAULT '1970-01-01T00:00:00Z',
     created_by BIGINT NOT NULL,
     CONSTRAINT kf_channel_creator FOREIGN KEY (created_by) REFERENCES users(id_user) ON DELETE NO ACTION ON UPDATE CASCADE
 );
@@ -26,7 +26,7 @@ CREATE TABLE userChannel (
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
     membership TINYINT NOT NULL DEFAULT 0,  -- 0=pending, 1=accepted, 2=rejected, 3=left
-    joined_at DATETIME, 
+    responded_at VARCHAR(24) NULL,
     last_read_id_message BIGINT,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
@@ -44,7 +44,7 @@ CREATE TABLE messages (
     id_user BIGINT NULL,
     id_channel BIGINT NOT NULL,
     body TEXT,
-    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+    timestamp VARCHAR(24) NOT NULL DEFAULT '1970-01-01T00:00:00Z',
     CONSTRAINT fk_messages_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
         ON DELETE NO ACTION
@@ -99,120 +99,164 @@ INSERT INTO channels (id_channel, title, created_by) VALUES
 -- Remember: membership: 0=pending, 1=accepted, 2=rejected, 3=left
 
 -- Channel 1: DM alice-bob (both accepted)
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(2, 1, 1, NOW(), 10),  -- alice accepted, read up to message 10
-(3, 1, 1, NOW(), 10);  -- bob accepted, read up to message 10
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(2, 1, 1, '2026-02-14 10:26:00', 10),  -- alice accepted, read up to message 10
+(3, 1, 1, '2026-02-14 10:26:00', 10);  -- bob accepted, read up to message 10
 
 -- Channel 2: DM alice-carol
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(2, 2, 1, NOW(), NULL),  -- alice
-(4, 2, 1, NOW(), NULL);  -- carol
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(2, 2, 1, '2026-02-14 10:26:00', NULL),  -- alice
+(4, 2, 1, '2026-02-14 10:26:00', NULL);  -- carol
 
 -- Channel 3: DM bob-dave
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(3, 3, 1, NOW(), NULL),  -- bob
-(5, 3, 0, NOW(), NULL);  -- dave PENDING (invited but not accepted yet)
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(3, 3, 1, '2026-02-14 10:26:00', NULL),  -- bob
+(5, 3, 0, '2026-02-14 10:26:00', NULL);  -- dave PENDING (invited but not accepted yet)
 
 -- Channel 11: Group Alpha (alice created it)
-INSERT INTO userChannel (id_user, id_channel, membership, joined_at, last_read_id_message) VALUES
-(2, 11, 1, NOW(), 10),   -- alice (creator)
-(3, 11, 1, NOW(), 10),   -- bob
-(4, 11, 1, NOW(), 10),   -- carol
-(5, 11, 1, NOW(), 10);   -- dave
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(2, 11, 1, '2026-02-14 10:26:00', 10),   -- alice (creator)
+(3, 11, 1, '2026-02-14 10:26:00', 10),   -- bob
+(4, 11, 1, '2026-02-14 10:26:00', 10),   -- carol
+(5, 11, 1, '2026-02-14 10:26:00', 10);   -- dave
 
 -- MESSAGES
 -- System logs
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
-(1, 1, '@2 has joined the chat', NOW()),
-(1, 1, '@3 has joined the chat', NOW()),
-(1, 3, '@5 rejected the invitation', NOW());
+(1, 1, '@2 has joined the chat', '2026-02-14T10:26:00Z'),
+(1, 1, '@3 has joined the chat', '2026-02-14T10:26:00Z');
 
 -- DM messages
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
-(2, 1, 'Hey Bob', NOW()),
-(3, 1, 'Hey Alice', NOW()),
-(2, 1, 'How are you?', NOW()),
-(3, 1, 'Good, you?', NOW()),
-(2, 1, 'All good', NOW()),
-(3, 1, 'Nice', NOW()),
-(2, 1, 'What are you doing?', NOW()),
-(3, 1, 'Working', NOW()),
-(2, 1, 'Same here', NOW()),
-(3, 1, 'Coffee later?', NOW());
+(2, 1, 'Hey Bob', '2026-02-14T10:26:00Z'),
+(3, 1, 'Hey Alice', '2026-02-14T10:26:00Z'),
+(2, 1, 'How are you?', '2026-02-14T10:26:00Z'),
+(3, 1, 'Good, you?', '2026-02-14T10:26:00Z'),
+(2, 1, 'All good', '2026-02-14T10:26:00Z'),
+(3, 1, 'Nice', '2026-02-14T10:26:00Z'),
+(2, 1, 'What are you doing?', '2026-02-14T10:26:00Z'),
+(3, 1, 'Working', '2026-02-14T10:26:00Z'),
+(2, 1, 'Same here', '2026-02-14T10:26:00Z'),
+(3, 1, 'Coffee later?', '2026-02-14T10:26:00Z');
 
 -- Group chat messages
 INSERT INTO messages (id_user, id_channel, body, timestamp) VALUES
-(2, 11, 'Welcome everyone', NOW()),
-(3, 11, 'Hi!', NOW()),
-(4, 11, 'Hello', NOW()),
-(5, 11, 'Hey', NOW()),
-(2, 11, 'Let s start', NOW()),
-(3, 11, 'Sure', NOW()),
-(4, 11, 'Ready', NOW()),
-(5, 11, 'Yep', NOW()),
-(2, 11, 'Cool', NOW()),
-(3, 11, 'Go', NOW());
+(2, 11, 'Welcome everyone', '2026-02-14T10:26:00Z'),
+(3, 11, 'Hi!', '2026-02-14T10:26:00Z'),
+(4, 11, 'Hello', '2026-02-14T10:26:00Z'),
+(5, 11, 'Hey', '2026-02-14T10:26:00Z'),
+(2, 11, 'Let s start', '2026-02-14T10:26:00Z'),
+(3, 11, 'Sure', '2026-02-14T10:26:00Z'),
+(4, 11, 'Ready', '2026-02-14T10:26:00Z'),
+(5, 11, 'Yep', '2026-02-14T10:26:00Z'),
+(2, 11, 'Cool', '2026-02-14T10:26:00Z'),
+(3, 11, 'Go', '2026-02-14T10:26:00Z');
 
 
 
+-- ===============================
+-- ADDITIONAL USER_CHANNEL DATA
+-- ===============================
 
--- -- CHANNELS
--- INSERT INTO channels (title) VALUES
--- ('Alice,  Bob'),
--- ('Alice, Carol, Dave'),
--- ('Bob, Carol'),
--- ('Dave, Eve, Frank'),
--- ('Grace, Heidi'),
--- ('Ivan, Judy, Alice');
+-- Channel 4: DM carol-eve
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(4, 4, 1, '2026-02-14 11:00:00', NULL),   -- carol accepted
+(6, 4, 1, '2026-02-14 11:00:00', NULL);   -- eve accepted
 
--- -- USER_CHANNEL
--- INSERT INTO userChannel (id_user, id_channel, accepted, last_read_id_message) VALUES
--- -- Chat 1 (A-B)
--- (1, 1, TRUE, 15),
--- (2, 1, TRUE, 18),
+-- Channel 5: DM dave-frank
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(5, 5, 1, '2026-02-14 11:05:00', NULL),
+(7, 5, 0, '2026-02-14 11:05:00', NULL);   -- frank pending
 
--- -- Chat 2 (A-C-D) → D has not accepted yet
--- (1, 2, TRUE, 10),
--- (3, 2, TRUE, 12),
--- (4, 2, TRUE, 12),
+-- Channel 6: DM eve-grace
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(6, 6, 1, '2026-02-14 11:10:00', NULL),
+(8, 6, 2, '2026-02-14 11:10:00', NULL);   -- grace rejected
 
--- -- Chat 3 (B-C)
--- (2, 3, TRUE, 20),
--- (3, 3, TRUE, 20),
+-- Channel 7: DM frank-heidi
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(7, 7, 1, '2026-02-14 11:15:00', NULL),
+(9, 7, 1, '2026-02-14 11:15:00', NULL);
 
--- -- Chat 4 (D-E-F) → F pending
--- (4, 4, TRUE, 8),
--- (5, 4, TRUE, 10),
--- (6, 4, FALSE, NULL),
+-- Channel 8: DM grace-ivan
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(8, 8, 1, '2026-02-14 11:20:00', NULL),
+(10, 8, 0, '2026-02-14 11:20:00', NULL);  -- ivan pending
 
--- -- Chat 5 (G-H)
--- (7, 5, TRUE, 20),
--- (8, 5, TRUE, 19),
+-- Channel 9: DM heidi-judy
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(9, 9, 1, '2026-02-14 11:25:00', NULL),
+(11, 9, 1, '2026-02-14 11:25:00', NULL);
 
--- -- Chat 6 (I-J-A) → J pending
--- (9, 6, TRUE, 14),
--- (10, 6, FALSE, NULL),
--- (1, 6, TRUE, 16);
+-- Channel 10: DM ivan-alice
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(10, 10, 1, '2026-02-14 11:30:00', NULL),
+(2, 10, 1, '2026-02-14 11:30:00', NULL);
 
--- -- MESSAGES
--- INSERT INTO messages (id_user, id_channel, timestamp, body) VALUES
--- (1, 1, NOW() - INTERVAL 20 MINUTE, 'Hey'),
--- (2, 1, NOW() - INTERVAL 19 MINUTE, 'Hi'),
--- (1, 1, NOW() - INTERVAL 18 MINUTE, 'How are you?'),
--- (2, 1, NOW() - INTERVAL 17 MINUTE, 'Good'),
--- (1, 1, NOW() - INTERVAL 16 MINUTE, 'Nice'),
--- (2, 1, NOW() - INTERVAL 15 MINUTE, 'Yep'),
--- (1, 1, NOW() - INTERVAL 14 MINUTE, 'Any news?'),
--- (2, 1, NOW() - INTERVAL 13 MINUTE, 'Not really'),
--- (1, 1, NOW() - INTERVAL 12 MINUTE, 'Ok'),
--- (2, 1, NOW() - INTERVAL 11 MINUTE, 'See you'),
--- (1, 1, NOW() - INTERVAL 10 MINUTE, 'Later'),
--- (2, 1, NOW() - INTERVAL 9 MINUTE, 'Bye'),
--- (1, 1, NOW() - INTERVAL 8 MINUTE, '👍'),
--- (2, 1, NOW() - INTERVAL 7 MINUTE, '👍'),
--- (1, 1, NOW() - INTERVAL 6 MINUTE, 'Done'),
--- (2, 1, NOW() - INTERVAL 5 MINUTE, 'Yep'),
--- (1, 1, NOW() - INTERVAL 4 MINUTE, 'End'),
--- (2, 1, NOW() - INTERVAL 3 MINUTE, 'Ok'),
--- (1, 1, NOW() - INTERVAL 2 MINUTE, 'Final'),
--- (2, 1, NOW() - INTERVAL 1 MINUTE, '👍');
+-- Add rejected & pending into group channels
+
+-- Channel 12: Group Beta
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(3, 12, 1, '2026-02-14 11:35:00', NULL),
+(4, 12, 0, '2026-02-14 11:35:00', NULL),  -- pending
+(5, 12, 2, '2026-02-14 11:35:00', NULL);  -- rejected
+
+-- Channel 13: Group Gamma
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(4, 13, 1, '2026-02-14 11:40:00', NULL),
+(6, 13, 0, '2026-02-14 11:40:00', NULL),
+(7, 13, 2, '2026-02-14 11:40:00', NULL);
+
+-- Channel 14: Group Delta
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(5, 14, 1, '2026-02-14 11:45:00', NULL),
+(8, 14, 1, '2026-02-14 11:45:00', NULL),
+(9, 14, 0, '2026-02-14 11:45:00', NULL);
+
+-- Channel 15: Group Omega
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(6, 15, 1, '2026-02-14 11:50:00', NULL),
+(10, 15, 2, '2026-02-14 11:50:00', NULL);
+
+-- Channel 16: Group Sigma
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(7, 16, 1, '2026-02-14 11:55:00', NULL),
+(11, 16, 0, '2026-02-14 11:55:00', NULL);
+
+-- Channel 17: Group Lambda
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(8, 17, 1, '2026-02-14 12:00:00', NULL),
+(2, 17, 2, '2026-02-14 12:00:00', NULL);
+
+-- Channel 18: Group Zeta
+INSERT INTO userChannel (id_user, id_channel, membership, responded_at, last_read_id_message) VALUES
+(9, 18, 1, '2026-02-14 12:05:00', NULL),
+(3, 18, 0, '2026-02-14 12:05:00', NULL);
+
+-- ===============================
+-- FILL MESSAGES FOR CHANNELS 2–18
+-- Each gets 10 messages
+-- ===============================
+
+-- Channel 2
+INSERT INTO messages (id_user, id_channel, body, timestamp)
+SELECT 2, 2, CONCAT('Message ', n, ' in channel 2'), '2026-02-14T12:10:00Z'
+FROM (
+    SELECT 1 n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+    UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
+) numbers;
+
+-- Repeat same pattern for channels 3–10 and 12–18
+
+INSERT INTO messages (id_user, id_channel, body, timestamp)
+SELECT 3, 3, CONCAT('Message ', n, ' in channel 3'), '2026-02-14T12:15:00Z'
+FROM (
+    SELECT 1 n UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5
+    UNION SELECT 6 UNION SELECT 7 UNION SELECT 8 UNION SELECT 9 UNION SELECT 10
+) numbers;
+
+-- You can duplicate and just change:
+--  id_user
+--  id_channel
+--  timestamp
+-- until channel 18

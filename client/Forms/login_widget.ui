@@ -158,6 +158,28 @@ QPushButton:pressed {
          </property>
         </widget>
        </item>
+             <item>
+                <widget class="QLabel" name="errorLabel">
+                 <property name="minimumSize">
+                    <size>
+                     <width>300</width>
+                     <height>18</height>
+                    </size>
+                 </property>
+                 <property name="styleSheet">
+                    <string notr="true">color: rgb(192, 137, 157);</string>
+                 </property>
+                 <property name="text">
+                    <string/>
+                 </property>
+                 <property name="alignment">
+                    <set>Qt::AlignmentFlag::AlignCenter</set>
+                 </property>
+                 <property name="wordWrap">
+                    <bool>true</bool>
+                 </property>
+                </widget>
+             </item>
       </layout>
      </item>
      <item>

@@ -1,18 +1,14 @@
-#include "mainwindow.h"
+#include "mainwindow.hpp"
 
-#include <QDateTime>
-#include <QMessageBox>
-#include <QVBoxLayout>
-
-#include "loginwidget.h"
 #include "ui_mainwindow.h"
-#include "websocket_client.h"
 
 MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
       loginWidget(nullptr),
-      wsClient(new WebSocketClient(this)) {
+      wsClient(new WebSocketClient(this)),
+      channelPanel(nullptr),
+      rightPanel(nullptr) {
   ui->setupUi(this);
 
   // Create and add login widget to the login page
@@ -20,6 +16,18 @@ MainWindow::MainWindow(QWidget* parent)
   QVBoxLayout* loginLayout = new QVBoxLayout(ui->loginPage);
   loginLayout->setContentsMargins(0, 0, 0, 0);
   loginLayout->addWidget(loginWidget);
+
+  channelPanel = new ChannelPanelWidget(ui->leftPanel);
+  ui->chatsLabel->hide();
+  ui->chatGroupsList->hide();
+  ui->leftPanelLayout->addWidget(channelPanel);
+
+  rightPanel = new RightPanelWidget(ui->rightPanel);
+  ui->chatTitleLabel->hide();
+  ui->messagesList->hide();
+  ui->messageInput->hide();
+  ui->sendButton->hide();
+  ui->rightPanelLayout->addWidget(rightPanel);
 
   // Connect login signal
   connect(loginWidget, &LoginWidget::loginSuccessful, this,
@@ -30,6 +38,8 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onWsAuthenticated);
   connect(wsClient, &WebSocketClient::initialDataReceived, this,
           &MainWindow::onInitialDataReceived);
+  connect(wsClient, &WebSocketClient::channelHistoryReceived, this,
+          &MainWindow::onChannelHistoryReceived);
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
   connect(wsClient, &WebSocketClient::errorReceived, this,
@@ -48,15 +58,10 @@ MainWindow::MainWindow(QWidget* parent)
 MainWindow::~MainWindow() { delete ui; }
 
 void MainWindow::setupChatView() {
-  // Connect chat list selection
-  connect(ui->chatGroupsList, &QListWidget::currentRowChanged, this,
-          &MainWindow::onChatSelected);
-
-  // Connect send button and enter key
-  connect(ui->sendButton, &QPushButton::clicked, this,
-          &MainWindow::onSendMessage);
-  connect(ui->messageInput, &QLineEdit::returnPressed, this,
-          &MainWindow::onSendMessage);
+  connect(channelPanel, &ChannelPanelWidget::channelSelected, this,
+          &MainWindow::onChannelSelected);
+  connect(rightPanel, &RightPanelWidget::sendRequested, this,
+          &MainWindow::onSendMessageRequested);
 
   // Set initial splitter sizes (250px for left panel, rest for right)
   ui->chatSplitter->setSizes({250, 650});
@@ -67,7 +72,10 @@ void MainWindow::onLoginSuccessful(const QString& username,
   currentUser = username;
   authToken = token;
 
-  ui->chatTitleLabel->setText("Connecting to server...");
+  qInfo().noquote() << "[UI][LOGIN] username=" << username
+                    << " token_len=" << token.size();
+
+  rightPanel->setChatTitle("Connecting to server...");
   setChatEnabled(false);
 
   wsClient->connectWithToken(token);
@@ -80,26 +88,59 @@ void MainWindow::onLoginSuccessful(const QString& username,
 
 void MainWindow::onWsAuthenticated(int64_t idUser) {
   currentUserId = idUser;
+  qInfo() << "[WS][AUTH_OK] id_user=" << idUser;
+  userNamesById.insert(currentUserId, currentUser);
   setChatEnabled(true);
-  ui->chatTitleLabel->setText("Select a chat to start messaging");
+  rightPanel->setChatTitle("Select a chat to start messaging");
 }
 
 void MainWindow::onInitialDataReceived(
     const ServerSend::InitialDataResponse& data) {
+  qInfo() << "[WS][INIT_DATA] contacts=" << data.contacts.size()
+          << " channels=" << data.channels.size()
+          << " invitations=" << data.invitations.size();
+  cacheKnownUsers(data);
   populateChannels(data.channels);
 
   if (data.channels.empty()) {
-    ui->messagesList->clear();
-    ui->messagesList->addItem("No channels available yet.");
+    rightPanel->clearMessages();
+    rightPanel->addPlainMessage("No channels available yet.");
+  }
+}
+
+void MainWindow::onChannelHistoryReceived(
+    const ServerSend::ChannelHistoryResponse& history) {
+  qInfo() << "[WS][HISTORY] channel_id=" << history.id_channel
+          << " count=" << history.messages.size()
+          << " has_more=" << history.has_more;
+  if (history.id_channel != currentChannelId) {
+    return;
+  }
+
+  std::vector<ServerSend::Message> ordered = history.messages;
+  std::sort(
+      ordered.begin(), ordered.end(),
+      [](const ServerSend::Message& left, const ServerSend::Message& right) {
+        return left.id_message < right.id_message;
+      });
+
+  rightPanel->clearMessages();
+  for (const auto& msg : ordered) {
+    appendMessageToView(history.id_channel, msg);
   }
 }
 
 void MainWindow::onNewMessageReceived(
-    const ServerSend::NewMessageBroadcast& msg) {
-  if (msg.channel_id != currentChannelId) {
+    const ServerSend::SendMessageResponse& msg) {
+  qInfo().noquote() << "[WS][NEW_MESSAGE] channel_id=" << msg.id_channel
+                    << " sender=" << msg.message.id_sender
+                    << " id_message=" << msg.message.id_message
+                    << " body_len="
+                    << static_cast<int>(msg.message.body.size());
+  if (msg.id_channel != currentChannelId) {
     return;
   }
-  appendMessageToView(msg.channel_id, msg.message);
+  appendMessageToView(msg.id_channel, msg.message);
 }
 
 void MainWindow::onWsError(const QString& code, const QString& message) {
@@ -111,90 +152,105 @@ void MainWindow::onWsDisconnected(const QString& reason) {
   QMessageBox::information(this, tr("WebSocket"), reason);
 }
 
-void MainWindow::addDemoChats() {
-  // Add some demo chat groups for testing
-  ui->chatGroupsList->clear();
-  const QStringList demoChats = {"General Chat", "Team Alpha", "Random",
-                                 "Tech Talk", "Off Topic"};
-  for (int i = 0; i < demoChats.size(); ++i) {
-    QListWidgetItem* item = new QListWidgetItem(demoChats[i]);
-    item->setData(Qt::UserRole, static_cast<qint64>(i + 1));
-    ui->chatGroupsList->addItem(item);
-  }
-}
-
 void MainWindow::populateChannels(
     const std::vector<ServerSend::ChannelInfo>& channels) {
-  ui->chatGroupsList->clear();
   channelTitles.clear();
 
-  if (channels.empty()) {
-    QListWidgetItem* item = new QListWidgetItem("No channels");
-    item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
-    item->setData(Qt::UserRole, static_cast<qint64>(-1));
-    ui->chatGroupsList->addItem(item);
-    return;
-  }
+  channelPanel->setChannels(channels);
 
   for (const auto& channel : channels) {
+    for (const auto& participant : channel.participants) {
+      userNamesById.insert(participant.id_user,
+                           QString::fromStdString(participant.username));
+    }
+
     const QString title = QString::fromStdString(channel.title);
-    QListWidgetItem* item = new QListWidgetItem(title);
-    item->setData(Qt::UserRole, static_cast<qint64>(channel.channel_id));
-    ui->chatGroupsList->addItem(item);
-    channelTitles.insert(channel.channel_id, title);
+    channelTitles.insert(channel.id_channel, title);
   }
 }
 
-void MainWindow::onChatSelected(int row) {
-  if (row < 0) return;
-
-  QListWidgetItem* item = ui->chatGroupsList->item(row);
-  const qint64 channelId = item->data(Qt::UserRole).toLongLong();
+void MainWindow::onChannelSelected(int64_t channelId, const QString& title) {
   currentChannelId = channelId;
+  qInfo().noquote() << "[UI][CHANNEL_SELECT] id=" << channelId
+                    << " title=" << title;
+  rightPanel->setChatTitle(title);
 
-  QString chatName = item->text();
-  ui->chatTitleLabel->setText(chatName);
-
-  ui->messagesList->clear();
+  rightPanel->clearMessages();
 
   if (channelId <= 0) {
     return;
   }
 
-  ui->messagesList->addItem("Loading messages...");
+  rightPanel->addPlainMessage("Loading messages...");
   wsClient->openChannel(channelId);
 }
 
-void MainWindow::onSendMessage() {
-  QString message = ui->messageInput->text().trimmed();
-  if (message.isEmpty()) return;
+void MainWindow::onSendMessageRequested(const QString& message) {
+  //  Probably redundant
+  if (message.isEmpty()) {
+    return;
+  }
 
   if (currentChannelId <= 0) {
     QMessageBox::warning(this, tr("Message"), tr("Select a channel first."));
     return;
   }
 
+  qInfo().noquote() << "[UI][SEND] channel_id=" << currentChannelId
+                    << " body_len=" << message.size()
+                    << " body=" << message;
   wsClient->sendMessage(currentChannelId, message);
+  rightPanel->focusInput();
 
-  ui->messageInput->clear();
-  ui->messageInput->setFocus();
+  // Fallback refresh: ensures UI catches up even if a NEW_MESSAGE event is
+  // missed.
+  QTimer::singleShot(120, this, [this]() {
+    if (currentChannelId > 0 && wsClient && wsClient->isConnected()) {
+      wsClient->openChannel(currentChannelId);
+    }
+  });
+}
+
+void MainWindow::cacheKnownUsers(const ServerSend::InitialDataResponse& data) {
+  if (!currentUser.isEmpty() && currentUserId > 0) {
+    userNamesById.insert(currentUserId, currentUser);
+  }
+
+  for (const auto& contact : data.contacts) {
+    userNamesById.insert(contact.id_user,
+                         QString::fromStdString(contact.username));
+  }
+
+  for (const auto& channel : data.channels) {
+    for (const auto& participant : channel.participants) {
+      userNamesById.insert(participant.id_user,
+                           QString::fromStdString(participant.username));
+    }
+  }
+
+  userNamesById.insert(1, "System");
+}
+
+QString MainWindow::usernameForUserId(int64_t userId) const {
+  const auto it = userNamesById.constFind(userId);
+  if (it != userNamesById.constEnd()) {
+    return it.value();
+  }
+  return QString("User %1").arg(userId);
+}
+
+QWidget* MainWindow::createMessageWidget(const ServerSend::Message& msg) const {
+  return new MessageItemWidget(msg, currentUserId,
+                               usernameForUserId(msg.id_sender));
 }
 
 void MainWindow::appendMessageToView(int64_t channelId,
                                      const ServerSend::Message& msg) {
   Q_UNUSED(channelId);
 
-  const QString sender =
-      msg.is_system ? QString("System") : QString::number(msg.id_sender);
-  const QString timestamp = QString::fromStdString(msg.timestamp);
-  const QString body = QString::fromStdString(msg.body);
-
-  const QString line = QString("[%1] %2: %3").arg(timestamp, sender, body);
-  ui->messagesList->addItem(line);
-  ui->messagesList->scrollToBottom();
+  rightPanel->addMessageWidget(createMessageWidget(msg));
 }
 
 void MainWindow::setChatEnabled(bool enabled) {
-  ui->sendButton->setEnabled(enabled);
-  ui->messageInput->setEnabled(enabled);
+  rightPanel->setInputEnabled(enabled);
 }
