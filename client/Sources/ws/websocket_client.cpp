@@ -55,7 +55,7 @@ void WebSocketClient::sendMessage(int64_t channelId, const QString& body) {
   req.id_channel = channelId;
   req.body = body.toStdString();
 
-  const QJsonDocument doc(MessageJson::to_json(req));
+  const QJsonDocument doc(MessageJson::toJson(req));
   const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
   qInfo().noquote() << "[WS][SEND] type=SEND_MESSAGE channel_id=" << channelId
                     << " body_len=" << body.size() << " payload=" << payload;
@@ -74,7 +74,7 @@ void WebSocketClient::openChannel(int64_t channelId) {
   req.before_id_message = 0;
   req.limit = 50;
 
-  const QJsonDocument doc(MessageJson::to_json(req));
+  const QJsonDocument doc(MessageJson::toJson(req));
   const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
   qInfo().noquote() << "[WS][SEND] type=REQUEST_CHANNEL_HISTORY channel_id="
                     << channelId << " payload=" << payload;
@@ -110,7 +110,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
 
   if (type == static_cast<int>(WizzMania::MessageType::WS_AUTH_SUCCESS)) {
     AuthMessages::WSAuthResponse resp;
-    if (MessageJson::from_json(obj, resp)) {
+    if (MessageJson::fromJson(obj, resp)) {
       emit authenticated(resp.id_user);
       return;
     }
@@ -118,7 +118,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
 
   if (type == static_cast<int>(WizzMania::MessageType::INITIAL_DATA)) {
     ServerSend::InitialDataResponse data;
-    if (MessageJson::from_json(obj, data)) {
+    if (MessageJson::fromJson(obj, data)) {
       emit initialDataReceived(data);
       return;
     }
@@ -126,7 +126,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
 
   if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_HISTORY)) {
     ServerSend::ChannelHistoryResponse history;
-    if (MessageJson::from_json(obj, history)) {
+    if (MessageJson::fromJson(obj, history)) {
       emit channelHistoryReceived(history);
       return;
     }
@@ -136,7 +136,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     qInfo().noquote() << "[WS][NEW_MESSAGE] type=NEW_MESSAGE channel_id="
                       << obj.value("id_channel").toInt();
     ServerSend::SendMessageResponse msg;
-    if (MessageJson::from_json(obj, msg)) {
+    if (MessageJson::fromJson(obj, msg)) {
       qInfo() << "[WS][NEW_MESSAGE] parsed ok, emitting signal";
       emit newMessageReceived(msg);
       return;
@@ -147,7 +147,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
 
   if (type == static_cast<int>(WizzMania::MessageType::ERROR)) {
     ServerSend::ErrorResponse err;
-    if (MessageJson::from_json(obj, err)) {
+    if (MessageJson::fromJson(obj, err)) {
       emit errorReceived(QString::fromStdString(err.error_code),
                          QString::fromStdString(err.message));
       return;
@@ -203,7 +203,7 @@ void WebSocketClient::sendAuth() {
   req.type = WizzMania::MessageType::WS_AUTH;
   req.token = authToken.toStdString();
 
-  const QJsonDocument doc(MessageJson::to_json(req));
+  const QJsonDocument doc(MessageJson::toJson(req));
   const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
   qInfo().noquote() << "[WS][SEND] type=WS_AUTH token_len=" << authToken.size()
                     << " payload=" << payload;

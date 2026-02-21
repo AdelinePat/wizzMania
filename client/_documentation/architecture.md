@@ -72,8 +72,8 @@ main() → crée QApplication → affiche MainWindow → lance event loop
 #### **`message_json.hpp/.cpp`**
 - **Rôle** : Sérialisation/désérialisation JSON ↔ structs C++
 - **Fonctions** :
-  - `to_json()` : struct → QJsonObject (pour envoyer)
-  - `from_json()` : QJsonObject → struct (pour recevoir)
+  - `toJson()` : struct → QJsonObject (pour envoyer)
+  - `fromJson()` : QJsonObject → struct (pour recevoir)
 - **Quand** : Utilisé par `WebSocketClient` à chaque message envoyé/reçu
 
 #### **`message_qt_types.hpp`**
@@ -217,7 +217,7 @@ void foo(const QString& title)  // Passage par référence constante
 ### **Paramètres de sortie**
 
 ```cpp
-bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out);
+bool fromJson(const QJsonObject& obj, AuthMessages::WSAuthResponse& out);
 ```
 
 - `obj` (const &) = **entrée** : JSON à parser (lecture seule)

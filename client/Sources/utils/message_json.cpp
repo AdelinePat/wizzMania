@@ -46,14 +46,14 @@ bool parse_channel(const QJsonObject& obj, ServerSend::ChannelInfo& out) {
 }
 }  // namespace
 
-QJsonObject to_json(const AuthMessages::WSAuthRequest& req) {
+QJsonObject toJson(const AuthMessages::WSAuthRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["token"] = QString::fromStdString(req.token);
   return obj;
 }
 
-QJsonObject to_json(const ClientSend::SendMessageRequest& req) {
+QJsonObject toJson(const ClientSend::SendMessageRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["id_channel"] = static_cast<qint64>(req.id_channel);
@@ -61,14 +61,14 @@ QJsonObject to_json(const ClientSend::SendMessageRequest& req) {
   return obj;
 }
 
-QJsonObject to_json(const ClientSend::ChannelOpenRequest& req) {
+QJsonObject toJson(const ClientSend::ChannelOpenRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["id_channel"] = static_cast<qint64>(req.id_channel);
   return obj;
 }
 
-QJsonObject to_json(const ClientSend::ChannelHistoryRequest& req) {
+QJsonObject toJson(const ClientSend::ChannelHistoryRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["id_channel"] = static_cast<qint64>(req.id_channel);
@@ -77,7 +77,7 @@ QJsonObject to_json(const ClientSend::ChannelHistoryRequest& req) {
   return obj;
 }
 
-bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
+bool fromJson(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
   if (!obj.contains("type")) {
     return false;
   }
@@ -91,7 +91,7 @@ bool from_json(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
   return true;
 }
 
-bool from_json(const QJsonObject& obj, ServerSend::SendMessageResponse& out) {
+bool fromJson(const QJsonObject& obj, ServerSend::SendMessageResponse& out) {
   if (!obj.contains("type") || !obj.contains("id_channel") ||
       !obj.contains("message")) {
     return false;
@@ -108,7 +108,7 @@ bool from_json(const QJsonObject& obj, ServerSend::SendMessageResponse& out) {
   return parse_message(obj.value("message").toObject(), out.message);
 }
 
-bool from_json(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
+bool fromJson(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
   if (!obj.contains("type")) {
     return false;
   }
@@ -151,8 +151,7 @@ bool from_json(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
   return true;
 }
 
-bool from_json(const QJsonObject& obj,
-               ServerSend::ChannelHistoryResponse& out) {
+bool fromJson(const QJsonObject& obj, ServerSend::ChannelHistoryResponse& out) {
   if (!obj.contains("type") || !obj.contains("id_channel")) {
     return false;
   }
@@ -181,7 +180,7 @@ bool from_json(const QJsonObject& obj,
   return true;
 }
 
-bool from_json(const QJsonObject& obj, ServerSend::ErrorResponse& out) {
+bool fromJson(const QJsonObject& obj, ServerSend::ErrorResponse& out) {
   if (!obj.contains("type") || !obj.contains("error_code") ||
       !obj.contains("message")) {
     return false;
