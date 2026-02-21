@@ -68,7 +68,7 @@ void WebSocketClient::openChannel(int64_t channelId) {
     return;
   }
 
-  ClientSend::RequestChannelHistoryRequest req;
+  ClientSend::ChannelHistoryRequest req;
   req.type = WizzMania::MessageType::REQUEST_CHANNEL_HISTORY;
   req.id_channel = channelId;
   req.before_id_message = 0;
@@ -135,7 +135,7 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
   if (type == static_cast<int>(WizzMania::MessageType::NEW_MESSAGE)) {
     qInfo().noquote() << "[WS][NEW_MESSAGE] type=NEW_MESSAGE channel_id="
                       << obj.value("id_channel").toInt();
-    ServerSend::NewMessageBroadcast msg;
+    ServerSend::SendMessageResponse msg;
     if (MessageJson::from_json(obj, msg)) {
       qInfo() << "[WS][NEW_MESSAGE] parsed ok, emitting signal";
       emit newMessageReceived(msg);

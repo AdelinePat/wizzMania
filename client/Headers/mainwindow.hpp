@@ -36,7 +36,7 @@ class MainWindow : public QMainWindow {
   void onInitialDataReceived(const ServerSend::InitialDataResponse& data);
   void onChannelHistoryReceived(
       const ServerSend::ChannelHistoryResponse& history);
-  void onNewMessageReceived(const ServerSend::NewMessageBroadcast& msg);
+  void onNewMessageReceived(const ServerSend::SendMessageResponse& msg);
   void onWsError(const QString& code, const QString& message);
   void onWsDisconnected(const QString& reason);
   void onChannelSelected(int64_t channelId, const QString& title);

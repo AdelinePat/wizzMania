@@ -2,12 +2,12 @@
 #define WEBSOCKET_CLIENT_H
 
 #include <QAbstractSocket>
+#include <QDebug>
 #include <QJsonDocument>
 #include <QObject>
 #include <QTimer>
 #include <QUrl>
 #include <QWebSocket>
-#include <QDebug>
 
 #include "message_structure.hpp"
 #include "services/server_config.hpp"
@@ -32,6 +32,8 @@ class WebSocketClient : public QObject {
   void disconnected(const QString& reason);
   void authenticated(int64_t idUser);
   void initialDataReceived(const ServerSend::InitialDataResponse& data);
+  void channelHistoryReceived(
+      const ServerSend::ChannelHistoryResponse& history);
   void newMessageReceived(const ServerSend::SendMessageResponse& msg);
   void errorReceived(const QString& code, const QString& message);
 

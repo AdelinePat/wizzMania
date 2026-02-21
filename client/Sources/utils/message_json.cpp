@@ -68,7 +68,7 @@ QJsonObject to_json(const ClientSend::ChannelOpenRequest& req) {
   return obj;
 }
 
-QJsonObject to_json(const ClientSend::RequestChannelHistoryRequest& req) {
+QJsonObject to_json(const ClientSend::ChannelHistoryRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["id_channel"] = static_cast<qint64>(req.id_channel);
