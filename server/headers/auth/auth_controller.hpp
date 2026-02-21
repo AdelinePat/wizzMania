@@ -18,15 +18,23 @@
 
 class AuthController {
  private:
-//   static const char* SECRET_KEY = Utils::get_env_var("SECRET_KEY");
-// static std::string SECRET_KEY;
+  WebSocketManager& ws_manager;
+  AuthService auth_service;
 
  public:
-  //   explicit AuthController(Database& db, WebSocketManager& ws)
-  //       : db(db), ws_manager(ws), auht_service(db) {}
-  static std::string generateToken(int64_t id_user);
+  explicit AuthController(WebSocketManager& ws)
+      : ws_manager(ws), auth_service() {}
+  std::string generateToken(int64_t id_user);
 
-  static std::optional<int64_t> validateToken(const std::string& token);
+//   int64_t validate_token(const std::string& token);
+
+  void authenticate_ws(crow::websocket::connection& conn,
+                       const crow::json::rvalue& json_msg);
+
+  void auth_success(crow::websocket::connection& conn,
+                    const int64_t validated_id_user);
+  void auth_error(crow::websocket::connection& conn,
+                  const std::string& message);
 };
 
 #endif

@@ -20,14 +20,13 @@
 class UserController {
  private:
   Database& db;
-  //   WebSocketManager& ws_manager;
+  WebSocketManager& ws;
   UserService user_service;
+  AuthController auth_controller;
 
  public:
-  //   explicit UserController(Database& db, UserService& user_service)
-  //       : db(db), user_service(user_service) {}
-
-  explicit UserController(Database& db) : db(db), user_service(db) {}
+  explicit UserController(Database& db, WebSocketManager& ws)
+      : db(db), ws(ws), user_service(db), auth_controller(ws) {}
 
   crow::response login(const crow::request& req);
   crow::response send_login_error(const HttpError& e);

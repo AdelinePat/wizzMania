@@ -1,55 +1,55 @@
 #include "message_handler.hpp"
 
-void MessageHandler::auth_error(crow::websocket::connection& conn,
-                                const std::string& message) {
-  std::cout << "[WS]" << message << "\n";
-  conn.close(message);
-}
+// void MessageHandler::auth_error(crow::websocket::connection& conn,
+//                                 const std::string& message) {
+//   std::cout << "[WS]" << message << "\n";
+//   conn.close(message);
+// }
 
-void MessageHandler::auth_success(crow::websocket::connection& conn,
-                                  const int64_t validated_id_user) {
-  std::cout << "[WS] ✅ User " << validated_id_user << " authenticated!\n";
+// void MessageHandler::auth_success(crow::websocket::connection& conn,
+//                                   const int64_t validated_id_user) {
+//   std::cout << "[WS] ✅ User " << validated_id_user << " authenticated!\n";
 
-  ws_manager.add_user(validated_id_user, &conn);
+//   ws_manager.add_user(validated_id_user, &conn);
 
-  AuthMessages::WSAuthResponse auth_resp;
-  auth_resp.type =
-      WizzMania::MessageType::WS_AUTH_SUCCESS;  // Explicitly set type
-  auth_resp.message = "Authentication successful";
-  auth_resp.id_user = validated_id_user;
-  conn.send_text(JsonHelpers::Auth::to_json(auth_resp).dump());
-}
+//   AuthMessages::WSAuthResponse auth_resp;
+//   auth_resp.type =
+//       WizzMania::MessageType::WS_AUTH_SUCCESS;  // Explicitly set type
+//   auth_resp.message = "Authentication successful";
+//   auth_resp.id_user = validated_id_user;
+//   conn.send_text(JsonHelpers::Auth::to_json(auth_resp).dump());
+// }
 
-void MessageHandler::authenticate_ws(crow::websocket::connection& conn,
-                                     const crow::json::rvalue& json_msg) {
-  if (ws_manager.is_authenticated(&conn)) {
-    std::cout << "[WS] User already authenticated\n";
-    return;
-  }
+// void MessageHandler::authenticate_ws(crow::websocket::connection& conn,
+//                                      const crow::json::rvalue& json_msg) {
+//   if (ws_manager.is_authenticated(&conn)) {
+//     std::cout << "[WS] User already authenticated\n";
+//     return;
+//   }
 
-  std::cout << "[WS] Processing authentication request\n";
+//   std::cout << "[WS] Processing authentication request\n";
 
-  std::optional<::AuthMessages::WSAuthRequest> auth_req =
-      JsonHelpers::Auth::parse_ws_auth_request(json_msg);
+//   std::optional<::AuthMessages::WSAuthRequest> auth_req =
+//       JsonHelpers::Auth::parse_ws_auth_request(json_msg);
 
-  if (!auth_req.has_value()) {
-    this->auth_error(conn, "Invalid authentication format");
-    return;
-  }
+//   if (!auth_req.has_value()) {
+//     this->auth_error(conn, "Invalid authentication format");
+//     return;
+//   }
 
-  std::optional<int64_t> validated_id_user =
-      AuthController::validateToken(auth_req->token);
+//   std::optional<int64_t> validated_id_user =
+//       AuthController::validateToken(auth_req->token);
 
-  if (!validated_id_user.has_value()) {
-    this->auth_error(conn, "Invalid token");
-    return;
-  }
+//   if (!validated_id_user.has_value()) {
+//     this->auth_error(conn, "Invalid token");
+//     return;
+//   }
 
-  this->auth_success(conn, validated_id_user.value());
-  this->initial_data(conn);
+//   this->auth_success(conn, validated_id_user.value());
+//   this->initial_data(conn);
 
-  return;
-}
+//   return;
+// }
 
 void MessageHandler::initial_data(crow::websocket::connection& conn) {
   std::optional<int64_t> id_user_opt = ws_manager.get_user_id(&conn);

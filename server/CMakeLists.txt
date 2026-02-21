@@ -32,7 +32,6 @@ if(NOT BUILD_TESTS)
         sources/user/user_controller.cpp
         sources/user/user_service.cpp
         sources/server.cpp
-        sources/auth.cpp
         sources/database/database_channels.cpp
         sources/database/database_core.cpp
         sources/database/database_invitations.cpp
@@ -57,7 +56,6 @@ if(NOT BUILD_TESTS)
         headers/user/user_controller.hpp
         headers/user/user_service.hpp
         headers/server.hpp
-        headers/auth.hpp
         headers/database.hpp
         headers/exception.hpp
         headers/helpers.hpp

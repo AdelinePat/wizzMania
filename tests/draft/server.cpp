@@ -16,7 +16,6 @@ std::mutex ws_mutex;
 
 #include <iostream>
 
-#include "auth.hpp"
 
 int main() {
   std::cout << "========================================\n";

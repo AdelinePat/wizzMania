@@ -37,12 +37,15 @@ int main() {
   crow::App<CORS> app;
 
   WebSocketManager ws_manager;
+
+  // TO DO DELETE
   MessageHandler msg_handler(db, ws_manager);
   // UserService user_service(db);
-  UserController user_controller(db);
+  UserController user_controller(db, ws_manager);
   MessageController message_controller(db, ws_manager);
   InvitationController invitation_controller(db, ws_manager);
   ChannelController channel_controller(db, ws_manager);
+  AuthController auth_controller(ws_manager);
 
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
@@ -97,7 +100,7 @@ int main() {
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
           // method in progress
-          return msg_handler.authenticate_ws(conn, json_msg);
+          return auth_controller.authenticate_ws(conn, json_msg);
         }
 
         // ===== ALL OTHER MESSAGES REQUIRE AUTH =====

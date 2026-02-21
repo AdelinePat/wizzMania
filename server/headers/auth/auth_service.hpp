@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-// #include "auth.hpp"
 #include "database.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
@@ -29,21 +28,21 @@
 #include <nlohmann/json.hpp>
 
 class AuthService {
-  //   Database& db;
-
  private:
-  static std::string SECRET_KEY;
+  //   WebSocketManager& ws_manager;
+  std::string SECRET_KEY = Utils::get_env_var("SECRET_KEY", "default_secret");
+
+  jwt::decoded_jwt<jwt::traits::nlohmann_json> decode(const std::string& token);
+  jwt::verifier<jwt::default_clock, jwt::traits::nlohmann_json>
+  create_verifier();
+  std::optional<int64_t> get_validated_id_user(const std::string& token);
 
  public:
-  //   explicit AuthService(Database& db) : db(db) {}
-  static std::string create_token(
+  explicit AuthService() {}
+  std::string create_token(
       const std::chrono::system_clock::time_point& now,
       const std::chrono::system_clock::time_point& expiration, int64_t id_user);
-  //  void verify_token(std::string& token);
-  static jwt::decoded_jwt<jwt::traits::nlohmann_json> decode(
-      const std::string& token);
-  static jwt::verifier<jwt::default_clock, jwt::traits::nlohmann_json>
-  create_verifier();
+  int64_t validate_token(const std::string& token);
 };
 
 #endif

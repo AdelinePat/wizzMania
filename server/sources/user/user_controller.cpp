@@ -21,7 +21,7 @@ crow::response UserController::login(const crow::request& req) {
 
   try {
     int64_t id_user = this->user_service.login(login_req.value());
-    std::string token = AuthController::generateToken(id_user);
+    std::string token = auth_controller.generateToken(id_user);
     return this->send_login_response(id_user, login_req->username, token);
 
   } catch (const HttpError& e) {

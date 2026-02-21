@@ -8,7 +8,6 @@
 #include <string>
 #include <vector>
 
-#include "auth.hpp"
 #include "database.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"

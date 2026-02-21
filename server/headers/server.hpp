@@ -21,6 +21,7 @@
 #include "user_service.hpp"
 #include "utils.hpp"
 #include "websocket_manager.hpp"
+#include "auth_controller.hpp"
 
 using WSConn = crow::websocket::connection*;
 #endif

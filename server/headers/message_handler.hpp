@@ -30,8 +30,8 @@ class MessageHandler {
   explicit MessageHandler(Database& db, WebSocketManager& ws_manager)
       : db(db), ws_manager(ws_manager) {}
 
-  void authenticate_ws(crow::websocket::connection& conn,
-                       const crow::json::rvalue& json_msg);
+  // void authenticate_ws(crow::websocket::connection& conn,
+  //                      const crow::json::rvalue& json_msg);
 
   void initial_data(crow::websocket::connection& conn);
 };
