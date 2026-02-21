@@ -1,6 +1,7 @@
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
 
+#include <QDebug>
 #include <QHash>
 #include <QMainWindow>
 #include <QMessageBox>
@@ -10,18 +11,17 @@
 #include <QWidget>
 #include <algorithm>
 #include <cstdint>
-#include <QDebug>
 
-#include "widgets/login_widget.hpp"
 #include "message_structure.hpp"
 #include "widgets/channel_panel_widget.hpp"
+#include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
 #include "widgets/right_panel_widget.hpp"
 #include "ws/websocket_client.hpp"
 
 namespace Ui {
 class MainWindow;
-}
+}  // namespace Ui
 
 class MainWindow : public QMainWindow {
   Q_OBJECT
@@ -60,9 +60,14 @@ class MainWindow : public QMainWindow {
   QString authToken;
   int64_t currentUserId = -1;
   int64_t currentChannelId = -1;
-  QHash<int64_t, QString> channelTitles; // TODO struct ChannelInfo has everything (last read id_message to send to server, last_message_sent (preview channel list), unread_count_count)
-  QHash<int64_t, QString> userNamesById; // TODO use std::vector<Contact> contacts;? 
+  QHash<int64_t, QString>
+      channelTitles;  // TODO struct ChannelInfo has everything (last read
+                      // id_message to send to server, last_message_sent
+                      // (preview channel list), unread_count_count)
+  QHash<int64_t, QString>
+      userNamesById;  // TODO use std::vector<Contact> contacts;?
   // initialDataResponse invitations (outgiong & incoming)
-  // user_model --> last};
+  // user_model --> last
+};
 
 #endif  // MAINWINDOW_H
