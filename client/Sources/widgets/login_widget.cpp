@@ -57,7 +57,10 @@ void LoginWidget::sendLoginRequest(const QString& username,
                                    const QString& password) {
   ui->loginButton->setEnabled(false);
   setErrorText(QString());
+  // TODO CLEAN inputs
+  // differentier email & username
   authManager->login(username, password);
+
 }
 
 void LoginWidget::setErrorText(const QString& text) {

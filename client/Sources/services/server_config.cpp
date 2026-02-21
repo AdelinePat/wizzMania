@@ -3,6 +3,7 @@
 QString ServerConfig::baseUrl() {
   const QString configPath =
       QCoreApplication::applicationDirPath() + "/settings.ini";
+  // TODO: stop using .ini for server url. Use common helper to handle .env data
   QSettings settings(configPath, QSettings::IniFormat);
   return settings.value("server/baseUrl", "http://localhost:8888").toString();
 }

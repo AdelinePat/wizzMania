@@ -186,6 +186,7 @@ void MainWindow::onChannelSelected(int64_t channelId, const QString& title) {
 }
 
 void MainWindow::onSendMessageRequested(const QString& message) {
+  //  Probably redundant
   if (message.isEmpty()) {
     return;
   }

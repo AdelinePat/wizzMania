@@ -34,7 +34,6 @@ find_package(Qt6 REQUIRED COMPONENTS
 set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
-    Sources/login_widget.cpp
     Sources/services/api_client.cpp
     Sources/services/auth_manager.cpp
     Sources/services/server_config.cpp
@@ -42,6 +41,7 @@ set(CLIENT_SOURCES
     Sources/utils/message_json.cpp
     Sources/models/message_model.cpp
     Sources/models/channel_model.cpp
+    Sources/widgets/login_widget.cpp
     Sources/widgets/message_item_widget.cpp
     Sources/widgets/channel_row_widget.cpp
     Sources/widgets/channel_panel_widget.cpp
@@ -51,7 +51,6 @@ set(CLIENT_SOURCES
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
     Headers/mainwindow.hpp
-    Headers/login_widget.hpp
     Headers/services/api_client.hpp
     Headers/services/auth_manager.hpp
     Headers/services/server_config.hpp
@@ -60,6 +59,7 @@ set(CLIENT_HEADERS
     Headers/utils/message_qt_types.hpp
     Headers/models/message_model.hpp
     Headers/models/channel_model.hpp
+    Headers/widgets/login_widget.hpp
     Headers/widgets/message_item_widget.hpp
     Headers/widgets/channel_row_widget.hpp
     Headers/widgets/channel_panel_widget.hpp

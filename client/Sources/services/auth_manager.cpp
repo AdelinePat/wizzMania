@@ -18,6 +18,7 @@ void AuthManager::login(const QString& username, const QString& password) {
   connect(reply, &QNetworkReply::finished, this, [this, reply, username]() {
     const int statusCode =
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    // TODO move consts after error check, to avoid parsing body if network error? complete range?
     const QByteArray body = reply->readAll();
     const QJsonDocument doc = QJsonDocument::fromJson(body);
     const QJsonObject obj = doc.object();
@@ -29,7 +30,7 @@ void AuthManager::login(const QString& username, const QString& password) {
       reply->deleteLater();
       return;
     }
-
+    //  replace by statuscodeand error code check, to avoid parsing body if error code is not 200
     if (obj.contains("success") && !obj.value("success").toBool()) {
       emit loginFailed(obj.value("message").toString(tr("Login failed.")));
       reply->deleteLater();
@@ -42,6 +43,7 @@ void AuthManager::login(const QString& username, const QString& password) {
       reply->deleteLater();
       return;
     }
+    // also keep id for futur http requests
 
     emit loginSucceeded(username, token);
     reply->deleteLater();
