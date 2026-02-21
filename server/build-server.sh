@@ -59,7 +59,7 @@ echo "Configuring server..."
 cmake ../server
 
 echo "Building server..."
-cmake --build . --target wizzmania-server
+cmake --build . --target wizzmania-server -j$(nproc)
 
 echo ""
 echo "✅ Server build complete!"
