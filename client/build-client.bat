@@ -216,7 +216,7 @@ echo Step 2: Building Client
 echo ========================================
 echo.
 
-cmake --build . --config %BUILD_TYPE%
+cmake --build . --config %BUILD_TYPE% --parallel 4
 if errorlevel 1 (
     echo.
     echo [FAILED] Build failed!
