@@ -1,0 +1,164 @@
+#include "database.hpp"
+
+
+
+// ===== GET INITIAL INVITATION =====
+
+// Populate ChannelInvitation structs for a user
+std::vector<ServerSend::ChannelInvitation> Database::get_initial_invitations(
+    const int64_t id_user) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  std::vector<ServerSend::ChannelInvitation> channels_invitations =
+      this->get_invitations_base(id_user);
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
+      this->get_participants_and_channel(id_user, ChannelStatus::PENDING,
+                                         ChannelStatus::ACCEPTED);
+
+  for (ServerSend::ChannelInvitation& channel : channels_invitations) {
+    auto it_participant = channel_participants.find(channel.id_channel);
+    if (it_participant != channel_participants.end()) {
+      channel.other_participant_ids = it_participant->second;
+    } else {
+      std::cerr << "[DB] Warning: no participants found for channel "
+                << channel.id_channel << "\n";
+    }
+  }
+
+  return channels_invitations;
+}
+
+// Populate part of ChannelInvitation structs for a user, missing participants
+// vector
+std::vector<ServerSend::ChannelInvitation> Database::get_invitations_base(
+    const int64_t id_user, ChannelStatus membership) {
+  std::vector<ServerSend::ChannelInvitation> channels_invitations;
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "SELECT c.id_channel, c.created_by, c.title FROM channels c "
+            "LEFT JOIN userChannel uc1 ON uc1.id_channel = c.id_channel "
+            "WHERE uc1.id_user = ? AND uc1.membership = ?;"));
+
+    prep_statement->setInt64(1, id_user);
+    prep_statement->setInt(2, static_cast<int32_t>(membership));
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    while (res->next()) {
+      ServerSend::ChannelInvitation channel;
+      channel.id_channel = res->getInt64("id_channel");
+      channel.title = res->getString("title");
+      channel.id_inviter = res->getInt64("created_by");
+      channels_invitations.push_back(channel);
+    }
+    return channels_invitations;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channels error: " << e.what() << std::endl;
+    return channels_invitations;
+  }
+}
+
+std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations(
+    int64_t id_user) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  std::vector<ServerSend::ChannelInfo> channels_info =
+      this->get_outgoing_invitations_base(id_user, ChannelStatus::ACCEPTED);
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
+      this->get_participants_and_channel(id_user, ChannelStatus::ACCEPTED,
+                                         ChannelStatus::PENDING);
+
+  for (ServerSend::ChannelInfo& channel : channels_info) {
+    auto it_participant = channel_participants.find(channel.id_channel);
+    if (it_participant != channel_participants.end()) {
+      channel.participants = it_participant->second;
+      channel.is_group = channel.participants.size() > 2;
+    } else {
+      std::cerr << "[DB] Warning: no participants found for channel "
+                << channel.id_channel << "\n";
+    }
+  }
+  return channels_info;
+}
+
+// Get outgoing invitations, meaning the channel the user created but no one
+// accepted yet
+std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations_base(
+    int64_t id_user, ChannelStatus membership) {
+  std::vector<ServerSend::ChannelInfo> channels_info;
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "SELECT c.id_channel, c.title, c.created_by FROM userChannel uc1 "
+            "JOIN channels c ON c.id_channel = uc1.id_channel "
+            "WHERE  uc1.membership = ? AND c.created_by = ? "
+            "AND (SELECT COUNT(*) FROM userChannel uc2 "
+            "WHERE uc2.id_channel = c.id_channel "
+            "AND uc2.membership = ?) = 1 "
+            "AND (SELECT COUNT(*) FROM userChannel uc3 "
+            "WHERE uc3.id_channel = c.id_channel "
+            "AND uc3.membership = ?) >= 1;"));
+
+    prep_statement->setInt(1, static_cast<int32_t>(membership));
+    prep_statement->setInt64(2, id_user);
+    prep_statement->setInt(3, static_cast<int32_t>(membership));
+    prep_statement->setInt(4, static_cast<int32_t>(ChannelStatus::PENDING));
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    while (res->next()) {
+      ServerSend::ChannelInfo channel;
+      channel.id_channel = res->getInt64("id_channel");
+      channel.title = res->getString("title");
+      channel.created_by = res->getInt64("created_by");
+      channel.last_read_id_message = 0;  // nothing read yet!
+      channel.unread_count = 0;          // no notification yet either
+      channels_info.push_back(channel);
+    }
+    return channels_info;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channels error: " << e.what() << std::endl;
+    return channels_info;
+  }
+}
+
+// ===== INVITATION ACCEPTED/REJECTED =====
+
+bool Database::update_invitation(int64_t id_user, int64_t id_channel,
+                                 const std::string& responded_at,
+                                 ChannelStatus membership) {
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("UPDATE userChannel "
+                                     "SET membership = ?, responded_at = ? "
+                                     "WHERE id_user = ? AND id_channel = ?;"));
+    prep_statement->setInt(1, static_cast<int32_t>(membership));
+    prep_statement->setString(2, responded_at);
+    prep_statement->setInt64(3, id_user);
+    prep_statement->setInt64(4, id_channel);
+
+    int affected_rows = prep_statement->executeUpdate();
+    return affected_rows > 0;
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] update_invitation error: " << e.what() << std::endl;
+    return false;
+  }
+};
+
+bool Database::accept_invitation(int64_t id_user, int64_t id_channel,
+                                 const std::string& responded_at) {
+  return this->update_invitation(id_user, id_channel, responded_at,
+                                 ChannelStatus::ACCEPTED);
+};
+
+bool Database::reject_invitation(int64_t id_user, int64_t id_channel,
+                                 const std::string& responded_at) {
+  return this->update_invitation(id_user, id_channel, responded_at,
+                                 ChannelStatus::REJECTED);
+};

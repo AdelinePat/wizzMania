@@ -9,14 +9,19 @@
 #include <string>
 #include <thread>
 
-
+#include "channel_controller.hpp"
 #include "database.hpp"
 #include "helpers.hpp"
-#include "http_manager.hpp"
+#include "invitation_controller.hpp"
 #include "json_helpers.hpp"
+#include "message_controller.hpp"
 #include "message_handler.hpp"
 #include "message_structure.hpp"
+#include "user_controller.hpp"
+#include "user_service.hpp"
+#include "utils.hpp"
 #include "websocket_manager.hpp"
+#include "auth_controller.hpp"
 
 using WSConn = crow::websocket::connection*;
 #endif
