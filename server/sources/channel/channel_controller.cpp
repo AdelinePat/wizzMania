@@ -66,7 +66,7 @@ crow::response ChannelController::create_channel(int64_t id_user,
   crow::json::rvalue body = crow::json::load(req.body);
   if (!body || !body.has("usernames")) {
     BadRequestError error = BadRequestError("Invalid CREATE_CHANNEL format");
-    return send_http_error(error.get_code(), error.get_message());
+    return WizzManiaError::send_http_error(error.get_code(), error.get_message());
   }
 
   std::unordered_set<std::string> usernames;
@@ -83,7 +83,7 @@ crow::response ChannelController::create_channel(int64_t id_user,
     }
   } catch (const WizzManiaError& e) {
     BadRequestError error = BadRequestError("Invalid username");
-    return send_http_error(error.get_code(), error.get_message());
+    return WizzManiaError::send_http_error(error.get_code(), error.get_message());
     // return send_error(conn, "INVALID_USERNAME", e.get_message());
   }
 
@@ -119,6 +119,6 @@ crow::response ChannelController::create_channel(int64_t id_user,
 
   } catch (const WizzManiaError& e) {
     // return send_error(conn, "INTERNAL ERROR", e.get_message());
-    return send_http_error(e.get_code(), e.get_message());
+    return WizzManiaError::send_http_error(e.get_code(), e.get_message());
   }
 }

@@ -39,8 +39,6 @@ ServerSend::ChannelInfo Database::get_channel_info(int64_t id_user,
   }
 }
 
-// ==== ??
-
 // Get all channels for a specific user , populate most of ChannelInfo struct,
 // missing participants vector
 std::vector<ServerSend::ChannelInfo> Database::get_channels(
@@ -196,8 +194,6 @@ std::optional<int64_t> Database::create_channel_with_participants(
 
 // ==== INVITATION
 
-
-
 std::optional<int64_t> Database::get_channel_creator(int64_t id_channel) {
   try {
     this->ensure_connection();
@@ -219,3 +215,22 @@ std::optional<int64_t> Database::get_channel_creator(int64_t id_channel) {
   }
 }
 
+int64_t Database::get_number_invited_users_in_channel(
+    int64_t id_channel, ChannelStatus membership,
+    ChannelStatus other_membership) {
+  // count PENDING + ACCEPTED
+  this->ensure_connection();
+  std::unique_ptr<sql::PreparedStatement> prep_statement(
+      this->conn->prepareStatement(
+          "SELECT COUNT(*) as total FROM userChannel "
+          "WHERE id_channel = ? "
+          "AND membership IN (?, ?);")); 
+  prep_statement->setInt64(1, id_channel);
+  prep_statement->setInt(2, static_cast<int>(membership));
+  prep_statement->setInt(3, static_cast<int>(other_membership));
+  std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+  if (!res->next()) {
+    throw InternalError("Couldn't get pending and accepted participants count");
+  }
+  return res->getInt64("total");
+}

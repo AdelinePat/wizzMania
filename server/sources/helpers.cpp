@@ -33,26 +33,37 @@ ServerSend::ChannelInfo create_empty_channel_info_struct(
   info.id_channel = id_channel;
   info.title = title;
   info.participants = other_participants;
-  info.is_group = info.participants.size() > 2;
+  info.is_group = (info.participants.size() + 1) > 2;
   info.created_by = created_by;
   return info;
 }
 
-void send_error(crow::websocket::connection& conn,
-                const std::string& error_code,
-                const std::string& error_message) {
-  ServerSend::ErrorResponse err;
-  err.type = WizzMania::MessageType::ERROR;
-  err.error_code = error_code;
-  err.message = error_message;
+// void send_error(crow::websocket::connection& conn,
+//                 const std::string& error_code,
+//                 const std::string& error_message) {
+//   ServerSend::ErrorResponse err;
+//   err.type = WizzMania::MessageType::ERROR;
+//   err.error_code = error_code;
+//   err.message = error_message;
 
-  conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
-}
+//   conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+// }
 
-crow::response send_http_error(int code, const std::string& message) {
-  crow::json::wvalue body;
-    body["error"] = message;
-    auto res = crow::response(code, body.dump());
-    res.add_header("Content-Type", "application/json");
-    return res;
-}
+// CHANGES!
+
+// void send_ws_error(crow::websocket::connection& conn, WizzManiaError error) {
+//   ServerSend::ErrorResponse err;
+//   err.type = WizzMania::MessageType::ERROR;
+//   err.error_code = error.get_code();
+//   err.message = error.get_message();
+
+//   conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+// }
+
+// crow::response send_http_error(int code, const std::string& message) {
+//   crow::json::wvalue body;
+//   body["error"] = message;
+//   auto res = crow::response(code, body.dump());
+//   res.add_header("Content-Type", "application/json");
+//   return res;
+// }

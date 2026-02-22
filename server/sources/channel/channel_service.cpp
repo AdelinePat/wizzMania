@@ -12,7 +12,8 @@ ServerSend::ChannelInfo ChannelService::get_channel(
       db.get_participants(id_user, id_channel, membership, other_membership);
   channel.unread_count = db.get_unread_count(id_user, id_channel);
   channel.last_message = db.get_last_message(id_user, id_channel);
-  channel.is_group = channel.participants.size() > 2;
+  // channel.is_group = channel.participants.size() > 2;
+  channel.is_group = db.get_number_invited_users_in_channel(id_channel) > 2;
   return channel;
 }
 

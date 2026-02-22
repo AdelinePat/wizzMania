@@ -5,33 +5,31 @@ void MessageController::send_message(crow::websocket::connection& conn,
                                      const crow::json::rvalue& json_msg) {
   std::optional<::ClientSend::SendMessageRequest> req =
       JsonHelpers::ClientSend::parse_send_message(json_msg);
-
-  if (!req.has_value()) {
-    send_error(conn, "INVALID_FORMAT", "Invalid SEND_MESSAGE format");
-    return;
-  }
-
-  std::cout << "[MSG] User " << id_user << " -> Channel " << req->id_channel
-            << ": " << req->body << "\n";
-
-  int64_t id_channel = req->id_channel;
-  bool has_access = user_service.has_access(id_user, id_channel);
-  if (!has_access) {
-    send_error(conn, "INVALID_USER",
-               "User has no permission to SEND_MESSAGE to this channel");
-    return;
-  }
-
-  std::string body = req->body;
-  std::string timestamp = Utils::get_timestamp();
-
   try {
+    if (!req.has_value()) {
+      throw BadRequestError("Invalid SEND_MESSAGE format");
+    }
+
+    std::cout << "[MSG] User " << id_user << " -> Channel " << req->id_channel
+              << ": " << req->body << "\n";
+
+    int64_t id_channel = req->id_channel;
+    bool has_access = user_service.has_access(id_user, id_channel);
+    if (!has_access) {
+      throw BadRequestError(
+          "User has no permission to SEND_MESSAGE to this channel");
+    }
+
+    std::string body = req->body;
+    std::string timestamp = Utils::get_timestamp();
+
     int64_t new_id_message =
         message_service.create_message(id_user, id_channel, body, timestamp);
     this->broadcast_new_message(id_channel, new_id_message, id_user, body,
                                 timestamp);
   } catch (const WizzManiaError& e) {
-    return send_error(conn, "INTERNAL_ERROR", e.get_message());
+    // return send_error(conn, "INTERNAL_ERROR", e.get_message());
+    WizzManiaError::send_ws_error(conn, e);
   }
 }
 
@@ -73,22 +71,27 @@ void MessageController::broadcast_new_message(const int64_t id_channel,
 void MessageController::send_history(crow::websocket::connection& conn,
                                      int64_t id_user,
                                      const crow::json::rvalue& json_msg) {
-  std::optional<::ClientSend::ChannelHistoryRequest> req =
-      JsonHelpers::ClientSend::parse_request_channel_history(json_msg);
+  try {
+    std::optional<::ClientSend::ChannelHistoryRequest> req =
+        JsonHelpers::ClientSend::parse_request_channel_history(json_msg);
 
-  if (!req.has_value()) {
-    send_error(conn, "INVALID_FORMAT",
-               "Invalid REQUEST_CHANNEL_HISTORY format");
-    return;
+    if (!req.has_value()) {
+      throw BadRequestError("Invalid REQUEST_CHANNEL_HISTORY format");
+      // send_error(conn, "INVALID_FORMAT",
+      //            "Invalid REQUEST_CHANNEL_HISTORY format");
+      // return;
+    }
+
+    std::cout << "[HISTORY] User " << id_user << " -> Channel "
+              << req->id_channel << "\n";
+    std::vector<ServerSend::Message> messages =
+        message_service.get_messages_history_from_channel(
+            req->id_channel, req->before_id_message, req->limit);
+
+    this->send_history_response(conn, req->id_channel, messages, req->limit);
+  } catch (const WizzManiaError& e) {
+    WizzManiaError::send_ws_error(conn, e);
   }
-
-  std::cout << "[HISTORY] User " << id_user << " -> Channel " << req->id_channel
-            << "\n";
-  std::vector<ServerSend::Message> messages =
-      message_service.get_messages_history_from_channel(
-          req->id_channel, req->before_id_message, req->limit);
-
-  this->send_history_response(conn, req->id_channel, messages, req->limit);
 }
 
 void MessageController::send_history_response(
