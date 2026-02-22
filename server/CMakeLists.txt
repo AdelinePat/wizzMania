@@ -38,7 +38,6 @@ if(NOT BUILD_TESTS)
         sources/database/database_invitations.cpp
         sources/database/database_messages.cpp
         sources/database/database_users.cpp
-        sources/database/database.cpp
         sources/helpers.cpp
         sources/message/message_controller.cpp
         sources/message/message_service.cpp
