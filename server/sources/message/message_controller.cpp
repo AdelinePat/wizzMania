@@ -30,7 +30,7 @@ void MessageController::send_message(crow::websocket::connection& conn,
         message_service.create_message(id_user, id_channel, body, timestamp);
     this->broadcast_new_message(id_channel, new_id_message, id_user, body,
                                 timestamp);
-  } catch (const WsError& e) {
+  } catch (const WizzManiaError& e) {
     return send_error(conn, "INTERNAL_ERROR", e.get_message());
   }
 }
@@ -43,7 +43,7 @@ void MessageController::send_message_internal(int64_t id_user,
   if (!has_access) {
     std::cerr << "INVALID_USER User has no permission to SEND_MESSAGE to this "
                  "channel\n";
-    throw WsError(
+    throw UnauthorizedError(
         "INVALID_USER User has no permission to SEND_MESSAGE to this channel");
   }
 
@@ -78,7 +78,7 @@ void MessageController::send_history(crow::websocket::connection& conn,
 
   if (!req.has_value()) {
     send_error(conn, "INVALID_FORMAT",
-                     "Invalid REQUEST_CHANNEL_HISTORY format");
+               "Invalid REQUEST_CHANNEL_HISTORY format");
     return;
   }
 
@@ -89,22 +89,6 @@ void MessageController::send_history(crow::websocket::connection& conn,
           req->id_channel, req->before_id_message, req->limit);
 
   this->send_history_response(conn, req->id_channel, messages, req->limit);
-
-  // req->id_channel, req->before_id_message, req->limit
-  // std::vector<ServerSend::Message> messages = db.get_channel_history(
-  //     req->id_channel, req->before_id_message, req->limit);
-  // if (messages.empty()) {
-  //   std::cerr << "[HISTORY] : messages could not be retrieve in db\n";
-  //   // actually possible to have no history, but I want to have a log about
-  //   it
-  // }
-
-  // ServerSend::ChannelHistoryResponse res;
-  // res.type = WizzMania::MessageType::CHANNEL_HISTORY;
-  // res.id_channel = req->id_channel;
-  // res.messages = messages;
-  // res.has_more = messages.size() == req->limit;
-  // conn.send_text(JsonHelpers::ServerSend::to_json(res).dump());
 }
 
 void MessageController::send_history_response(

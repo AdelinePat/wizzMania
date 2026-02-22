@@ -21,6 +21,7 @@
 #include "helpers.hpp"
 #include "message_structure.hpp"
 #include "messages.hpp"
+#include "exception.hpp"
 
 class Database {
  private:
@@ -37,7 +38,7 @@ class Database {
                         const std::string& database);
   void ensure_connection();
 
-  bool update_invitation(int64_t id_user, int64_t id_channel,
+  void update_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at,
                          ChannelStatus membership);
 
@@ -81,10 +82,10 @@ class Database {
 
   bool has_channel_access(int64_t id_user, int64_t id_channel);
 
-  bool accept_invitation(int64_t id_user, int64_t id_channel,
+  void accept_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at);
 
-  bool reject_invitation(int64_t id_user, int64_t id_channel,
+  void reject_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at);
 
 //   ServerSend::ChannelInfo get_channel(

@@ -7,7 +7,7 @@ crow::response UserController::login(const crow::request& req) {
   crow::json::rvalue json_body = crow::json::load(req.body);
   if (!json_body) {
     std::cout << "[LOGIN] Invalid JSON\n";
-    HttpError error = HttpError(400, "Invalid JSON");
+    BadRequestError error = BadRequestError("Invalid JSON");
     return this->send_login_error(error);
   }
 
@@ -15,7 +15,7 @@ crow::response UserController::login(const crow::request& req) {
       JsonHelpers::Auth::parse_login_request(json_body);
   if (!login_req.has_value()) {
     std::cout << "[LOGIN] Missing required fields\n";
-    HttpError error = HttpError(400, "Missing username or password");
+    BadRequestError error = BadRequestError("Missing username or password");
     return this->send_login_error(error);
   }
 
@@ -24,13 +24,13 @@ crow::response UserController::login(const crow::request& req) {
     std::string token = auth_controller.generateToken(id_user);
     return this->send_login_response(id_user, login_req->username, token);
 
-  } catch (const HttpError& e) {
+  } catch (const WizzManiaError& e) {
     return this->send_login_error(e);
   }
 }
 
 // Change into standard http response for error
-crow::response UserController::send_login_error(const HttpError& e) {
+crow::response UserController::send_login_error(const WizzManiaError& e) {
   AuthMessages::LoginResponse error_resp;
   error_resp.success = false;
   error_resp.message = e.get_message();

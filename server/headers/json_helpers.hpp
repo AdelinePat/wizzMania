@@ -5,6 +5,7 @@
 
 #include "crow.h"
 #include "message_structure.hpp"
+#include "exception.hpp"
 
 // ===== CROW JSON SERIALIZATION (Server-side only) =====
 

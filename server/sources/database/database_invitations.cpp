@@ -78,7 +78,7 @@ std::vector<ServerSend::ChannelInfo> Database::get_outgoing_invitations_base(
 
 // ===== INVITATION ACCEPTED/REJECTED =====
 
-bool Database::update_invitation(int64_t id_user, int64_t id_channel,
+void Database::update_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at,
                                  ChannelStatus membership) {
   try {
@@ -93,20 +93,25 @@ bool Database::update_invitation(int64_t id_user, int64_t id_channel,
     prep_statement->setInt64(4, id_channel);
 
     int affected_rows = prep_statement->executeUpdate();
-    return affected_rows > 0;
+    if (affected_rows == 0) {
+      throw NotFoundError("Invitation not found for this user/channel");
+    }
+    // return affected_rows > 0;
+    // return true;
   } catch (sql::SQLException& e) {
-    std::cerr << "[DB] update_invitation error: " << e.what() << std::endl;
-    return false;
+    // std::cerr << "[DB] update_invitation error: " << e.what() << std::endl;
+    throw InternalError(std::string("DB error: ") + e.what());
+    // return false;
   }
 };
 
-bool Database::accept_invitation(int64_t id_user, int64_t id_channel,
+void Database::accept_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
   return this->update_invitation(id_user, id_channel, responded_at,
                                  ChannelStatus::ACCEPTED);
 };
 
-bool Database::reject_invitation(int64_t id_user, int64_t id_channel,
+void Database::reject_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
   return this->update_invitation(id_user, id_channel, responded_at,
                                  ChannelStatus::REJECTED);

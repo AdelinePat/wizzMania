@@ -6,10 +6,20 @@ std::string AuthController::generateToken(int64_t id_user) {
   return auth_service.create_token(now, expiration, id_user);
 }
 
+int64_t AuthController::authenticate_http(const crow::request& req) {
+  std::string token = req.get_header_value("X-Auth-Token");
+  if (token.empty()) {
+    throw UnauthorizedError("Missing X-Auth-Token header");
+  }
+  int64_t validated_id_user = auth_service.validate_token(token);
+  // your existing token validation logic goes here
+  return validated_id_user;
+}
+
 int64_t AuthController::authenticate_ws(crow::websocket::connection& conn,
-                                     const crow::json::rvalue& json_msg) {
+                                        const crow::json::rvalue& json_msg) {
   if (ws_manager.is_authenticated(&conn)) {
-    throw WsError("[WS] User already authenticated\n");
+    throw UnauthorizedError("[WS] User already authenticated\n");
   }
 
   std::cout << "[WS] Processing authentication request\n";
@@ -18,7 +28,7 @@ int64_t AuthController::authenticate_ws(crow::websocket::connection& conn,
       JsonHelpers::Auth::parse_ws_auth_request(json_msg);
 
   if (!auth_req.has_value()) {
-    throw WsError("Invalid authentication format");
+    throw BadRequestError("Invalid authentication format");
   }
 
   int64_t validated_id_user = auth_service.validate_token(auth_req->token);

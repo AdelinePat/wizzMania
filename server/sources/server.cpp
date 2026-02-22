@@ -63,6 +63,42 @@ int main() {
         return user_controller.login(req);
       });
 
+  // ===== PATCH / /invitation/id_channel/accept endpoint =====
+  CROW_ROUTE(app, "/invitations/<int>/accept")
+      .methods("PATCH"_method)([&invitation_controller, &auth_controller](
+                                   const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          return invitation_controller.accept_invitation(
+              req, id_user, static_cast<int64_t>(id_channel));
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
+      });
+
+  CROW_ROUTE(app, "/invitations/<int>/reject")
+      .methods("PATCH"_method)([&invitation_controller, &auth_controller](
+                                   const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          return invitation_controller.reject_invitation(
+              req, id_user, static_cast<int64_t>(id_channel));
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
+      });
+
+  CROW_ROUTE(app, "/channels")
+      .methods("POST"_method)(
+          [&channel_controller, &auth_controller](const crow::request& req) {
+            try {
+              int64_t id_user = auth_controller.authenticate_http(req);
+              return channel_controller.create_channel(id_user, req);
+            } catch (const WizzManiaError& e) {
+              return crow::response(e.get_code(), e.get_message());
+            }
+          });
+
   // ===== WebSocket endpoint =====
   CROW_ROUTE(app, "/ws")
       .websocket(&app)
@@ -100,7 +136,7 @@ int main() {
           try {
             int64_t id_user = auth_controller.authenticate_ws(conn, json_msg);
             return init_controller.initial_data(conn, id_user);
-          } catch (const WsError& e) {
+          } catch (const WizzManiaError& e) {
             std::cerr << e.get_message();
             auth_controller.auth_error(conn, "Invalid authentication format");
           }
@@ -129,23 +165,23 @@ int main() {
             break;
           }
 
-          case WizzMania::MessageType::ACCEPT_INVITATION: {
-            // TODO HTTP
-            invitation_controller.accept_invitation(conn, id_user, json_msg);
-            break;
-          }
+            // case WizzMania::MessageType::ACCEPT_INVITATION: {
+            //   // TODO HTTP
+            //   invitation_controller.accept_invitation(conn, id_user,
+            //   json_msg); break;
+            // }
 
-          case WizzMania::MessageType::REJECT_INVITATION: {
-            // TODO HTTP
-            invitation_controller.reject_invitation(conn, id_user, json_msg);
-            break;
-          }
+            // case WizzMania::MessageType::REJECT_INVITATION: {
+            //   // TODO HTTP
+            //   invitation_controller.reject_invitation(conn, id_user,
+            //   json_msg); break;
+            // }
 
-          case WizzMania::MessageType::CREATE_CHANNEL: {
-            // TODO HTTP INSTEAD OF WS !! + check if creator invites themselves
-            channel_controller.create_channel(conn, id_user, json_msg);
-            break;
-          }
+            // case WizzMania::MessageType::CREATE_CHANNEL: {
+            //   // TODO HTTP INSTEAD OF WS !! + check if creator invites
+            //   themselves channel_controller.create_channel(conn, id_user,
+            //   json_msg); break;
+            // }
 
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {

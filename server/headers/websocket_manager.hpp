@@ -1,12 +1,14 @@
 #ifndef WEBSOCKET_MANAGER_H
 #define WEBSOCKET_MANAGER_H
 
-#include <unordered_set>  // SHOULD APPEAR BEFORE CROW, ELSE EVERYTHING BREAKS !!!!!!
 #include <crow.h>
 
 #include <mutex>
 #include <unordered_map>
+#include <unordered_set>  // SHOULD APPEAR BEFORE CROW, ELSE EVERYTHING BREAKS !!!!!!
 #include <vector>
+
+#include "exception.hpp"
 
 using WSConn = crow::websocket::connection*;
 
@@ -26,7 +28,7 @@ class WebSocketManager {
   bool is_authenticated(WSConn conn);
   std::optional<int64_t> get_id_user(WSConn conn);
   std::vector<WSConn> get_user_connections(int64_t id_user);
-  
+
   void broadcast_to_all(const std::string& message);
   void broadcast_to_users(const std::unordered_set<int64_t>& id_users,
                           const std::string& message);
@@ -34,7 +36,6 @@ class WebSocketManager {
   bool is_user_online(int64_t id_user);  // might not use this one
   std::optional<int64_t> get_user_id(WSConn conn);
   void send_to_user(int64_t id_user, const std::string& message);
-
 };
 
 #endif

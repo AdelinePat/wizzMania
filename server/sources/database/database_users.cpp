@@ -40,11 +40,16 @@ bool Database::has_channel_access(int64_t id_user, int64_t id_channel) {
     prep_statement->setInt64(2, id_channel);
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
-    return res->next();
+    if (res->next()) {
+      return true;
+    }
+    return false;
+    // return res->next();
 
   } catch (sql::SQLException& e) {
     std::cerr << "[DB] has_channel_access error: " << e.what() << std::endl;
-    return false;
+    throw InternalError(std::string("DB error: ") + e.what());
+    // return false;
   }
 }
 

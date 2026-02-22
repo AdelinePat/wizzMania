@@ -10,7 +10,7 @@ int64_t UserService::login(AuthMessages::LoginRequest login_request) {
   if (id_user < 0) {
     std::cout << "[LOGIN] Invalid credentials for: " << login_request.username
               << "\n";
-    throw HttpError(401, "Invalid username or password");
+    throw UnauthorizedError("Invalid username or password");
   }
   return id_user;
 }
@@ -34,7 +34,7 @@ std::optional<ServerSend::Contact> UserService::get_contact(int64_t id_user) {
 int64_t UserService::get_id_user(const std::string& username) {
   std::optional<int64_t> id_user = db.get_id_user(username);
   if (!id_user.has_value()) {
-    throw WsError("User " + username + " not found");
+    throw NotFoundError("User " + username + " not found");
   }
   return id_user.value();
 }

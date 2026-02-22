@@ -391,15 +391,55 @@ function appendOutgoingCard(container, ch) {
   container.appendChild(card);
 }
 
-function acceptInvitation(id_channel) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: MessageType.ACCEPT_INVITATION, id_channel }));
+async function acceptInvitation(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/invitations/${id_channel}/accept`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[ACCEPT] Error:", err.error);
+      return;
+    }
+
+    const data = await response.json();
+    handleInvitationAccepted(data);
+  } catch (err) {
+    console.error("[ACCEPT] Network error:", err.message);
+  }
 }
 
-function rejectInvitation(id_channel) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: MessageType.REJECT_INVITATION, id_channel }));
+async function rejectInvitation(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/invitations/${id_channel}/reject`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[REJECT] Error:", err.error);
+      return;
+    }
+
+    const data = await response.json();
+    handleInvitationRejected(data);
+  } catch (err) {
+    console.error("[REJECT] Network error:", err.message);
+  }
 }
+
+// function acceptInvitation(id_channel) {
+//   if (!ws || ws.readyState !== WebSocket.OPEN) return;
+//   ws.send(JSON.stringify({ type: MessageType.ACCEPT_INVITATION, id_channel }));
+// }
+
+// function rejectInvitation(id_channel) {
+//   if (!ws || ws.readyState !== WebSocket.OPEN) return;
+//   ws.send(JSON.stringify({ type: MessageType.REJECT_INVITATION, id_channel }));
+// }
 
 // ==================== CHANNEL SELECTION ====================
 function selectChannel(channelId) {
@@ -638,9 +678,7 @@ function handleChannelInvitation(data) {
 }
 
 // ==================== CREATE CHANNEL ====================
-function sendCreateChannel() {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-
+async function sendCreateChannel() {
   const usernames = [...tagState.tags];
   if (usernames.length === 0) return;
 
@@ -649,12 +687,30 @@ function sendCreateChannel() {
   setModalError("");
   document.getElementById("submitCreateChannelBtn").disabled = true;
 
-  ws.send(JSON.stringify({
-    type: MessageType.CREATE_CHANNEL,
-    usernames,
-    title
-  }));
-  // Button re-enabled by handleChannelCreated or handleServerError
+  try {
+    const response = await fetch(`${SERVER_URL}/channels`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Auth-Token": token
+      },
+      body: JSON.stringify({ usernames, title })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      setModalError(err.error ?? "An error occurred");
+      document.getElementById("submitCreateChannelBtn").disabled = false;
+      return;
+    }
+
+    const data = await response.json();
+    handleChannelCreated(data);
+
+  } catch (err) {
+    setModalError(`Connection error: ${err.message}`);
+    document.getElementById("submitCreateChannelBtn").disabled = false;
+  }
 }
 
 // ==================== MESSAGING ====================

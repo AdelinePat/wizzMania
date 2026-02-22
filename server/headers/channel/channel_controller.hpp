@@ -15,8 +15,8 @@
 #include "message_structure.hpp"      // use
 #include "optional"                   // use
 #include "user_service.hpp"           // use
-#include "websocket_manager.hpp"      // use
 #include "utils.hpp"
+#include "websocket_manager.hpp"  // use
 
 class ChannelController {
  private:
@@ -35,8 +35,9 @@ class ChannelController {
         user_service(db),
         invitation_controller(db, ws) {}
 
-  void create_channel(crow::websocket::connection& conn, int64_t id_user,
-                      const crow::json::rvalue& json_msg);
+  // void create_channel(crow::websocket::connection& conn, int64_t id_user,
+  //                     const crow::json::rvalue& json_msg);
+  crow::response create_channel(int64_t id_user, const crow::request& req);
 };
 
 #endif

@@ -26,10 +26,10 @@ class AuthController {
       : ws_manager(ws), auth_service() {}
   std::string generateToken(int64_t id_user);
 
-//   int64_t validate_token(const std::string& token);
+  int64_t authenticate_http(const crow::request& req);
 
   int64_t authenticate_ws(crow::websocket::connection& conn,
-                       const crow::json::rvalue& json_msg);
+                          const crow::json::rvalue& json_msg);
 
   void auth_success(crow::websocket::connection& conn,
                     const int64_t validated_id_user);

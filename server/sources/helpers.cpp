@@ -48,3 +48,11 @@ void send_error(crow::websocket::connection& conn,
 
   conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
 }
+
+crow::response send_http_error(int code, const std::string& message) {
+  crow::json::wvalue body;
+    body["error"] = message;
+    auto res = crow::response(code, body.dump());
+    res.add_header("Content-Type", "application/json");
+    return res;
+}

@@ -48,7 +48,8 @@ int64_t AuthService::validate_token(const std::string& token) {
   std::optional<int64_t> validated_id_user = this->get_validated_id_user(token);
 
   if (!validated_id_user.has_value()) {
-    throw WsError("Invalid token");
+    // throw WsError("Invalid token");
+    throw UnauthorizedError("Invalid token");
     // this->auth_error(conn, "Invalid token");
     // return;
   }

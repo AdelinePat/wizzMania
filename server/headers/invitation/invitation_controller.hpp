@@ -42,10 +42,18 @@ class InvitationController {
         message_controller(db, ws),
         user_service(db) {}
 
-  void accept_invitation(crow::websocket::connection& conn, int64_t id_user,
-                         const crow::json::rvalue& json_msg);
-  void reject_invitation(crow::websocket::connection& conn, int64_t id_user,
-                         const crow::json::rvalue& json_msg);
+  //   void accept_invitation(crow::websocket::connection& conn, int64_t
+  //   id_user,
+  //                          const crow::json::rvalue& json_msg);
+  crow::response accept_invitation(const crow::request& req, int64_t id_user,
+                                   int64_t id_channel);
+
+  //   void reject_invitation(crow::websocket::connection& conn, int64_t
+  //   id_user,
+  //                          const crow::json::rvalue& json_msg);
+
+  crow::response reject_invitation(const crow::request& req, int64_t id_user,
+                                   int64_t id_channel);
   void broadcast_invitation_notification(
       std::unordered_set<int64_t> participants,
       ServerSend::ChannelInvitation& invitation);

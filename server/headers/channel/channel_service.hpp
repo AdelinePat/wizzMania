@@ -28,7 +28,8 @@ class ChannelService {
   int64_t get_creator_id(int64_t id_user, int64_t id_channel);
 
   void generate_title(std::string& title,
-                      std::unordered_set<std::string>& usernames);
+                      std::unordered_set<std::string>& usernames,
+                      int64_t id_creator);
 
   int64_t create_channel(int64_t id_user, std::string& title,
                          std::string& created_at,
