@@ -38,6 +38,9 @@ class ChannelController {
   // void create_channel(crow::websocket::connection& conn, int64_t id_user,
   //                     const crow::json::rvalue& json_msg);
   crow::response create_channel(int64_t id_user, const crow::request& req);
+
+  crow::response leave_channel(const crow::request& req, int64_t id_user,
+                               int64_t id_channel);
 };
 
 #endif

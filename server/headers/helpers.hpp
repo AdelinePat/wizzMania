@@ -8,22 +8,28 @@
 #include "message_structure.hpp"
 // #include "exception.hpp"
 
-ServerSend::Message create_message_struct(int64_t id_message, int64_t id_user,
-                                          const std::string& body,
-                                          const std::string& timestamp);
-ServerSend::ChannelInvitation create_invitation_struct(
-    int64_t id_channel, int64_t id_inviter,
-    const std::vector<ServerSend::Contact>& other_participants,
-    std::string& title);
-ServerSend::ChannelInfo create_empty_channel_info_struct(
-    int64_t id_channel, int64_t created_by,
-    const std::vector<ServerSend::Contact>& other_participants,
-    std::string& title);
+// using ServerSend::ChannelInfo;
+// using ServerSend::ChannelInvitation;
+// using ServerSend::Contact;
+// using ServerSend::Message;
 
-// void send_error(crow::websocket::connection& conn,
-//                 const std::string& error_code,
-//                 const std::string& error_message);
+class Structure {
+ public:
+  static ServerSend::Message create_message_struct(int64_t id_message, int64_t id_user,
+                                       const std::string& body,
+                                       const std::string& timestamp);
+  static ServerSend::ChannelInvitation create_invitation_struct(
+      int64_t id_channel, int64_t id_inviter,
+      const std::vector<ServerSend::Contact>& other_participants, std::string& title);
+  static ServerSend::ChannelInfo create_empty_channel_info_struct(
+      int64_t id_channel, int64_t created_by,
+      const std::vector<ServerSend::Contact>& other_participants, std::string& title);
 
-// crow::response send_http_error(int code, const std::string& message);
+  // void send_error(crow::websocket::connection& conn,
+  //                 const std::string& error_code,
+  //                 const std::string& error_message);
+
+  // crow::response send_http_error(int code, const std::string& message);
+};
 
 #endif

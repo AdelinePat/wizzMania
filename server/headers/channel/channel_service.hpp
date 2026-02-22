@@ -36,6 +36,7 @@ class ChannelService {
                          std::unordered_set<int64_t> participants);
 
   std::vector<ServerSend::ChannelInfo> get_all_user_channels(int64_t id_user);
+  void leave_channel(int64_t id_user, int64_t id_channel);
 };
 
 #endif

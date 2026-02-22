@@ -60,7 +60,7 @@ void MessageController::broadcast_new_message(const int64_t id_channel,
   broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
   broadcast.id_channel = id_channel;
   broadcast.message =
-      create_message_struct(id_message, id_user, body, timestamp);
+      Structure::create_message_struct(id_message, id_user, body, timestamp);
   std::string broadcast_json_str =
       JsonHelpers::ServerSend::to_json(broadcast).dump();
   std::unordered_set<int64_t> participants =

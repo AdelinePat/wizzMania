@@ -76,6 +76,7 @@ int main() {
         }
       });
 
+  // ===== PATCH / /invitation/id_channel/reject endpoint =====
   CROW_ROUTE(app, "/invitations/<int>/reject")
       .methods("PATCH"_method)([&invitation_controller, &auth_controller](
                                    const crow::request& req, int id_channel) {
@@ -87,7 +88,7 @@ int main() {
           return crow::response(e.get_code(), e.get_message());
         }
       });
-
+  //  ===== PATCH Create a channel (send new invitation)  =====
   CROW_ROUTE(app, "/channels")
       .methods("POST"_method)(
           [&channel_controller, &auth_controller](const crow::request& req) {
@@ -98,6 +99,19 @@ int main() {
               return crow::response(e.get_code(), e.get_message());
             }
           });
+
+  // ===== PATCH / /channels/id_channel/leave endpoint =====
+  CROW_ROUTE(app, "/channels/<int>/leave")
+      .methods("PATCH"_method)([&channel_controller, &auth_controller](
+                                   const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          return channel_controller.leave_channel(
+              req, id_user, static_cast<int64_t>(id_channel));
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
+      });
 
   // ===== WebSocket endpoint =====
   CROW_ROUTE(app, "/ws")

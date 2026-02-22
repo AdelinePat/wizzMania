@@ -115,4 +115,6 @@ void Database::reject_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
   return this->update_invitation(id_user, id_channel, responded_at,
                                  ChannelStatus::REJECTED);
+
+  
 };

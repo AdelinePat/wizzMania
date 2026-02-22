@@ -66,7 +66,8 @@ crow::response ChannelController::create_channel(int64_t id_user,
   crow::json::rvalue body = crow::json::load(req.body);
   if (!body || !body.has("usernames")) {
     BadRequestError error = BadRequestError("Invalid CREATE_CHANNEL format");
-    return WizzManiaError::send_http_error(error.get_code(), error.get_message());
+    return WizzManiaError::send_http_error(error.get_code(),
+                                           error.get_message());
   }
 
   std::unordered_set<std::string> usernames;
@@ -83,7 +84,8 @@ crow::response ChannelController::create_channel(int64_t id_user,
     }
   } catch (const WizzManiaError& e) {
     BadRequestError error = BadRequestError("Invalid username");
-    return WizzManiaError::send_http_error(error.get_code(), error.get_message());
+    return WizzManiaError::send_http_error(error.get_code(),
+                                           error.get_message());
     // return send_error(conn, "INVALID_USERNAME", e.get_message());
   }
 
@@ -100,7 +102,7 @@ crow::response ChannelController::create_channel(int64_t id_user,
         user_service.get_contacts_from_channel(id_channel);
 
     ServerSend::ChannelInvitation invitation_message =
-        create_invitation_struct(id_channel, id_user, contacts, title);
+        Structure::create_invitation_struct(id_channel, id_user, contacts, title);
 
     invitation_controller.broadcast_invitation_notification(participants,
                                                             invitation_message);
@@ -111,7 +113,7 @@ crow::response ChannelController::create_channel(int64_t id_user,
     resp.already_existed = false;  // TODO !! MAKE A CHECK IF A CHANNEL WITH
                                    // THESE PARTICIPANT ALREADY EXIST OR NOT
     resp.channel =
-        create_empty_channel_info_struct(id_channel, id_user, contacts, title);
+        Structure::create_empty_channel_info_struct(id_channel, id_user, contacts, title);
     // ws_manager.send_to_user(id_user,
     //                         JsonHelpers::ServerSend::to_json(resp).dump());
 
@@ -119,6 +121,36 @@ crow::response ChannelController::create_channel(int64_t id_user,
 
   } catch (const WizzManiaError& e) {
     // return send_error(conn, "INTERNAL ERROR", e.get_message());
+    return WizzManiaError::send_http_error(e.get_code(), e.get_message());
+  }
+}
+
+crow::response ChannelController::leave_channel(const crow::request& req,
+                                                int64_t id_user,
+                                                int64_t id_channel) {
+  try {
+    channel_service.leave_channel(id_user, id_channel);
+
+    // notify remaining participants via WS
+    ServerSend::UserLeftNotification notif;
+    notif.type = WizzMania::MessageType::USER_LEFT;
+    notif.id_channel = id_channel;
+    notif.id_user = id_user;
+
+    //         struct UserLeftNotification {
+    //   WizzMania::MessageType type;  // USER_LEFT
+    //   int64_t id_channel;
+    //   int64_t id_user;
+    //   std::string username;
+    // };
+
+    std::unordered_set<int64_t> remaining =
+        user_service.get_users_by_channel(id_channel);
+    ws_manager.broadcast_to_users(
+        remaining, JsonHelpers::ServerSend::to_json(notif).dump());
+
+    return crow::response(204);  // ok with no body
+  } catch (const WizzManiaError& e) {
     return WizzManiaError::send_http_error(e.get_code(), e.get_message());
   }
 }

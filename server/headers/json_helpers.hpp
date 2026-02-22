@@ -4,8 +4,8 @@
 #include <optional>
 
 #include "crow.h"
-#include "message_structure.hpp"
 #include "exception.hpp"
+#include "message_structure.hpp"
 
 // ===== CROW JSON SERIALIZATION (Server-side only) =====
 
@@ -391,6 +391,15 @@ inline crow::json::wvalue to_json(
   }
   json["messages"] = std::move(messages_list);
 
+  return json;
+}
+
+inline crow::json::wvalue to_json(
+    const ::ServerSend::UserLeftNotification& resp) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(resp.type);
+  json["id_channel"] = resp.id_channel;
+  json["id_user"] = resp.id_user;
   return json;
 }
 

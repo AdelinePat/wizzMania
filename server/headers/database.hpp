@@ -41,6 +41,8 @@ class Database {
   void update_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at,
                          ChannelStatus membership);
+  int leave_channel(int64_t id_user, int64_t id_channel,
+                     ChannelStatus membership);
 
  public:
   Database();
@@ -124,8 +126,9 @@ class Database {
       int64_t id_channel, ChannelStatus membership);
 
   int64_t get_number_invited_users_in_channel(
-    int64_t id_channel,
-    ChannelStatus membership = ChannelStatus::PENDING,
-    ChannelStatus other_membership = ChannelStatus::ACCEPTED);
+      int64_t id_channel, ChannelStatus membership = ChannelStatus::PENDING,
+      ChannelStatus other_membership = ChannelStatus::ACCEPTED);
+
+  void leave_channel(int64_t id_user, int64_t id_channel);
 };
 #endif

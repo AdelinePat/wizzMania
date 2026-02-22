@@ -80,6 +80,7 @@ function showHome() {
 
   document.getElementById("home-view").classList.remove("hidden");
   document.getElementById("chat-view").classList.add("hidden");
+  document.getElementById("leaveChannelBtn").classList.add("hidden");
 
   document.getElementById("chat-icon").textContent = "⌂";
   document.getElementById("chat-title").textContent = "Home";
@@ -93,13 +94,12 @@ function showChat(channelId) {
   document.getElementById("home-view").classList.add("hidden");
   document.getElementById("chat-view").classList.remove("hidden");
   document.getElementById("user-pill").classList.remove("active");
+  document.getElementById("leaveChannelBtn").classList.remove("hidden");
 }
 
 // ==================== DM TITLE RESOLUTION ====================
-// Use at render time only — cache always keeps the server title
 function getChannelDisplayTitle(ch) {
   if (ch.is_group) return ch.title;
-  // For DM: find the other participant (not me)
   const other = ch.participants?.find(p => p.id_user !== userId);
   return other?.username ?? ch.title;
 }
@@ -145,6 +145,7 @@ function connectWebSocket() {
         case MessageType.INVITATION_ACCEPTED: handleInvitationAccepted(data); break;
         case MessageType.INVITATION_REJECTED: handleInvitationRejected(data); break;
         case MessageType.USER_JOINED: handleUserJoined(data); break;
+        case MessageType.USER_LEFT: handleUserLeft(data); break;
         case MessageType.CHANNEL_CREATED: handleChannelCreated(data); break;
         case MessageType.ERROR: handleServerError(data); break;
         case MessageType.CHANNEL_INVITATION: handleChannelInvitation(data); break;
@@ -186,7 +187,6 @@ function setWsDot(state) {
 
 // ==================== SERVER ERROR ====================
 function handleServerError(data) {
-  // If modal is open, show error there. Otherwise show as system message.
   const modal = document.getElementById("createChannelModal");
   if (modal.classList.contains("open")) {
     setModalError(data.message ?? "An error occurred");
@@ -364,9 +364,7 @@ function renderHomeInvitations(incoming, outgoing) {
   updateInvitationsBadge();
 }
 
-// Append a single outgoing invitation card — reused by handleChannelCreated
 function appendOutgoingCard(container, ch) {
-  // Ensure "Sent" section title exists
   let sentTitle = container.querySelector(".inv-section-title[data-section='sent']");
   if (!sentTitle) {
     sentTitle = document.createElement("div");
@@ -391,19 +389,18 @@ function appendOutgoingCard(container, ch) {
   container.appendChild(card);
 }
 
+// ==================== INVITATION ACTIONS ====================
 async function acceptInvitation(id_channel) {
   try {
     const response = await fetch(`${SERVER_URL}/invitations/${id_channel}/accept`, {
       method: "PATCH",
       headers: { "X-Auth-Token": token }
     });
-
     if (!response.ok) {
       const err = await response.json();
       console.error("[ACCEPT] Error:", err.error);
       return;
     }
-
     const data = await response.json();
     handleInvitationAccepted(data);
   } catch (err) {
@@ -417,29 +414,17 @@ async function rejectInvitation(id_channel) {
       method: "PATCH",
       headers: { "X-Auth-Token": token }
     });
-
     if (!response.ok) {
       const err = await response.json();
       console.error("[REJECT] Error:", err.error);
       return;
     }
-
     const data = await response.json();
     handleInvitationRejected(data);
   } catch (err) {
     console.error("[REJECT] Network error:", err.message);
   }
 }
-
-// function acceptInvitation(id_channel) {
-//   if (!ws || ws.readyState !== WebSocket.OPEN) return;
-//   ws.send(JSON.stringify({ type: MessageType.ACCEPT_INVITATION, id_channel }));
-// }
-
-// function rejectInvitation(id_channel) {
-//   if (!ws || ws.readyState !== WebSocket.OPEN) return;
-//   ws.send(JSON.stringify({ type: MessageType.REJECT_INVITATION, id_channel }));
-// }
 
 // ==================== CHANNEL SELECTION ====================
 function selectChannel(channelId) {
@@ -577,6 +562,7 @@ function handleUserJoined(data) {
     }
   }
 }
+
 function handleInvitationRejected(data) {
   const { id_channel, contact } = data;
   const iAmRejecter = contact.id_user === userId;
@@ -585,7 +571,6 @@ function handleInvitationRejected(data) {
     const card = document.querySelector(`#home-invitations-content .inv-card:not(.outgoing)[data-id="${id_channel}"]`);
     if (card) card.remove();
   } else {
-    // I'm the creator — remove only this person from the pending list
     userCache.set(contact.id_user, contact.username);
 
     const ch = outgoingCache.get(id_channel);
@@ -593,12 +578,10 @@ function handleInvitationRejected(data) {
       ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
 
       if (ch.participants.length === 0) {
-        // Nobody left pending — remove entirely
         outgoingCache.delete(id_channel);
         const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
         if (card) card.remove();
       } else {
-        // Still waiting on others — just update the card text
         const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
         if (card) {
           const meta = card.querySelector(".inv-meta");
@@ -614,28 +597,21 @@ function handleInvitationRejected(data) {
 function handleChannelCreated(data) {
   const ch = data.channel;
 
-  // Store in outgoing cache — it becomes a real channel once someone accepts
   outgoingCache.set(ch.id_channel, ch);
   ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
 
-  // Add outgoing card to invitations tab
   const container = document.getElementById("home-invitations-content");
-  // Remove empty state if present
   const empty = container.querySelector(".empty-home");
   if (empty) empty.remove();
 
   appendOutgoingCard(container, ch);
   updateInvitationsBadge();
 
-  // Switch to invitations tab so they see it
   switchTab("invitations");
-
-  // Close modal
   closeCreateChannelModal();
 }
 
 function handleChannelInvitation(data) {
-  // data is a ChannelInvitation: { type, id_channel, id_inviter, other_participant_ids, title }
   const inviterName = userCache.get(data.id_inviter) ?? `User ${data.id_inviter}`;
   data.other_participant_ids?.forEach(p => userCache.set(p.id_user, p.username));
 
@@ -643,14 +619,13 @@ function handleChannelInvitation(data) {
   const empty = container.querySelector(".empty-home");
   if (empty) empty.remove();
 
-  // Ensure "Incoming" section title exists
   let incomingTitle = container.querySelector(".inv-section-title[data-section='incoming']");
   if (!incomingTitle) {
     incomingTitle = document.createElement("div");
     incomingTitle.className = "inv-section-title";
     incomingTitle.dataset.section = "incoming";
     incomingTitle.textContent = "Incoming";
-    container.prepend(incomingTitle); // incoming goes above outgoing
+    container.prepend(incomingTitle);
   }
 
   const memberNames = (data.other_participant_ids ?? []).map(p => p.username).join(", ");
@@ -671,10 +646,54 @@ function handleChannelInvitation(data) {
   card.querySelector(".accept-btn").addEventListener("click", () => acceptInvitation(data.id_channel));
   card.querySelector(".reject-btn").addEventListener("click", () => rejectInvitation(data.id_channel));
 
-  // Insert after the incoming title
   incomingTitle.insertAdjacentElement("afterend", card);
   updateInvitationsBadge();
-  switchTab("invitations"); // bring attention to it
+  switchTab("invitations");
+}
+
+// ==================== LEAVE CHANNEL ====================
+async function leaveChannel(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/channels/${id_channel}/leave`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[LEAVE] Error:", err.error);
+      return;
+    }
+
+    channelCache.delete(id_channel);
+    if (activeChannelId === id_channel) showHome();
+    renderChannelsSidebar();
+  } catch (err) {
+    console.error("[LEAVE] Network error:", err.message);
+  }
+}
+
+function handleUserLeft(data) {
+  const ch = channelCache.get(data.id_channel);
+  if (!ch) return;
+
+  if (data.channel_deleted) {
+    channelCache.delete(data.id_channel);
+    if (activeChannelId === data.id_channel) showHome();
+    renderChannelsSidebar();
+    return;
+  }
+
+  ch.participants = ch.participants.filter(p => p.id_user !== data.id_user);
+  ch.is_group = ch.participants.length > 2;
+
+  if (activeChannelId === data.id_channel) {
+    const name = userCache.get(data.id_user) ?? `User ${data.id_user}`;
+    addSystemMessage(`${name} left the channel`);
+    document.getElementById("chat-sub").textContent = `${ch.participants.length} members`;
+  }
+
+  renderChannelsSidebar();
 }
 
 // ==================== CREATE CHANNEL ====================
@@ -706,7 +725,6 @@ async function sendCreateChannel() {
 
     const data = await response.json();
     handleChannelCreated(data);
-
   } catch (err) {
     setModalError(`Connection error: ${err.message}`);
     document.getElementById("submitCreateChannelBtn").disabled = false;
@@ -774,7 +792,6 @@ function resolveAtMentions(text) {
 }
 
 // ==================== MODAL ====================
-// Tag state — lives outside DOM so it's easy to read on submit
 const tagState = { tags: new Set() };
 
 function openCreateChannelModal() {
@@ -810,7 +827,7 @@ function commitTag() {
 
   if (tagState.tags.has(value)) {
     input.value = "";
-    return; // silently ignore duplicate
+    return;
   }
 
   tagState.tags.add(value);
@@ -858,28 +875,23 @@ document.addEventListener("DOMContentLoaded", () => {
     tab.addEventListener("click", () => switchTab(tab.dataset.tab));
   });
 
-  // Modal open/close
   document.getElementById("openCreateChannelBtn").addEventListener("click", openCreateChannelModal);
   document.getElementById("cancelCreateChannelBtn").addEventListener("click", closeCreateChannelModal);
   document.getElementById("submitCreateChannelBtn").addEventListener("click", sendCreateChannel);
 
-  // Close modal on overlay click
   document.getElementById("createChannelModal").addEventListener("click", (e) => {
     if (e.target === document.getElementById("createChannelModal")) closeCreateChannelModal();
   });
 
-  // Close modal on Escape
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") closeCreateChannelModal();
   });
 
-  // Tag input: commit on Space, comma, or Enter
   document.getElementById("tagTextInput").addEventListener("keydown", (e) => {
     if (e.key === " " || e.key === "," || e.key === "Enter") {
       e.preventDefault();
       commitTag();
     }
-    // Backspace on empty input removes last tag
     if (e.key === "Backspace" && e.target.value === "") {
       const lastTag = [...tagState.tags].at(-1);
       if (lastTag) {
@@ -892,8 +904,11 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Clicking anywhere in the tag wrap focuses the input
   document.getElementById("tagInputWrap").addEventListener("click", () => {
     document.getElementById("tagTextInput").focus();
+  });
+
+  document.getElementById("leaveChannelBtn").addEventListener("click", () => {
+    if (activeChannelId) leaveChannel(activeChannelId);
   });
 });

@@ -221,10 +221,9 @@ int64_t Database::get_number_invited_users_in_channel(
   // count PENDING + ACCEPTED
   this->ensure_connection();
   std::unique_ptr<sql::PreparedStatement> prep_statement(
-      this->conn->prepareStatement(
-          "SELECT COUNT(*) as total FROM userChannel "
-          "WHERE id_channel = ? "
-          "AND membership IN (?, ?);")); 
+      this->conn->prepareStatement("SELECT COUNT(*) as total FROM userChannel "
+                                   "WHERE id_channel = ? "
+                                   "AND membership IN (?, ?);"));
   prep_statement->setInt64(1, id_channel);
   prep_statement->setInt(2, static_cast<int>(membership));
   prep_statement->setInt(3, static_cast<int>(other_membership));
@@ -233,4 +232,56 @@ int64_t Database::get_number_invited_users_in_channel(
     throw InternalError("Couldn't get pending and accepted participants count");
   }
   return res->getInt64("total");
+}
+
+void Database::leave_channel(int64_t id_user, int64_t id_channel) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+  try {
+    this->ensure_connection();
+    this->conn->setAutoCommit(false);
+
+    this->leave_channel(id_user, id_channel, ChannelStatus::LEFT);
+
+    int64_t remaining = get_number_invited_users_in_channel(
+        id_channel, ChannelStatus::PENDING, ChannelStatus::ACCEPTED);
+
+    // bool creator_left = (id_user == id_creator);
+    if (remaining <= 0) {
+      std::unique_ptr<sql::PreparedStatement> del(this->conn->prepareStatement(
+          "DELETE FROM channels WHERE id_channel = ?;"));
+      del->setInt64(1, id_channel);
+      del->executeUpdate();
+      // CASCADE handles userChannel and messages automatically
+    }
+
+  } catch (sql::SQLException& e) {
+    this->conn->rollback();
+    this->conn->setAutoCommit(true);
+    throw InternalError(std::string("DB error: ") + e.what());
+  }
+}
+
+int Database::leave_channel(int64_t id_user, int64_t id_channel,
+                            ChannelStatus membership) {
+  try {
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("UPDATE userChannel "
+                                     "SET membership = ?, "
+                                     "WHERE id_user = ? AND id_channel = ?;"));
+    prep_statement->setInt(1, static_cast<int32_t>(membership));
+    prep_statement->setInt64(2, id_user);
+    prep_statement->setInt64(3, id_channel);
+
+    int affected_rows = prep_statement->executeUpdate();
+    if (affected_rows == 0) {
+      throw NotFoundError("User is not a member of this channel");
+    }
+    return affected_rows;
+    // return affected_rows > 0;
+    // return true;
+  } catch (sql::SQLException& e) {
+    // std::cerr << "[DB] update_invitation error: " << e.what() << std::endl;
+    throw InternalError(std::string("DB error: ") + e.what());
+    // return false;
+  }
 }

@@ -182,7 +182,7 @@ struct UserLeftNotification {
   WizzMania::MessageType type;  // USER_LEFT
   int64_t id_channel;
   int64_t id_user;
-  std::string username;
+  // std::string username;
 };
 
 struct ChannelActivatedNotification {

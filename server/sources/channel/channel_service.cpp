@@ -27,10 +27,10 @@ int64_t ChannelService::get_creator_id(int64_t id_user, int64_t id_channel) {
   return id_creator_opt.value();
 }
 
-void ChannelService::generate_title(
-    std::string& title, std::unordered_set<std::string>& usernames, int64_t id_creator) {
+void ChannelService::generate_title(std::string& title,
+                                    std::unordered_set<std::string>& usernames,
+                                    int64_t id_creator) {
   if (title.empty()) {
-
     // add creator name to title!
     title += db.get_contact(id_creator).value().username;
 
@@ -106,4 +106,8 @@ std::vector<ServerSend::ChannelInfo> ChannelService::get_all_user_channels(
     }
   }
   return channels_info;
+}
+
+void ChannelService::leave_channel(int64_t id_user, int64_t id_channel) {
+  db.leave_channel(id_user, id_channel);
 }
