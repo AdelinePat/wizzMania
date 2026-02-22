@@ -266,7 +266,7 @@ int Database::leave_channel(int64_t id_user, int64_t id_channel,
   try {
     std::unique_ptr<sql::PreparedStatement> prep_statement(
         this->conn->prepareStatement("UPDATE userChannel "
-                                     "SET membership = ?, "
+                                     "SET membership = ? "
                                      "WHERE id_user = ? AND id_channel = ?;"));
     prep_statement->setInt(1, static_cast<int32_t>(membership));
     prep_statement->setInt64(2, id_user);
