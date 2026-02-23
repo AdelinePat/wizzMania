@@ -29,33 +29,44 @@ crow::response InvitationController::accept_invitation(const crow::request& req,
 crow::response InvitationController::reject_invitation(const crow::request& req,
                                                        int64_t id_user,
                                                        int64_t id_channel) {
-  std::string responded_at = Utils::get_timestamp();
-  // try {
-  int64_t id_creator = channel_service.get_creator_id(id_user, id_channel);
+  try {
+    std::string responded_at = Utils::get_timestamp();
+    // try {
+    int64_t id_creator = channel_service.get_creator_id(id_user, id_channel);
 
-  invitation_service.reject_invitation(id_user, id_channel, responded_at);
+    invitation_service.reject_invitation(id_user, id_channel, responded_at);
 
-  std::cout << "[INVITATION] User " << id_user << " -> declined the invitation "
-            << id_channel << "\n";
+    bool channel_exists = channel_service.does_channel_exist(id_channel);
 
-  ServerSend::RejectInvitationResponse resp;
-  resp.type = WizzMania::MessageType::INVITATION_REJECTED;
-  resp.id_channel = id_channel;
+    std::cout << "[INVITATION] User " << id_user
+              << " -> declined the invitation " << id_channel << "\n";
 
-  std::optional<ServerSend::Contact> rejecter_opt =
-      user_service.get_contact(id_user);
-  if (!rejecter_opt.has_value()) {
-    throw NotFoundError("User not found");
+    ServerSend::RejectInvitationResponse resp;
+    resp.type = WizzMania::MessageType::INVITATION_REJECTED;
+    resp.id_channel = id_channel;
+
+    std::optional<ServerSend::Contact> rejecter_opt =
+        user_service.get_contact(id_user);
+    if (!rejecter_opt.has_value()) {
+      throw NotFoundError("User not found");
+    }
+    resp.contact = rejecter_opt.value();
+
+    // send rejection to creator !
+    std::string resp_json = JsonHelpers::ServerSend::to_json(resp).dump();
+    ws_manager.send_to_user(id_creator, resp_json);
+
+    if (channel_exists) {
+      std::string body =
+          "User @" + std::to_string(id_user) + " rejected the chat!";
+
+      message_controller.send_message_internal(1, id_channel, body,
+                                               responded_at);
+    }
+    return crow::response(200, resp_json);
+  } catch (const WizzManiaError& e) {
+    return WizzManiaError::send_http_error(e.get_code(), e.get_message());
   }
-  resp.contact = rejecter_opt.value();
-
-  std::string resp_json = JsonHelpers::ServerSend::to_json(resp).dump();
-  ws_manager.send_to_user(id_creator, resp_json);
-
-  std::string body = "User @" + std::to_string(id_user) + " rejected the chat!";
-
-  message_controller.send_message_internal(1, id_channel, body, responded_at);
-  return crow::response(200, resp_json);
 }
 
 void InvitationController::broadcast_joined_notification(
@@ -86,6 +97,7 @@ void InvitationController::broadcast_joined_notification(
 void InvitationController::broadcast_invitation_notification(
     std::unordered_set<int64_t> participants,
     ServerSend::ChannelInvitation& invitation) {
+  participants.erase(invitation.id_inviter);
   ws_manager.broadcast_to_users(
       participants, JsonHelpers::ServerSend::to_json(invitation).dump());
 }

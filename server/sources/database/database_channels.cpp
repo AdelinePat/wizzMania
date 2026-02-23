@@ -116,6 +116,8 @@ std::optional<int64_t> Database::create_channel(const int64_t created_by,
 bool Database::create_user_channels(
     const int64_t id_creator, const int64_t id_channel,
     const std::unordered_set<int64_t>& participants) {
+  //   std::unordered_set<int64_t> invitees = participants;
+  // invitees.erase(id_creator);
   try {
     this->ensure_connection();
     std::string query =
@@ -283,5 +285,72 @@ int Database::leave_channel(int64_t id_user, int64_t id_channel,
     // std::cerr << "[DB] update_invitation error: " << e.what() << std::endl;
     throw InternalError(std::string("DB error: ") + e.what());
     // return false;
+  }
+}
+
+std::optional<int64_t> Database::find_existing_channel(
+    const std::unordered_set<int64_t>& all_participants) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+  try {
+    this->ensure_connection();
+
+    std::string placeholders;
+    for (size_t i = 0; i < all_participants.size(); i++) {
+      placeholders += (i == 0) ? "?" : ", ?";
+    }
+
+    std::string query =
+        "SELECT uc.id_channel FROM userChannel uc "
+        "WHERE uc.membership IN (0, 1) "
+        "AND uc.id_user IN (" +
+        placeholders +
+        ") "
+        "GROUP BY uc.id_channel "
+        "HAVING COUNT(DISTINCT uc.id_user) = ? "
+        "AND ("
+        "  SELECT COUNT(*) FROM userChannel uc2 "
+        "  WHERE uc2.id_channel = uc.id_channel "
+        "  AND uc2.membership IN (0, 1)"
+        ") = ?;";
+
+    std::unique_ptr<sql::PreparedStatement> stmt(
+        this->conn->prepareStatement(query));
+
+    int param = 0;
+    for (int64_t id : all_participants) {
+      stmt->setInt64(++param, id);
+    }
+    int64_t count = static_cast<int64_t>(all_participants.size());
+    stmt->setInt64(++param, count);  // HAVING COUNT(DISTINCT) = ?
+    stmt->setInt64(++param, count);  // subquery COUNT(*) = ?
+
+    std::unique_ptr<sql::ResultSet> res(stmt->executeQuery());
+    if (res->next()) {
+      return res->getInt64("id_channel");
+    }
+    return std::nullopt;
+  } catch (sql::SQLException& e) {
+    throw InternalError(std::string("DB error: ") + e.what());
+  }
+}
+
+std::optional<bool> Database::does_channel_exist(int64_t id_channel) {
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("SELECT 1 FROM channels "
+                                     "WHERE id_channel = ?;"));
+
+    prep_statement->setInt64(1, id_channel);
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    if (res->next()) {
+      return true;
+    }
+    return false;
+
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] get_channel_creator error: " << e.what() << std::endl;
+    return std::nullopt;
   }
 }

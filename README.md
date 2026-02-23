@@ -244,3 +244,8 @@ python3 -m http.server 8880
 
 Then, if your secret server is localhost, go to:
 http://localhost:8880/tests/draft/index.html
+
+### if windows is a little bitch:
+```bash
+dos2unix server/build-server.sh
+```

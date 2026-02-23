@@ -37,6 +37,9 @@ class ChannelService {
 
   std::vector<ServerSend::ChannelInfo> get_all_user_channels(int64_t id_user);
   void leave_channel(int64_t id_user, int64_t id_channel);
+  std::optional<int64_t> find_existing_channel(
+      const std::unordered_set<int64_t>& invited_participants);
+  bool does_channel_exist(int64_t id_channel);
 };
 
 #endif

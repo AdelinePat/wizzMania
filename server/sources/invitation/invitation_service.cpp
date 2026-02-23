@@ -10,9 +10,10 @@ void InvitationService::accept_invitation(int64_t id_user, int64_t id_channel,
   // return;
 }
 
+// Should return a boolean
 void InvitationService::reject_invitation(int64_t id_user, int64_t id_channel,
                                           std::string& responded_at) {
-  db.reject_invitation(id_user, id_channel, responded_at);
+  return db.reject_invitation(id_user, id_channel, responded_at);
   // if (!rejected) {
   //   // this->send_error(conn, "[INVITATION ERROR]",
   //   //                  "Couldn't reject the invitation");
@@ -61,8 +62,8 @@ InvitationService::get_all_outgoing_invitations(int64_t id_user) {
     auto it_participant = channel_participants.find(channel.id_channel);
     if (it_participant != channel_participants.end()) {
       channel.participants = it_participant->second;
-      // channel.is_group = channel.participants.size() > 2;
-      db.get_number_invited_users_in_channel(channel.id_channel) > 2;
+      channel.is_group =
+          db.get_number_invited_users_in_channel(channel.id_channel) > 2;
     } else {
       std::cerr << "[DB] Warning: no participants found for channel "
                 << channel.id_channel << "\n";
