@@ -109,6 +109,11 @@ void MessageController::send_history_response(
 void MessageController::mark_as_read(crow::websocket::connection& conn,
                                      int64_t id_user,
                                      const crow::json::rvalue& json_msg) {
+  /** TODO should send an answer through websocket (using
+   * ws.send_to_user(id_user, json_msg)) So it can send new unread count to all
+   * device for the same user (needs new unread count for this specific
+   * channel!) **/
+
   try {
     std::optional<::ClientSend::MarkAsReadRequest> req =
         JsonHelpers::ClientSend::parse_mark_as_read(json_msg);
@@ -118,7 +123,8 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
     }
 
     std::cout << "[MARK_AS_READ] User " << id_user << " -> Channel "
-              << req->id_channel << " read up to message " << req->last_id_message << "\n";
+              << req->id_channel << " read up to message "
+              << req->last_id_message << "\n";
 
     bool has_access = user_service.has_access(id_user, req->id_channel);
     if (!has_access) {
@@ -126,7 +132,8 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
           "User has no permission to MARK_AS_READ in this channel");
     }
 
-    message_service.mark_as_read(id_user, req->id_channel, req->last_id_message);
+    message_service.mark_as_read(id_user, req->id_channel,
+                                 req->last_id_message);
 
   } catch (const WizzManiaError& e) {
     WizzManiaError::send_ws_error(conn, e);

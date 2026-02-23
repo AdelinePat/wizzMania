@@ -14,6 +14,8 @@ const outgoingCache = new Map();  // id_channel -> ChannelInfo (pending sent)
 const SERVER_URL = `http://${SERVER_IP ?? "192.168.0.117"}:${SERVER_PORT ?? "8080"}`;
 const WS_URL = `ws://${SERVER_IP}:${SERVER_PORT}/ws`;
 
+let intentionalLogout = false;
+
 // ==================== MESSAGE TYPES ====================
 const MessageType = {
   WS_AUTH: 0, LOGOUT: 1,
@@ -127,7 +129,7 @@ function updateInvitationsBadge() {
 // ==================== WEBSOCKET ====================
 function connectWebSocket() {
   ws = new WebSocket(WS_URL);
-  window.ws = ws; 
+  window.ws = ws;
 
   ws.onopen = () => {
     setWsDot("connecting");
@@ -157,10 +159,23 @@ function connectWebSocket() {
 
   ws.onerror = () => setWsDot("error");
   ws.onclose = (event) => {
+    if (intentionalLogout) return; // ← skip everything, logout() handles it
     setWsDot("disconnected");
     document.getElementById("messageInput").disabled = true;
     document.getElementById("sendBtn").disabled = true;
     addSystemMessage(`Disconnected: ${event.reason || "connection closed"}`);
+
+
+    // reset UI back to login
+    document.getElementById("app-screen").classList.remove("visible");
+    document.getElementById("login-screen").style.display = "";
+    document.getElementById("username").value = "";
+    document.getElementById("password").value = "";
+    document.getElementById("login-error").textContent = "";
+    // ↓ add these two
+    document.getElementById("loginBtn").disabled = false;
+    document.getElementById("loginBtn").textContent = "Connect";
+    intentionalLogout = false
   };
 }
 
@@ -170,12 +185,35 @@ function onAuthSuccess() {
   document.getElementById("sendBtn").disabled = false;
 }
 
-function disconnectWebSocket() {
-  if (ws) {
-    if (ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: MessageType.LOGOUT, reason: "User logged out" }));
-    ws.close();
-    ws = null;
+async function logout() {
+  intentionalLogout = true;
+  try {
+    await fetch(`${SERVER_URL}/logout`, {
+      method: "POST",
+      headers: { "X-Auth-Token": token }
+    });
+  } catch (err) {
+    console.error("[LOGOUT] HTTP error:", err.message);
   }
+
+  // purge everything
+  token = null;
+  userId = null;
+  username = null;
+  activeChannelId = null;
+  channelCache.clear();
+  outgoingCache.clear();
+  userCache.clear();
+
+  if (ws) { ws.close(); ws = null; }
+
+  // reset UI back to login
+  document.getElementById("app-screen").classList.remove("visible");
+  document.getElementById("login-screen").style.display = "";
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("login-error").textContent = "";
+  intentionalLogout = false;
 }
 
 function setWsDot(state) {
@@ -446,7 +484,7 @@ function selectChannel(channelId) {
   const participantCount = ch?.participants?.length ?? 0;
   document.getElementById("chat-sub").textContent = participantCount > 0 ? `${participantCount} members` : "";
 
- const sidebarItem = document.querySelector(`#channels-list .sidebar-item[data-id="${channelId}"]`);
+  const sidebarItem = document.querySelector(`#channels-list .sidebar-item[data-id="${channelId}"]`);
   if (sidebarItem) { const badge = sidebarItem.querySelector(".unread-badge"); if (badge) badge.remove(); }
 
   // Auto mark as read when opening channel
@@ -893,7 +931,8 @@ function escapeHtml(text) { const d = document.createElement("div"); d.textConte
 document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("loginBtn").addEventListener("click", login);
   document.getElementById("sendBtn").addEventListener("click", sendMessage);
-  document.getElementById("logoutBtn").addEventListener("click", disconnectWebSocket);
+  // document.getElementById("logoutBtn").addEventListener("click", disconnectWebSocket);
+  document.getElementById("logoutBtn").addEventListener("click", logout);
   document.getElementById("password").addEventListener("keypress", e => { if (e.key === "Enter") login(); });
   document.getElementById("messageInput").addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
 

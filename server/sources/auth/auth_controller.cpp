@@ -33,7 +33,7 @@ int64_t AuthController::authenticate_ws(crow::websocket::connection& conn,
 
   int64_t validated_id_user = auth_service.validate_token(auth_req->token);
 
-  this->auth_success(conn, validated_id_user);
+  this->auth_success(conn, validated_id_user, auth_req->token);
   return validated_id_user;
 }
 
