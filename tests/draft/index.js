@@ -212,8 +212,10 @@ function handleInitialData(data) {
 
   if (Array.isArray(data.outgoing_invitations)) {
     data.outgoing_invitations.forEach(ch => {
+      // only keep invitees, not self — so length === 0 works correctly on rejection
+      ch.participants = (ch.participants ?? []).filter(p => p.id_user !== userId);
       outgoingCache.set(ch.id_channel, ch);
-      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+      ch.participants.forEach(p => userCache.set(p.id_user, p.username));
     });
   }
 
@@ -568,20 +570,21 @@ function handleInvitationRejected(data) {
   const iAmRejecter = contact.id_user === userId;
 
   if (iAmRejecter) {
+    // I rejected — remove my incoming card
     const card = document.querySelector(`#home-invitations-content .inv-card:not(.outgoing)[data-id="${id_channel}"]`);
     if (card) card.remove();
   } else {
     userCache.set(contact.id_user, contact.username);
-
     const ch = outgoingCache.get(id_channel);
     if (ch) {
       ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
-
       if (ch.participants.length === 0) {
+        // no more invitees pending — remove outgoing card entirely
         outgoingCache.delete(id_channel);
         const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
         if (card) card.remove();
       } else {
+        // still waiting on others — update the card
         const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
         if (card) {
           const meta = card.querySelector(".inv-meta");
@@ -597,8 +600,10 @@ function handleInvitationRejected(data) {
 function handleChannelCreated(data) {
   const ch = data.channel;
 
+  // only keep invitees, not self — so length === 0 works correctly on rejection
+  ch.participants = (ch.participants ?? []).filter(p => p.id_user !== userId);
   outgoingCache.set(ch.id_channel, ch);
-  ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+  ch.participants.forEach(p => userCache.set(p.id_user, p.username));
 
   const container = document.getElementById("home-invitations-content");
   const empty = container.querySelector(".empty-home");
@@ -715,6 +720,15 @@ async function sendCreateChannel() {
       },
       body: JSON.stringify({ usernames, title })
     });
+
+    if (response.status === 409) {
+      const data = await response.json();
+      if (channelCache.has(data.id_channel)) {
+        selectChannel(data.id_channel);
+      }
+      closeCreateChannelModal();
+      return;
+    }
 
     if (!response.ok) {
       const err = await response.json();

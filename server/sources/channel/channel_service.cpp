@@ -111,3 +111,16 @@ std::vector<ServerSend::ChannelInfo> ChannelService::get_all_user_channels(
 void ChannelService::leave_channel(int64_t id_user, int64_t id_channel) {
   db.leave_channel(id_user, id_channel);
 }
+
+std::optional<int64_t> ChannelService::find_existing_channel(
+    const std::unordered_set<int64_t>& invited_participants) {
+  return db.find_existing_channel(invited_participants);
+}
+
+bool ChannelService::does_channel_exist(int64_t id_channel) {
+    std::optional<bool> result = db.does_channel_exist(id_channel);
+  if (!result.has_value()) {
+    throw InternalError("Could not check channel existence");
+  }
+  return result.value();
+}

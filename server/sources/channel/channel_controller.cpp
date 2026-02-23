@@ -2,7 +2,6 @@
 
 crow::response ChannelController::create_channel(int64_t id_user,
                                                  const crow::request& req) {
-
   crow::json::rvalue body = crow::json::load(req.body);
   if (!body || !body.has("usernames")) {
     BadRequestError error = BadRequestError("Invalid CREATE_CHANNEL format");
@@ -20,9 +19,11 @@ crow::response ChannelController::create_channel(int64_t id_user,
   std::unordered_set<int64_t> participants;
   try {
     for (const std::string& username : usernames) {
-      int64_t id_user = user_service.get_id_user(username);
-      participants.insert(id_user);
+      int64_t current_id_user = user_service.get_id_user(username);
+      participants.insert(current_id_user);
     }
+    participants.insert(id_user);
+
   } catch (const WizzManiaError& e) {
     BadRequestError error = BadRequestError("Invalid username");
     return WizzManiaError::send_http_error(error.get_code(),
@@ -30,9 +31,24 @@ crow::response ChannelController::create_channel(int64_t id_user,
   }
 
   try {
+    std::optional<int64_t> existing =
+        channel_service.find_existing_channel(participants);
+
+    ServerSend::CreateChannelResponse resp;
+
+    if (existing.has_value()) {
+      resp.type = WizzMania::MessageType::CHANNEL_CREATED;
+      resp.id_channel = existing.value();
+      resp.already_existed = true;
+      return crow::response(409, JsonHelpers::ServerSend::to_json(resp).dump());
+    }
+
     channel_service.generate_title(title, usernames, id_user);
 
     std::string created_at = Utils::get_timestamp();
+
+    // ALED
+    participants.erase(id_user);
     int64_t id_channel = channel_service.create_channel(
         id_user, title, created_at, participants);
 
@@ -40,18 +56,19 @@ crow::response ChannelController::create_channel(int64_t id_user,
         user_service.get_contacts_from_channel(id_channel);
 
     ServerSend::ChannelInvitation invitation_message =
-        Structure::create_invitation_struct(id_channel, id_user, contacts, title);
+        Structure::create_invitation_struct(id_channel, id_user, contacts,
+                                            title);
 
     invitation_controller.broadcast_invitation_notification(participants,
                                                             invitation_message);
 
-    ServerSend::CreateChannelResponse resp;
+    // ServerSend::CreateChannelResponse resp;
     resp.type = WizzMania::MessageType::CHANNEL_CREATED;
     resp.id_channel = id_channel;
-    resp.already_existed = false;  // TODO !! MAKE A CHECK IF A CHANNEL WITH
-                                   // THESE PARTICIPANT ALREADY EXIST OR NOT
-    resp.channel =
-        Structure::create_empty_channel_info_struct(id_channel, id_user, contacts, title);
+    resp.already_existed = false;
+
+    resp.channel = Structure::create_empty_channel_info_struct(
+        id_channel, id_user, contacts, title);
 
     return crow::response(201, JsonHelpers::ServerSend::to_json(resp).dump());
 
