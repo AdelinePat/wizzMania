@@ -1,25 +1,54 @@
 #include "websocket_manager.hpp"
 
-void WebSocketManager::add_user(int64_t id_user, WSConn conn) {
+void WebSocketManager::add_user(int64_t id_user, WSConn conn,
+                                const std::string& token) {
   std::lock_guard<std::mutex> lock(this->ws_mutex);
   this->user_sockets[id_user].insert(conn);
   this->socket_to_user[conn] = id_user;
+  this->token_to_socket[token] = conn;
+  this->socket_to_token[conn] = token;
   // lock guard will be released when going out of method
 }
 
 void WebSocketManager::remove_connection(WSConn conn) {
-  std::lock_guard<std::mutex> lock(this->ws_mutex);
+  // std::lock_guard<std::mutex> lock(this->ws_mutex);
 
-  auto it = this->socket_to_user.find(conn);
-  if (it != this->socket_to_user.end()) {
-    int64_t id_user = it->second;
+  // auto it = this->socket_to_user.find(conn);
+  // if (it != this->socket_to_user.end()) {
+  //   int64_t id_user = it->second;
+  //   this->user_sockets[id_user].erase(conn);
+  //   if (this->user_sockets[id_user].empty()) {
+  //     this->user_sockets.erase(id_user);
+  //   }
+  //   this->socket_to_user.erase(conn);
+  // }
+
+  std::lock_guard<std::mutex> lock(this->ws_mutex);
+  auto it_user = this->socket_to_user.find(conn);
+  if (it_user != this->socket_to_user.end()) {
+    int64_t id_user = it_user->second;
     this->user_sockets[id_user].erase(conn);
     if (this->user_sockets[id_user].empty()) {
       this->user_sockets.erase(id_user);
     }
     this->socket_to_user.erase(conn);
   }
+  auto it_token = this->socket_to_token.find(conn);
+  if (it_token != this->socket_to_token.end()) {
+    this->token_to_socket.erase(it_token->second);
+    this->socket_to_token.erase(it_token);
+  }
   // lock guard will be released when going out of method
+}
+
+void WebSocketManager::disconnect_token(const std::string& token) {
+  std::lock_guard<std::mutex> lock(this->ws_mutex);
+  auto it = this->token_to_socket.find(token);
+  if (it == this->token_to_socket.end()) return;
+
+  WSConn conn = it->second;
+  conn->close("logout");
+  // cleanup is handled by onclose → remove_connection
 }
 
 bool WebSocketManager::is_authenticated(WSConn conn) {

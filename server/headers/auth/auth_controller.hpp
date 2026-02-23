@@ -32,7 +32,7 @@ class AuthController {
                           const crow::json::rvalue& json_msg);
 
   void auth_success(crow::websocket::connection& conn,
-                    const int64_t validated_id_user);
+                    const int64_t validated_id_user, const std::string& token);
   void auth_error(crow::websocket::connection& conn,
                   const std::string& message);
 };
