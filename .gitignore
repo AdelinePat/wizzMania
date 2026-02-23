@@ -79,3 +79,6 @@ ui_*.h
 # handle CRLF vs LF issues
 .gitattributes
 secret.js
+QT_LOGGING_RULES=*
+QT_LOGGING_RULES=*
+QT_LOGGING_RULES*
