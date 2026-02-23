@@ -113,6 +113,34 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
     return std::nullopt;
   }
 }
+// ==== MARK AS READ === //
+  bool Database::update_last_read_message(int64_t id_user, int64_t id_channel, int64_t last_read_id_message) {
+    std::lock_guard<std::mutex> lock(db_mutex);
+    try
+    {
+       this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "UPDATE userChannel SET last_read_id_message = ? "
+            "WHERE id_user = ? AND id_channel = ? "
+            "AND (last_read_id_message IS NULL OR last_read_id_message < ?);"));
+
+    prep_statement->setInt64(1, last_read_id_message);
+    prep_statement->setInt64(2,id_user);
+    prep_statement->setInt64(3, id_channel);
+    prep_statement->setInt64(4, last_read_id_message);
+
+    int rows_affected = prep_statement->executeUpdate();
+    return rows_affected > 0;
+
+    }
+    catch (sql::SQLException& e)
+    {
+      std::cerr << "[DB] update_last_read_message error: " << e.what() << std::endl;
+      return false;
+    }
+    
+  }
 
 // ===== CHANNELS ESSENTIALS =====
 

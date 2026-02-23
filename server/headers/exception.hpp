@@ -23,7 +23,7 @@ class WizzManiaError : public std::exception {
                             const WizzManiaError& error) {
     ServerSend::ErrorResponse err;
     err.type = WizzMania::MessageType::ERROR;
-    err.error_code = error.get_code();
+    err.error_code = std::to_string(error.get_code());
     err.message = error.get_message();
 
     conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());

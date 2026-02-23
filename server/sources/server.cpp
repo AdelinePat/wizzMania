@@ -179,6 +179,11 @@ int main() {
             break;
           }
 
+            case WizzMania::MessageType::MARK_AS_READ: {
+            message_controller.mark_as_read(conn, id_user, json_msg);
+            break;
+            }
+
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {
             //   auto req = JsonHelpers::ClientSend::parse_typing(json_msg);

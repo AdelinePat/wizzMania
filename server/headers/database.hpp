@@ -84,11 +84,15 @@ class Database {
 
   bool has_channel_access(int64_t id_user, int64_t id_channel);
 
+  bool update_last_read_message(int64_t id_user, int64_t id_channel,int64_t last_read_id_message);
+
   void accept_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at);
 
   void reject_invitation(int64_t id_user, int64_t id_channel,
                          const std::string& responded_at);
+
+
 
   //   ServerSend::ChannelInfo get_channel(
   //       int64_t id_user, int64_t id_channel,

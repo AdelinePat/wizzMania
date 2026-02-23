@@ -1,4 +1,5 @@
 #include "message_service.hpp"
+#include <vector>
 
 int64_t MessageService::create_message(int64_t id_user, int64_t id_channel,
                                        std::string& body,
@@ -10,6 +11,16 @@ int64_t MessageService::create_message(int64_t id_user, int64_t id_channel,
     throw InternalError("Message could not be saved in DB");
   }
   return id_message_opt.value();
+}
+
+//===MARK AS READ===//
+bool MessageService::mark_as_read(int64_t id_user, int64_t id_channel, int64_t last_id_message) {
+  bool updated = db.update_last_read_message(id_user, id_channel, last_id_message);
+  if (!updated) {
+    std::cerr << "[MARK_AS_READ] Could not update last_read_id_message for user "
+              << id_user << " in channel " << id_channel << "\n";
+  }
+  return updated;
 }
 
 // TODO CHECK NO HISTORY CONDITION!

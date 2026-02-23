@@ -97,6 +97,23 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
   return req;
 }
 
+// FROM JSON MARK AS READ REQUEST
+inline std::optional<::ClientSend::MarkAsReadRequest> parse_mark_as_read(
+    const crow::json::rvalue& json) {
+  if (!json.has("type") || !json.has("id_channel") || !json.has("last_id_message")) {
+    return std::nullopt;
+  }
+  int type_int = json["type"].i();
+  if (type_int != static_cast<int>(WizzMania::MessageType::MARK_AS_READ)) {
+    return std::nullopt;
+  }
+
+  ::ClientSend::MarkAsReadRequest req;
+  req.id_channel = json["id_channel"].i();
+  req.last_id_message = json["last_id_message"].i();
+  return req;
+}
+
 // FROM JSON CHANNEL HISTORY REQUEST
 inline std::optional<::ClientSend::ChannelHistoryRequest>
 parse_request_channel_history(const crow::json::rvalue& json) {

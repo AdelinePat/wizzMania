@@ -127,6 +127,7 @@ function updateInvitationsBadge() {
 // ==================== WEBSOCKET ====================
 function connectWebSocket() {
   ws = new WebSocket(WS_URL);
+  window.ws = ws; 
 
   ws.onopen = () => {
     setWsDot("connecting");

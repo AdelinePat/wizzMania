@@ -17,7 +17,6 @@
 class MessageService {
   Database& db;
 
- private:
  public:
   explicit MessageService(Database& db) : db(db) {}
 
@@ -26,6 +25,7 @@ class MessageService {
   int64_t get_creator_id(int64_t id_user, int64_t id_channel);
   std::vector<ServerSend::Message> get_messages_history_from_channel(
       int64_t id_channel, int64_t before_id_message, int limit);
+  bool mark_as_read(int64_t id_user, int64_t id_channel, int64_t last_id_message);
 };
 
 #endif
