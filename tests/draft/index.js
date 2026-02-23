@@ -446,8 +446,15 @@ function selectChannel(channelId) {
   const participantCount = ch?.participants?.length ?? 0;
   document.getElementById("chat-sub").textContent = participantCount > 0 ? `${participantCount} members` : "";
 
-  const sidebarItem = document.querySelector(`#channels-list .sidebar-item[data-id="${channelId}"]`);
+ const sidebarItem = document.querySelector(`#channels-list .sidebar-item[data-id="${channelId}"]`);
   if (sidebarItem) { const badge = sidebarItem.querySelector(".unread-badge"); if (badge) badge.remove(); }
+
+  // Auto mark as read when opening channel
+  if (ch && ch.last_message && ch.last_message.id_message > 0 && ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: MessageType.MARK_AS_READ, id_channel: channelId, last_id_message: ch.last_message.id_message }));
+    ch.unread_count = 0;
+    ch.last_read_id_message = ch.last_message.id_message;
+  }
 
   document.getElementById("messages-container").innerHTML = "";
   requestChannelHistory(channelId, 0);
@@ -485,6 +492,12 @@ function handleNewMessage(data) {
   }
 
   if (data.id_channel !== activeChannelId) return;
+
+  // Auto mark as read for incoming messages in active channel
+  if (ws?.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({ type: MessageType.MARK_AS_READ, id_channel: data.id_channel, last_id_message: msg.id_message }));
+    if (chData) { chData.unread_count = 0; chData.last_read_id_message = msg.id_message; }
+  }
 
   if (isSystem) addSystemMessage(msg.body);
   else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);
