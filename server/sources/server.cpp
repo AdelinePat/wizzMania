@@ -179,24 +179,6 @@ int main() {
             break;
           }
 
-            // case WizzMania::MessageType::ACCEPT_INVITATION: {
-            //   // TODO HTTP
-            //   invitation_controller.accept_invitation(conn, id_user,
-            //   json_msg); break;
-            // }
-
-            // case WizzMania::MessageType::REJECT_INVITATION: {
-            //   // TODO HTTP
-            //   invitation_controller.reject_invitation(conn, id_user,
-            //   json_msg); break;
-            // }
-
-            // case WizzMania::MessageType::CREATE_CHANNEL: {
-            //   // TODO HTTP INSTEAD OF WS !! + check if creator invites
-            //   themselves channel_controller.create_channel(conn, id_user,
-            //   json_msg); break;
-            // }
-
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {
             //   auto req = JsonHelpers::ClientSend::parse_typing(json_msg);

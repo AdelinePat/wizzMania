@@ -103,6 +103,7 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
     std::unique_ptr<sql::ResultSet> res(
         stmt->executeQuery("SELECT LAST_INSERT_ID()"));
 
+    // TODO THROW ERROR !!!
     if (res->next()) {
       return res->getInt64(1);
     }

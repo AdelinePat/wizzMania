@@ -16,7 +16,7 @@ void MessageController::send_message(crow::websocket::connection& conn,
     int64_t id_channel = req->id_channel;
     bool has_access = user_service.has_access(id_user, id_channel);
     if (!has_access) {
-      throw BadRequestError(
+      throw UnauthorizedError(
           "User has no permission to SEND_MESSAGE to this channel");
     }
 
