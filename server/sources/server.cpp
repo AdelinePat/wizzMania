@@ -113,6 +113,18 @@ int main() {
         }
       });
 
+  // ===== PATCH / /channels/id_channel/leave endpoint =====
+  CROW_ROUTE(app, "/logout")
+      .methods("POST"_method)(
+          [&user_controller, &auth_controller](const crow::request& req) {
+            try {
+              int64_t id_user = auth_controller.authenticate_http(req);
+              return user_controller.logout(req);
+            } catch (const WizzManiaError& e) {
+              return crow::response(e.get_code(), e.get_message());
+            }
+          });
+
   // ===== WebSocket endpoint =====
   CROW_ROUTE(app, "/ws")
       .websocket(&app)
@@ -179,10 +191,10 @@ int main() {
             break;
           }
 
-            case WizzMania::MessageType::MARK_AS_READ: {
+          case WizzMania::MessageType::MARK_AS_READ: {
             message_controller.mark_as_read(conn, id_user, json_msg);
             break;
-            }
+          }
 
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {

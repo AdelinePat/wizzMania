@@ -33,15 +33,15 @@ int64_t AuthController::authenticate_ws(crow::websocket::connection& conn,
 
   int64_t validated_id_user = auth_service.validate_token(auth_req->token);
 
-  this->auth_success(conn, validated_id_user);
+  this->auth_success(conn, validated_id_user, auth_req->token);
   return validated_id_user;
 }
 
 void AuthController::auth_success(crow::websocket::connection& conn,
-                                  const int64_t validated_id_user) {
+                                  const int64_t validated_id_user, const std::string& token) {
   std::cout << "[WS] ✅ User " << validated_id_user << " authenticated!\n";
 
-  ws_manager.add_user(validated_id_user, &conn);
+  ws_manager.add_user(validated_id_user, &conn, token);
 
   AuthMessages::WSAuthResponse auth_resp;
   auth_resp.type =

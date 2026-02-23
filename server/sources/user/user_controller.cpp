@@ -29,6 +29,25 @@ crow::response UserController::login(const crow::request& req) {
   }
 }
 
+crow::response UserController::logout(const crow::request& req) {
+  std::cout << "[LOGOUT] Received logout request\n";
+  // crow::json::rvalue json_body = crow::json::load(req.body);
+  // if (!json_body) {
+  //   std::cout << "[LOGIN] Invalid JSON\n";
+  //   BadRequestError error = BadRequestError("Invalid JSON");
+  //   return this->send_login_error(error);
+  // }
+
+  // try {
+  std::string token = req.get_header_value("X-Auth-Token");
+  if (token.empty()) {
+    throw UnauthorizedError("Missing X-Auth-Token header");
+  }
+  ws.disconnect_token(token);
+  return crow::response(200);
+  // }
+}
+
 // Change into standard http response for error
 crow::response UserController::send_login_error(const WizzManiaError& e) {
   AuthMessages::LoginResponse error_resp;

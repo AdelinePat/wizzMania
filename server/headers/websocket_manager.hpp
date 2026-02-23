@@ -19,12 +19,16 @@ class WebSocketManager {
   // --------------------
   std::unordered_map<int64_t, std::unordered_set<WSConn>> user_sockets;
   std::unordered_map<WSConn, int64_t> socket_to_user;
+  std::unordered_map<std::string, WSConn> token_to_socket;
+  std::unordered_map<WSConn, std::string> socket_to_token;
+
   std::mutex ws_mutex;
   void send_to_user_(int64_t id_user, const std::string& message);
 
  public:
-  void add_user(int64_t id_user, WSConn conn);
+  void add_user(int64_t id_user, WSConn conn, const std::string& token);
   void remove_connection(WSConn conn);
+  void disconnect_token(const std::string& token);
   bool is_authenticated(WSConn conn);
   std::optional<int64_t> get_id_user(WSConn conn);
   std::vector<WSConn> get_user_connections(int64_t id_user);
