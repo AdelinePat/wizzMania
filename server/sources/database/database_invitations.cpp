@@ -107,14 +107,41 @@ void Database::update_invitation(int64_t id_user, int64_t id_channel,
 
 void Database::accept_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
+  std::lock_guard<std::mutex> lock(db_mutex);
   return this->update_invitation(id_user, id_channel, responded_at,
                                  ChannelStatus::ACCEPTED);
 };
-
 void Database::reject_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
-  return this->update_invitation(id_user, id_channel, responded_at,
-                                 ChannelStatus::REJECTED);
+  std::lock_guard<std::mutex> lock(db_mutex);
+  try {
+    this->ensure_connection();
+    this->conn->setAutoCommit(false);
 
-  
-};
+    this->update_invitation(id_user, id_channel, responded_at,
+                            ChannelStatus::REJECTED);
+
+    int64_t remaining = get_number_invited_users_in_channel(
+        id_channel, ChannelStatus::PENDING, ChannelStatus::ACCEPTED);
+
+    // only creator remains, delete channel!
+    if (remaining <= 1) {
+      std::unique_ptr<sql::PreparedStatement> del(this->conn->prepareStatement(
+          "DELETE FROM channels WHERE id_channel = ?;"));
+      del->setInt64(1, id_channel);
+      del->executeUpdate();
+    }
+
+    this->conn->commit();
+    this->conn->setAutoCommit(true);
+
+  } catch (const NotFoundError&) {
+    this->conn->rollback();
+    this->conn->setAutoCommit(true);
+    throw;  // rethrow as-is
+  } catch (const std::exception& e) {
+    this->conn->rollback();
+    this->conn->setAutoCommit(true);
+    throw InternalError(std::string("DB error: ") + e.what());
+  }
+}

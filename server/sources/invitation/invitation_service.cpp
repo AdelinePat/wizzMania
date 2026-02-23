@@ -61,8 +61,7 @@ InvitationService::get_all_outgoing_invitations(int64_t id_user) {
     auto it_participant = channel_participants.find(channel.id_channel);
     if (it_participant != channel_participants.end()) {
       channel.participants = it_participant->second;
-      // channel.is_group = channel.participants.size() > 2;
-      db.get_number_invited_users_in_channel(channel.id_channel) > 2;
+      channel.is_group = db.get_number_invited_users_in_channel(channel.id_channel) > 2;
     } else {
       std::cerr << "[DB] Warning: no participants found for channel "
                 << channel.id_channel << "\n";
