@@ -78,7 +78,7 @@ inline std::optional<::AuthMessages::LogoutRequest> parse_logout_request(
 }  // namespace Auth
 
 // ===== ClientSend Helpers =====
-namespace ClientSend {
+namespace ClientSendHelpers {
 // FROM JSON SEND MESSAGE REQUEST
 inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
     const crow::json::rvalue& json) {
@@ -97,16 +97,17 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
 }
 
 // FROM JSON MARK AS READ REQUEST
-inline std::optional<::MarkAsRead> parse_mark_as_read(
+inline std::optional<::ClientSend::MarkAsRead> parse_mark_as_read(
     const crow::json::rvalue& json) {
-  if (!json.has("type") || !json.has("id_channel") || !json.has("last_id_message")) {
+  if (!json.has("type") || !json.has("id_channel") ||
+      !json.has("last_id_message")) {
     return std::nullopt;
   }
   int type_int = json["type"].i();
   if (type_int != static_cast<int>(WizzMania::MessageType::MARK_AS_READ)) {
     return std::nullopt;
   }
-  ::MarkAsRead mark;
+  ::ClientSend::MarkAsRead mark;
   mark.type = WizzMania::MessageType::MARK_AS_READ;
   mark.id_channel = json["id_channel"].i();
   mark.last_id_message = json["last_id_message"].i();
@@ -210,10 +211,20 @@ inline std::optional<::ClientSend::LeaveChannelRequest> parse_leave_channel(
   req.id_channel = json["id_channel"].i();
   return req;
 }
-}  // namespace ClientSend
+
+// TO JSON MARK AS READ
+inline crow::json::wvalue to_json(const ::ClientSend::MarkAsRead& mark) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(mark.type);
+  json["id_channel"] = mark.id_channel;
+  json["last_id_message"] = mark.last_id_message;
+  json["unread_count"] = mark.unread_count;
+  return json;
+}
+}  // namespace ClientSendHelpers
 
 // ===== ServerSend Helpers =====
-namespace ServerSend {
+namespace ServerSendHelpers {
 // TO JSON MESSAGE (must be first - other to_json functions use this)
 inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   crow::json::wvalue json;
@@ -222,16 +233,6 @@ inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   json["body"] = msg.body;
   json["timestamp"] = msg.timestamp;
   json["is_system"] = msg.is_system;
-  return json;
-}
-
-// TO JSON MARK AS READ
-inline crow::json::wvalue to_json(const ::MarkAsRead& mark) {
-  crow::json::wvalue json;
-  json["type"] = static_cast<int>(mark.type);
-  json["id_channel"] = mark.id_channel;
-  json["last_id_message"] = mark.last_id_message;
-  json["unread_count"] = mark.unread_count;
   return json;
 }
 
@@ -363,12 +364,12 @@ inline crow::json::wvalue to_json(
   }
   json["invitations"] = std::move(invitations_list);
 
-  crow::json::wvalue::list outgoint_invitations;
+  crow::json::wvalue::list outgoing_invitations;
   for (const ::ServerSend::ChannelInfo& outgoing_invitation :
        resp.outgoing_invitations) {
-    outgoint_invitations.push_back(to_json(outgoing_invitation));
+    outgoing_invitations.push_back(to_json(outgoing_invitation));
   }
-  json["outgoing_invitations"] = std::move(outgoint_invitations);
+  json["outgoing_invitations"] = std::move(outgoing_invitations);
 
   return json;
 }
@@ -400,7 +401,7 @@ inline crow::json::wvalue to_json(
   return json;
 }
 
-}  // namespace ServerSend
+}  // namespace ServerSendHelpers
 
 }  // namespace JsonHelpers
 

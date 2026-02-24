@@ -40,7 +40,8 @@ crow::response ChannelController::create_channel(int64_t id_user,
       resp.type = WizzMania::MessageType::CHANNEL_CREATED;
       resp.id_channel = existing.value();
       resp.already_existed = true;
-      return crow::response(409, JsonHelpers::ServerSend::to_json(resp).dump());
+      return crow::response(
+          409, JsonHelpers::ServerSendHelpers::to_json(resp).dump());
     }
 
     channel_service.generate_title(title, usernames, id_user);
@@ -70,7 +71,8 @@ crow::response ChannelController::create_channel(int64_t id_user,
     resp.channel = Structure::create_empty_channel_info_struct(
         id_channel, id_user, contacts, title);
 
-    return crow::response(201, JsonHelpers::ServerSend::to_json(resp).dump());
+    return crow::response(201,
+                          JsonHelpers::ServerSendHelpers::to_json(resp).dump());
 
   } catch (const WizzManiaError& e) {
     return WizzManiaError::send_http_error(e.get_code(), e.get_message());
@@ -92,7 +94,7 @@ crow::response ChannelController::leave_channel(const crow::request& req,
     std::unordered_set<int64_t> remaining =
         user_service.get_users_by_channel(id_channel);
     ws_manager.broadcast_to_users(
-        remaining, JsonHelpers::ServerSend::to_json(notif).dump());
+        remaining, JsonHelpers::ServerSendHelpers::to_json(notif).dump());
 
     return crow::response(204);  // ok with no body
   } catch (const WizzManiaError& e) {

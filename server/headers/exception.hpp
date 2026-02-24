@@ -9,7 +9,6 @@
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 
-
 class WizzManiaError : public std::exception {
  public:
   WizzManiaError(int code, const std::string& message)
@@ -26,7 +25,7 @@ class WizzManiaError : public std::exception {
     err.error_code = std::to_string(error.get_code());
     err.message = error.get_message();
 
-    conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+    conn.send_text(JsonHelpers::ServerSendHelpers::to_json(err).dump());
   }
 
   static crow::response send_http_error(int code, const std::string& message) {

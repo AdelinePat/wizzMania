@@ -157,6 +157,12 @@ int main() {
         WizzMania::MessageType msg_type =
             static_cast<WizzMania::MessageType>(type_int);
 
+        // int type_int = json_msg["type"].i();
+        // if (type_int < 0 || type_int > 255) {
+        //   conn.send_text(...);  // send error
+        //   return;
+        // }
+
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
           try {
@@ -198,13 +204,14 @@ int main() {
 
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {
-            //   auto req = JsonHelpers::ClientSend::parse_typing(json_msg);
-            //   if (!req.has_value()) {
+            //   auto req =
+            //   JsonHelpers::ClientSendHelpers::parse_typing(json_msg); if
+            //   (!req.has_value()) {
             //     ServerSend::ErrorResponse err;
             //     err.type = WizzMania::MessageType::ERROR;
             //     err.message = "Invalid TYPING format";
             //     err.error_code = "INVALID_FORMAT";
-            //     conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+            //     conn.send_text(JsonHelpers::ServerSendHelpers::to_json(err).dump());
             //     return;
             //   }
 
@@ -235,7 +242,7 @@ int main() {
             err.type = WizzMania::MessageType::ERROR;
             err.message = "Message type not implemented";
             err.error_code = "NOT_IMPLEMENTED";
-            conn.send_text(JsonHelpers::ServerSend::to_json(err).dump());
+            conn.send_text(JsonHelpers::ServerSendHelpers::to_json(err).dump());
             break;
         }
       });

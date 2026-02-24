@@ -15,7 +15,8 @@ crow::response InvitationController::accept_invitation(const crow::request& req,
 
   resp.channel = channel_service.get_channel(id_user, id_channel);
 
-  std::string channel_info_str = JsonHelpers::ServerSend::to_json(resp).dump();
+  std::string channel_info_str =
+      JsonHelpers::ServerSendHelpers::to_json(resp).dump();
 
   // send new participant list to all current participant of channel
   broadcast_joined_notification(id_user, id_channel, resp.channel.participants);
@@ -53,7 +54,8 @@ crow::response InvitationController::reject_invitation(const crow::request& req,
     resp.contact = rejecter_opt.value();
 
     // send rejection to creator !
-    std::string resp_json = JsonHelpers::ServerSend::to_json(resp).dump();
+    std::string resp_json =
+        JsonHelpers::ServerSendHelpers::to_json(resp).dump();
     ws_manager.send_to_user(id_creator, resp_json);
 
     if (channel_exists) {
@@ -86,7 +88,7 @@ void InvitationController::broadcast_joined_notification(
   joined_notification.contact.username = new_username;
 
   std::string joined_json =
-      JsonHelpers::ServerSend::to_json(joined_notification).dump();
+      JsonHelpers::ServerSendHelpers::to_json(joined_notification).dump();
   std::unordered_set<int64_t> participants_set =
       db.get_channel_participants(id_channel);
 
@@ -99,5 +101,5 @@ void InvitationController::broadcast_invitation_notification(
     ServerSend::ChannelInvitation& invitation) {
   participants.erase(invitation.id_inviter);
   ws_manager.broadcast_to_users(
-      participants, JsonHelpers::ServerSend::to_json(invitation).dump());
+      participants, JsonHelpers::ServerSendHelpers::to_json(invitation).dump());
 }

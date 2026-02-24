@@ -4,7 +4,7 @@ void MessageController::send_message(crow::websocket::connection& conn,
                                      int64_t id_user,
                                      const crow::json::rvalue& json_msg) {
   std::optional<::ClientSend::SendMessageRequest> req =
-      JsonHelpers::ClientSend::parse_send_message(json_msg);
+      JsonHelpers::ClientSendHelpers::parse_send_message(json_msg);
   try {
     if (!req.has_value()) {
       throw BadRequestError("Invalid SEND_MESSAGE format");
@@ -62,7 +62,7 @@ void MessageController::broadcast_new_message(const int64_t id_channel,
   broadcast.message =
       Structure::create_message_struct(id_message, id_user, body, timestamp);
   std::string broadcast_json_str =
-      JsonHelpers::ServerSend::to_json(broadcast).dump();
+      JsonHelpers::ServerSendHelpers::to_json(broadcast).dump();
   std::unordered_set<int64_t> participants =
       user_service.get_users_by_channel(id_channel);
   ws_manager.broadcast_to_users(participants, broadcast_json_str);
@@ -73,7 +73,7 @@ void MessageController::send_history(crow::websocket::connection& conn,
                                      const crow::json::rvalue& json_msg) {
   try {
     std::optional<::ClientSend::ChannelHistoryRequest> req =
-        JsonHelpers::ClientSend::parse_request_channel_history(json_msg);
+        JsonHelpers::ClientSendHelpers::parse_request_channel_history(json_msg);
 
     if (!req.has_value()) {
       throw BadRequestError("Invalid REQUEST_CHANNEL_HISTORY format");
@@ -102,7 +102,7 @@ void MessageController::send_history_response(
   res.id_channel = id_channel;
   res.messages = messages;
   res.has_more = messages.size() == limit;
-  conn.send_text(JsonHelpers::ServerSend::to_json(res).dump());
+  conn.send_text(JsonHelpers::ServerSendHelpers::to_json(res).dump());
 }
 
 // === Mark as Read === //
@@ -111,8 +111,8 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
                                      const crow::json::rvalue& json_msg) {
   try {
     // parse the json from client
-    std::optional<::MarkAsRead> mark =
-        JsonHelpers::ClientSend::parse_mark_as_read(json_msg);
+    std::optional<ClientSend::MarkAsRead> mark =
+        JsonHelpers::ClientSendHelpers::parse_mark_as_read(json_msg);
 
     if (!mark.has_value()) {
       throw BadRequestError("Invalid MARK_AS_READ format");
@@ -137,8 +137,8 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
     mark->unread_count = db.get_unread_count(id_user, mark->id_channel);
 
     // send response to all connected devices of this user
-    ws_manager.send_to_user(id_user,
-                            JsonHelpers::ServerSend::to_json(mark.value()).dump());
+    ws_manager.send_to_user(
+        id_user, JsonHelpers::ClientSendHelpers::to_json(mark.value()).dump());
 
   } catch (const WizzManiaError& e) {
     WizzManiaError::send_ws_error(conn, e);

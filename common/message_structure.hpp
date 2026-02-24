@@ -41,15 +41,6 @@ struct LogoutRequest {
 };
 }  // namespace AuthMessages
 
-// ===== SHARED Client <-> Server =====
-struct MarkAsRead {
-  WizzMania::MessageType type;  // MARK_AS_READ
-  int64_t id_channel;
-  int64_t last_id_message;
-  int64_t unread_count;
-};
-
-
 // ===== CLIENT -> SERVER Messages =====
 namespace ClientSend {
 struct SendMessageRequest {
@@ -85,10 +76,17 @@ struct UpdateChannelTitleRequest {
   std::string new_title;
 };
 
-struct MarkAsReadRequest {
+// struct MarkAsReadRequest {
+//   WizzMania::MessageType type;  // MARK_AS_READ
+//   int64_t id_channel;
+//   int64_t last_id_message;
+// };
+// ===== SHARED Client <-> Server =====
+struct MarkAsRead {
   WizzMania::MessageType type;  // MARK_AS_READ
   int64_t id_channel;
   int64_t last_id_message;
+  int64_t unread_count = 0;
 };
 
 struct TypingRequest {

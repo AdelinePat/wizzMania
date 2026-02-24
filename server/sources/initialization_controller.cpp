@@ -9,7 +9,8 @@ void InitializationController::initial_data(crow::websocket::connection& conn,
 
     init_data.type = WizzMania::MessageType::INITIAL_DATA;
 
-    std::string json_str = JsonHelpers::ServerSend::to_json(init_data).dump();
+    std::string json_str =
+        JsonHelpers::ServerSendHelpers::to_json(init_data).dump();
     conn.send_text(json_str);
 
     std::cout << "[INIT] Sent initial data: " << init_data.contacts.size()
