@@ -1,19 +1,21 @@
 #include "utils.hpp"
 
-const std::string Utils::get_env_var(const std::string& name, const std::string& default_val) {
-    const char* value = std::getenv(name.c_str());
-    if (!value) {
-        if (!default_val.empty())
-            std::cout << "[WARN] " << name << " not set. Using default: " << default_val << "\n";
-        else
-            std::cerr << "[WARN] " << name << " not set and no default provided.\n";
-        return default_val;
-    }
-    return std::string(value);
+const std::string Utils::get_env_var(const std::string& name,
+                                     const std::string& default_val) {
+  const char* value = std::getenv(name.c_str());
+  if (!value) {
+    if (!default_val.empty())
+      std::cout << "[WARN] " << name
+                << " not set. Using default: " << default_val << "\n";
+    else
+      std::cerr << "[WARN] " << name << " not set and no default provided.\n";
+    return default_val;
+  }
+  return std::string(value);
 }
 
 uint16_t Utils::get_server_port() {
-//   const char* portStr = std::getenv("SERVER_PORT");
+  //   const char* portStr = std::getenv("SERVER_PORT");
   const char* portStr = Utils::get_env_var("SERVER_PORT").c_str();
   uint16_t port = 8888;
 

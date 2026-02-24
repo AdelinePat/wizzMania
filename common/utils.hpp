@@ -16,7 +16,7 @@ class Utils {
 
   // Static utility methods
   static const std::string get_env_var(const std::string& name,
-                                        const std::string& default_val = "");
+                                       const std::string& default_val = "");
   static uint16_t get_server_port();
   static std::string get_timestamp();
 };
