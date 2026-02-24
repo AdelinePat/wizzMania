@@ -97,8 +97,9 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
   return req;
 }
 
+
 // FROM JSON MARK AS READ REQUEST
-inline std::optional<::ClientSend::MarkAsReadRequest> parse_mark_as_read(
+inline std::optional<::MarkAsRead> parse_mark_as_read(
     const crow::json::rvalue& json) {
   if (!json.has("type") || !json.has("id_channel") || !json.has("last_id_message")) {
     return std::nullopt;
@@ -107,11 +108,12 @@ inline std::optional<::ClientSend::MarkAsReadRequest> parse_mark_as_read(
   if (type_int != static_cast<int>(WizzMania::MessageType::MARK_AS_READ)) {
     return std::nullopt;
   }
-
-  ::ClientSend::MarkAsReadRequest req;
-  req.id_channel = json["id_channel"].i();
-  req.last_id_message = json["last_id_message"].i();
-  return req;
+  ::MarkAsRead mark;
+  mark.type = WizzMania::MessageType::MARK_AS_READ;
+  mark.id_channel = json["id_channel"].i();
+  mark.last_id_message = json["last_id_message"].i();
+  mark.unread_count = 0;
+  return mark;
 }
 
 // FROM JSON CHANNEL HISTORY REQUEST
@@ -243,6 +245,16 @@ inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   json["body"] = msg.body;
   json["timestamp"] = msg.timestamp;
   json["is_system"] = msg.is_system;
+  return json;
+}
+
+// TO JSON MARK AS READ
+inline crow::json::wvalue to_json(const ::MarkAsRead& mark) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(mark.type);
+  json["id_channel"] = mark.id_channel;
+  json["last_id_message"] = mark.last_id_message;
+  json["unread_count"] = mark.unread_count;
   return json;
 }
 

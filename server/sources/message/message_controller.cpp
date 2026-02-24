@@ -105,35 +105,41 @@ void MessageController::send_history_response(
   conn.send_text(JsonHelpers::ServerSend::to_json(res).dump());
 }
 
+
 // === Mark as Read ===//
 void MessageController::mark_as_read(crow::websocket::connection& conn,
                                      int64_t id_user,
                                      const crow::json::rvalue& json_msg) {
-  /** TODO should send an answer through websocket (using
-   * ws.send_to_user(id_user, json_msg)) So it can send new unread count to all
-   * device for the same user (needs new unread count for this specific
-   * channel!) **/
-
   try {
-    std::optional<::ClientSend::MarkAsReadRequest> req =
+    // parse the json from client
+    std::optional<::MarkAsRead> mark =
         JsonHelpers::ClientSend::parse_mark_as_read(json_msg);
 
-    if (!req.has_value()) {
+    if (!mark.has_value()) {
       throw BadRequestError("Invalid MARK_AS_READ format");
     }
 
     std::cout << "[MARK_AS_READ] User " << id_user << " -> Channel "
-              << req->id_channel << " read up to message "
-              << req->last_id_message << "\n";
+              << mark->id_channel << " read up to message "
+              << mark->last_id_message << "\n";
 
-    bool has_access = user_service.has_access(id_user, req->id_channel);
+    // check if user has access to this channel
+    bool has_access = user_service.has_access(id_user, mark->id_channel);
     if (!has_access) {
       throw UnauthorizedError(
           "User has no permission to MARK_AS_READ in this channel");
     }
 
-    message_service.mark_as_read(id_user, req->id_channel,
-                                 req->last_id_message);
+    // update last_read_id_message in db
+    message_service.mark_as_read(id_user, mark->id_channel,
+                                 mark->last_id_message);
+
+    // get updated unread count from db
+    mark->unread_count = db.get_unread_count(id_user, mark->id_channel);
+
+    // send response to all connected devices of this user
+    ws_manager.send_to_user(id_user,
+                            JsonHelpers::ServerSend::to_json(mark.value()).dump());
 
   } catch (const WizzManiaError& e) {
     WizzManiaError::send_ws_error(conn, e);
