@@ -1,11 +1,20 @@
 #include "services/server_config.hpp"
 
+#include <cstdlib>
+
+#include "utils.hpp"
+
 QString ServerConfig::baseUrl() {
-  const QString configPath =
-      QCoreApplication::applicationDirPath() + "/settings.ini";
-  // TODO: stop using .ini for server url. Use common helper to handle .env data
-  QSettings settings(configPath, QSettings::IniFormat);
-  return settings.value("server/baseUrl", "http://localhost:8888").toString();
+  // Get host from SERVER_HOST env var, default to localhost
+  std::string host = Utils::get_env_var("SERVER_HOST", "localhost");
+  QString serverHost = QString::fromStdString(host);
+
+  // Get port using Utils function
+  uint16_t port = Utils::get_server_port();
+
+  // Determine scheme based on port
+  const QString scheme = (port == 443 || port == 8443) ? "https" : "http";
+  return scheme + "://" + serverHost + ":" + QString::number(port);
 }
 
 QString ServerConfig::loginUrl() {

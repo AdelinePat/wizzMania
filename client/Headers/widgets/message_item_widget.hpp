@@ -15,6 +15,7 @@ class MessageItemWidget : public QWidget {
  public:
   explicit MessageItemWidget(const ServerSend::Message& message,
                              int64_t currentUserId, const QString& senderName,
+                             const QString& resolvedBody = QString(),
                              QWidget* parent = nullptr);
 };
 

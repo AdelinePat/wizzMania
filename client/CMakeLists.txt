@@ -46,6 +46,8 @@ set(CLIENT_SOURCES
     Sources/widgets/channel_row_widget.cpp
     Sources/widgets/channel_panel_widget.cpp
     Sources/widgets/right_panel_widget.cpp
+    Sources/widgets/user_home_widget.cpp
+    ../common/utils.cpp
 )
 
 # Collect header files from Headers/ directory
@@ -64,6 +66,8 @@ set(CLIENT_HEADERS
     Headers/widgets/channel_row_widget.hpp
     Headers/widgets/channel_panel_widget.hpp
     Headers/widgets/right_panel_widget.hpp
+    Headers/widgets/user_home_widget.hpp
+    ../common/utils.hpp
 )
 
 # Collect UI files from Forms/ directory

@@ -6,19 +6,10 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
   rootLayout->setSpacing(10);
 
   titleLabel = new QLabel("Select a chat to start messaging", this);
-  titleLabel->setStyleSheet(
-      "QLabel { color: rgb(200, 200, 200); padding: 5px; "
-      "background-color: rgb(0, 22, 33); border-radius: 4px; "
-      "font-size: 12px; font-weight: 700; }");
+  titleLabel->setObjectName("chatTitleLabel");
 
   messagesList = new QListWidget(this);
-  messagesList->setStyleSheet(
-      "QListWidget {"
-      "  background-color: rgb(0, 22, 33);"
-      "  color: rgb(200, 200, 200);"
-      "  border: none;"
-      "  border-radius: 4px;"
-      "}");
+  messagesList->setObjectName("messagesList");
   messagesList->setWordWrap(true);
   messagesList->setSpacing(8);
   messagesList->setSelectionMode(QAbstractItemView::NoSelection);
@@ -32,31 +23,11 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
   messageInput = new QLineEdit(inputRow);
   messageInput->setMinimumHeight(40);
   messageInput->setPlaceholderText("Type a message...");
-  messageInput->setStyleSheet(
-      "QLineEdit {"
-      "  background-color: rgb(0, 27, 41);"
-      "  color: rgb(200, 200, 200);"
-      "  border: 1px solid rgb(66, 126, 157);"
-      "  border-radius: 4px;"
-      "  padding: 8px;"
-      "}");
+  messageInput->setObjectName("messageInput");
 
   sendButton = new QPushButton("Send", inputRow);
   sendButton->setMinimumSize(80, 40);
-  sendButton->setStyleSheet(
-      "QPushButton {"
-      "  background-color: rgb(82, 134, 77);"
-      "  color: white;"
-      "  border: none;"
-      "  border-radius: 4px;"
-      "  font-weight: bold;"
-      "}"
-      "QPushButton:hover {"
-      "  background-color: rgb(92, 144, 87);"
-      "}"
-      "QPushButton:pressed {"
-      "  background-color: rgb(72, 124, 67);"
-      "}");
+  sendButton->setObjectName("sendButton");
 
   inputLayout->addWidget(messageInput, 1);
   inputLayout->addWidget(sendButton);
