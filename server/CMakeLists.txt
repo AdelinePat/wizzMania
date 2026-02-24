@@ -110,7 +110,9 @@ endif()
 # ============================================
 if(BUILD_TESTS)
     add_executable(tests
-        ../tests/server/test_main.cpp
+        # ../tests/server/test_main.cpp
+        ../common/utils.cpp
+        ../tests/common/test_utils.cpp
         # Add your test files here
     )
     
