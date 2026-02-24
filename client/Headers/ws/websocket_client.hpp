@@ -26,6 +26,9 @@ class WebSocketClient : public QObject {
 
   void sendMessage(int64_t channelId, const QString& body);
   void openChannel(int64_t channelId);
+  void markAsRead(int64_t channelId, int64_t lastMessageId);
+  void acceptInvitation(int64_t id_channel);
+  void rejectInvitation(int64_t id_channel);
 
  signals:
   void connected();

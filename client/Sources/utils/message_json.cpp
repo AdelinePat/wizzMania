@@ -77,6 +77,28 @@ QJsonObject toJson(const ClientSend::ChannelHistoryRequest& req) {
   return obj;
 }
 
+QJsonObject toJson(const ClientSend::MarkAsReadRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  obj["last_id_message"] = static_cast<qint64>(req.last_id_message);
+  return obj;
+}
+
+QJsonObject toJson(const ClientSend::AcceptInvitationRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  return obj;
+}
+
+QJsonObject toJson(const ClientSend::RejectInvitationRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  return obj;
+}
+
 bool fromJson(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
   if (!obj.contains("type")) {
     return false;

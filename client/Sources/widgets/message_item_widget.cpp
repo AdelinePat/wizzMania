@@ -2,18 +2,20 @@
 
 MessageItemWidget::MessageItemWidget(const ServerSend::Message& message,
                                      int64_t currentUserId,
-                                     const QString& senderName, QWidget* parent)
+                                     const QString& senderName,
+                                     const QString& resolvedBody,
+                                     QWidget* parent)
     : QWidget(parent) {
   QHBoxLayout* rowLayout = new QHBoxLayout(this);
-  rowLayout->setContentsMargins(8, 6, 8, 6);
+  rowLayout->setContentsMargins(4, 4, 4, 4);
 
   if (message.is_system) {
-    QLabel* systemLabel =
-        new QLabel(QString::fromStdString(message.body), this);
+    const QString displayText = resolvedBody.isEmpty()
+                                    ? QString::fromStdString(message.body)
+                                    : resolvedBody;
+    QLabel* systemLabel = new QLabel(displayText, this);
     systemLabel->setWordWrap(true);
-    systemLabel->setStyleSheet(
-        "QLabel { color: #9aa6b2; font-style: italic; font-size: 12px; "
-        "padding: 2px 8px; }");
+    systemLabel->setObjectName("systemLabel");
     rowLayout->addWidget(systemLabel, 0, Qt::AlignCenter);
     return;
   }
@@ -29,29 +31,24 @@ MessageItemWidget::MessageItemWidget(const ServerSend::Message& message,
   columnLayout->setSpacing(4);
 
   QLabel* senderLabel = new QLabel(senderName, messageColumn);
-  senderLabel->setStyleSheet(isCurrentUser
-                                 ? "QLabel { color: #d9ffe8; font-size: 11px; "
-                                   "font-weight: 600; padding-left: 2px; }"
-                                 : "QLabel { color: #91b9d7; font-size: 11px; "
-                                   "font-weight: 600; padding-left: 2px; }");
+  senderLabel->setObjectName("senderLabel");
+  // senderLabel->setProperty("owner", isCurrentUser ? "self" : "other");
 
   QFrame* bubbleFrame = new QFrame(messageColumn);
-  bubbleFrame->setStyleSheet(
-      isCurrentUser
-          ? "QFrame { background-color: #1f8b4c; border-radius: 12px; }"
-          : "QFrame { background-color: #12212e; border-radius: 12px; }");
+  bubbleFrame->setObjectName("bubbleFrame");
+  bubbleFrame->setProperty("owner", isCurrentUser ? "self" : "other");
 
   QVBoxLayout* bubbleLayout = new QVBoxLayout(bubbleFrame);
-  bubbleLayout->setContentsMargins(12, 10, 12, 10);
+  bubbleLayout->setContentsMargins(8, 6, 8, 6);
   bubbleLayout->setSpacing(6);
 
   QLabel* bodyLabel = new QLabel(body, bubbleFrame);
   bodyLabel->setWordWrap(true);
-  bodyLabel->setStyleSheet("QLabel { color: #e4edf5; font-size: 13px; }");
+  bodyLabel->setObjectName("bodyLabel");
   bubbleLayout->addWidget(bodyLabel);
 
   QLabel* timeLabel = new QLabel(timestamp, messageColumn);
-  timeLabel->setStyleSheet("QLabel { color: #9aa6b2; font-size: 10px; }");
+  timeLabel->setObjectName("timeLabel");
   timeLabel->setAlignment(isCurrentUser ? Qt::AlignLeft : Qt::AlignRight);
 
   columnLayout->addWidget(senderLabel);

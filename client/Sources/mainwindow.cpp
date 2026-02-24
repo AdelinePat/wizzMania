@@ -1,5 +1,7 @@
 #include "mainwindow.hpp"
 
+#include <QRegularExpression>
+
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -18,7 +20,7 @@ MainWindow::MainWindow(QWidget* parent)
   loginLayout->addWidget(loginWidget);
 
   channelPanel = new ChannelPanelWidget(ui->leftPanel);
-  ui->chatsLabel->hide();
+  ui->appLabel->hide();
   ui->chatGroupsList->hide();
   ui->leftPanelLayout->addWidget(channelPanel);
 
@@ -28,6 +30,11 @@ MainWindow::MainWindow(QWidget* parent)
   ui->messageInput->hide();
   ui->sendButton->hide();
   ui->rightPanelLayout->addWidget(rightPanel);
+
+  // User home widget (hidden by default)
+  userHomeWidget = new UserHomeWidget(ui->rightPanel);
+  ui->rightPanelLayout->addWidget(userHomeWidget);
+  userHomeWidget->hide();
 
   // Connect login signal
   connect(loginWidget, &LoginWidget::loginSuccessful, this,
@@ -46,6 +53,24 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onWsError);
   connect(wsClient, &WebSocketClient::disconnected, this,
           &MainWindow::onWsDisconnected);
+
+  // Channel panel portrait click -> show user home
+  connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
+    if (userHomeWidget) {
+      rightPanel->hide();
+      userHomeWidget->show();
+    }
+  });
+
+  // Forward invitation actions from user home to websocket client
+  connect(userHomeWidget, &UserHomeWidget::acceptInvitationRequested, this,
+          [this](int64_t id) {
+            if (wsClient) wsClient->acceptInvitation(id);
+          });
+  connect(userHomeWidget, &UserHomeWidget::rejectInvitationRequested, this,
+          [this](int64_t id) {
+            if (wsClient) wsClient->rejectInvitation(id);
+          });
 
   // Setup chat view connections
   setupChatView();
@@ -92,6 +117,13 @@ void MainWindow::onWsAuthenticated(int64_t idUser) {
   userNamesById.insert(currentUserId, currentUser);
   setChatEnabled(true);
   rightPanel->setChatTitle("Select a chat to start messaging");
+
+  // If no channel is currently selected, show the user home by default
+  // so the user sees invitations and profile info immediately after login.
+  if (currentChannelId <= 0 && userHomeWidget) {
+    rightPanel->hide();
+    userHomeWidget->show();
+  }
 }
 
 void MainWindow::onInitialDataReceived(
@@ -101,6 +133,10 @@ void MainWindow::onInitialDataReceived(
           << " invitations=" << data.invitations.size();
   cacheKnownUsers(data);
   populateChannels(data.channels);
+  // Populate user home invitations
+  if (userHomeWidget) {
+    userHomeWidget->setIncomingInvitations(data.invitations);
+  }
 
   if (data.channels.empty()) {
     rightPanel->clearMessages();
@@ -128,19 +164,33 @@ void MainWindow::onChannelHistoryReceived(
   for (const auto& msg : ordered) {
     appendMessageToView(history.id_channel, msg);
   }
+
+  // TODO: Mark messages as read when server implements MARK_AS_READ handler
+  // if (!ordered.empty()) {
+  //   int64_t lastMessageId = ordered.back().id_message;
+  //   wsClient->markAsRead(history.id_channel, lastMessageId);
+  // }
 }
 
 void MainWindow::onNewMessageReceived(
     const ServerSend::SendMessageResponse& msg) {
   qInfo().noquote() << "[WS][NEW_MESSAGE] channel_id=" << msg.id_channel
                     << " sender=" << msg.message.id_sender
-                    << " id_message=" << msg.message.id_message
-                    << " body_len="
+                    << " id_message=" << msg.message.id_message << " body_len="
                     << static_cast<int>(msg.message.body.size());
-  if (msg.id_channel != currentChannelId) {
-    return;
+  // Update channel preview / unread badge regardless of active channel
+  QString preview = QString::fromStdString(msg.message.body);
+  bool incrementUnread = (msg.id_channel != currentChannelId &&
+                          msg.message.id_sender != currentUserId);
+  if (channelPanel) {
+    channelPanel->updateChannelOnNewMessage(msg.id_channel, preview,
+                                            incrementUnread);
   }
-  appendMessageToView(msg.id_channel, msg.message);
+
+  // If the message is for the currently open channel, append to view
+  if (msg.id_channel == currentChannelId) {
+    appendMessageToView(msg.id_channel, msg.message);
+  }
 }
 
 void MainWindow::onWsError(const QString& code, const QString& message) {
@@ -173,6 +223,14 @@ void MainWindow::onChannelSelected(int64_t channelId, const QString& title) {
   currentChannelId = channelId;
   qInfo().noquote() << "[UI][CHANNEL_SELECT] id=" << channelId
                     << " title=" << title;
+  // When a channel is selected, ensure the right panel (messages) is shown
+  // and the user home view is hidden.
+  if (userHomeWidget) {
+    userHomeWidget->hide();
+  }
+  if (rightPanel) {
+    rightPanel->show();
+  }
   rightPanel->setChatTitle(title);
 
   rightPanel->clearMessages();
@@ -197,8 +255,7 @@ void MainWindow::onSendMessageRequested(const QString& message) {
   }
 
   qInfo().noquote() << "[UI][SEND] channel_id=" << currentChannelId
-                    << " body_len=" << message.size()
-                    << " body=" << message;
+                    << " body_len=" << message.size() << " body=" << message;
   wsClient->sendMessage(currentChannelId, message);
   rightPanel->focusInput();
 
@@ -239,9 +296,38 @@ QString MainWindow::usernameForUserId(int64_t userId) const {
   return QString("User %1").arg(userId);
 }
 
+QString MainWindow::resolveAtMentions(const QString& text) const {
+  QString result = text;
+  // Replace @ID with @username using regex
+  QRegularExpression re("@(\\d+)");
+  QRegularExpressionMatchIterator it = re.globalMatch(text);
+
+  // Process matches in reverse order to avoid offset issues
+  QList<QRegularExpressionMatch> matches;
+  while (it.hasNext()) {
+    matches.prepend(it.next());
+  }
+
+  for (const auto& match : matches) {
+    bool ok;
+    int64_t userId = match.captured(1).toLongLong(&ok);
+    if (ok) {
+      QString username = usernameForUserId(userId);
+      result.replace(match.capturedStart(), match.capturedLength(),
+                     "@" + username);
+    }
+  }
+
+  return result;
+}
+
 QWidget* MainWindow::createMessageWidget(const ServerSend::Message& msg) const {
+  QString resolvedBody;
+  if (msg.is_system) {
+    resolvedBody = resolveAtMentions(QString::fromStdString(msg.body));
+  }
   return new MessageItemWidget(msg, currentUserId,
-                               usernameForUserId(msg.id_sender));
+                               usernameForUserId(msg.id_sender), resolvedBody);
 }
 
 void MainWindow::appendMessageToView(int64_t channelId,

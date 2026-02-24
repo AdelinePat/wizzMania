@@ -1,4 +1,6 @@
 #include <QApplication>
+#include <QCoreApplication>
+#include <QFile>
 #include <iostream>
 
 #include "mainwindow.hpp"
@@ -10,6 +12,14 @@ int main(int argc, char** argv) {
   std::cout << "========================================\n";
 
   QApplication app(argc, argv);
+
+  // Load centralized stylesheet if available (client/resources/app.qss)
+  const QString qssPath =
+      QCoreApplication::applicationDirPath() + "/../resources/app.qss";
+  QFile qssFile(qssPath);
+  if (qssFile.open(QFile::ReadOnly | QFile::Text)) {
+    qApp->setStyleSheet(qssFile.readAll());
+  }
 
   qRegisterMetaType<AuthMessages::WSAuthResponse>();
   qRegisterMetaType<ServerSend::InitialDataResponse>();

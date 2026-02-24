@@ -19,9 +19,7 @@
   <property name="windowTitle">
    <string>WizzMania</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background-color: rgb(0, 17, 26);</string>
-  </property>
+  
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="mainLayout">
     <property name="spacing">
@@ -80,9 +78,7 @@
              <height>16777215</height>
             </size>
            </property>
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 22, 33);</string>
-           </property>
+           
            <layout class="QVBoxLayout" name="leftPanelLayout">
             <property name="spacing">
              <number>10</number>
@@ -100,49 +96,28 @@
              <number>10</number>
             </property>
             <item>
-             <widget class="QLabel" name="chatsLabel">
+             <widget class="QLabel" name="appLabel">
               <property name="font">
                <font>
                 <pointsize>14</pointsize>
                 <bold>true</bold>
                </font>
               </property>
-              <property name="styleSheet">
-               <string notr="true">color: rgb(82, 134, 77); padding: 5px;</string>
-              </property>
+              
               <property name="text">
-               <string>Chats</string>
+               <string>WizzMania</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QListWidget" name="chatGroupsList">
-              <property name="styleSheet">
-               <string notr="true">QListWidget {
-                    background-color: rgb(0, 27, 41);
-                    color: rgb(200, 200, 200);
-                    border: none;
-                    border-radius: 4px;
-                }
-                QListWidget::item {
-                    padding: 12px;
-                    border-bottom: 1px solid rgb(0, 35, 50);
-                }
-                QListWidget::item:selected {
-                    background-color: rgb(82, 134, 77);
-                }
-                QListWidget::item:hover {
-                    background-color: rgb(0, 35, 50);
-                }</string>
-              </property>
+              
              </widget>
             </item>
            </layout>
           </widget>
           <widget class="QWidget" name="rightPanel">
-           <property name="styleSheet">
-            <string notr="true">background-color: rgb(0, 17, 26);</string>
-           </property>
+           
            <layout class="QVBoxLayout" name="rightPanelLayout">
             <property name="spacing">
              <number>10</number>
@@ -167,9 +142,7 @@
                 <bold>true</bold>
                </font>
               </property>
-              <property name="styleSheet">
-               <string notr="true">color: rgb(200, 200, 200); padding: 5px; background-color: rgb(0, 22, 33); border-radius: 4px;</string>
-              </property>
+              
               <property name="text">
                <string>Select a chat to start messaging</string>
               </property>
@@ -177,14 +150,7 @@
             </item>
             <item>
              <widget class="QListWidget" name="messagesList">
-              <property name="styleSheet">
-               <string notr="true">QListWidget {
-                    background-color: rgb(0, 22, 33);
-                    color: rgb(200, 200, 200);
-                    border: none;
-                    border-radius: 4px;
-                }</string>
-              </property>
+              
              </widget>
             </item>
             <item>
@@ -197,15 +163,7 @@
                   <height>40</height>
                  </size>
                 </property>
-                <property name="styleSheet">
-                 <string notr="true">QLineEdit {
-                    background-color: rgb(0, 27, 41);
-                    color: rgb(200, 200, 200);
-                    border: 1px solid rgb(66, 126, 157);
-                    border-radius: 4px;
-                    padding: 8px;
-                }</string>
-                </property>
+                
                 <property name="placeholderText">
                  <string>Type a message...</string>
                 </property>
@@ -219,21 +177,7 @@
                   <height>40</height>
                  </size>
                 </property>
-                <property name="styleSheet">
-                 <string notr="true">QPushButton {
-                    background-color: rgb(82, 134, 77);
-                    color: white;
-                    border: none;
-                    border-radius: 4px;
-                    font-weight: bold;
-                }
-                QPushButton:hover {
-                    background-color: rgb(92, 144, 87);
-                }
-                QPushButton:pressed {
-                    background-color: rgb(72, 124, 67);
-                }</string>
-                </property>
+                
                 <property name="text">
                  <string>Send</string>
                 </property>

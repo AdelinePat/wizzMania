@@ -17,6 +17,7 @@
 #include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
 #include "widgets/right_panel_widget.hpp"
+#include "widgets/user_home_widget.hpp"
 #include "ws/websocket_client.hpp"
 
 namespace Ui {
@@ -47,6 +48,7 @@ class MainWindow : public QMainWindow {
   void cacheKnownUsers(const ServerSend::InitialDataResponse& data);
   void populateChannels(const std::vector<ServerSend::ChannelInfo>& channels);
   QString usernameForUserId(int64_t userId) const;
+  QString resolveAtMentions(const QString& text) const;
   QWidget* createMessageWidget(const ServerSend::Message& msg) const;
   void appendMessageToView(int64_t channelId, const ServerSend::Message& msg);
   void setChatEnabled(bool enabled);
@@ -56,6 +58,7 @@ class MainWindow : public QMainWindow {
   WebSocketClient* wsClient;
   ChannelPanelWidget* channelPanel;
   RightPanelWidget* rightPanel;
+  UserHomeWidget* userHomeWidget;
   QString currentUser;
   QString authToken;
   int64_t currentUserId = -1;

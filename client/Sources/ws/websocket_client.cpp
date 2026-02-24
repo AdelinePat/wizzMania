@@ -81,6 +81,42 @@ void WebSocketClient::openChannel(int64_t channelId) {
   socket.sendTextMessage(payload);
 }
 
+void WebSocketClient::markAsRead(int64_t channelId, int64_t lastMessageId) {
+  if (!isConnected()) {
+    return;
+  }
+
+  ClientSend::MarkAsReadRequest req;
+  req.type = WizzMania::MessageType::MARK_AS_READ;
+  req.id_channel = channelId;
+  req.last_id_message = lastMessageId;
+
+  const QJsonDocument doc(MessageJson::toJson(req));
+  const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+  qInfo().noquote() << "[WS][SEND] type=MARK_AS_READ channel_id=" << channelId
+                    << " last_id_message=" << lastMessageId;
+
+  socket.sendTextMessage(payload);
+}
+
+void WebSocketClient::acceptInvitation(int64_t id_channel) {
+  if (!isConnected()) return;
+  ClientSend::AcceptInvitationRequest req;
+  req.type = WizzMania::MessageType::ACCEPT_INVITATION;
+  req.id_channel = id_channel;
+  const QJsonDocument doc(MessageJson::toJson(req));
+  socket.sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+}
+
+void WebSocketClient::rejectInvitation(int64_t id_channel) {
+  if (!isConnected()) return;
+  ClientSend::RejectInvitationRequest req;
+  req.type = WizzMania::MessageType::REJECT_INVITATION;
+  req.id_channel = id_channel;
+  const QJsonDocument doc(MessageJson::toJson(req));
+  socket.sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
+}
+
 void WebSocketClient::onConnected() {
   resetReconnectState();
   qInfo() << "[WS][CONNECTED]";
