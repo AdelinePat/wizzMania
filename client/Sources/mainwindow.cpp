@@ -49,6 +49,10 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onChannelHistoryReceived);
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
+  // signal for update channel unread count
+  connect(wsClient, &WebSocketClient::updateChannelUnreadCount, this,
+          &MainWindow::onUpdateChannelUnreadCount);
+
   connect(wsClient, &WebSocketClient::errorReceived, this,
           &MainWindow::onWsError);
   connect(wsClient, &WebSocketClient::disconnected, this,
@@ -144,6 +148,11 @@ void MainWindow::onInitialDataReceived(
   }
 }
 
+void MainWindow::onUpdateChannelUnreadCount(int64_t id_channel, int count,
+                                            int64_t last_id_message) {
+  channelPanel->updateChannelUnreadCount(id_channel, count, last_id_message);
+}
+
 void MainWindow::onChannelHistoryReceived(
     const ServerSend::ChannelHistoryResponse& history) {
   qInfo() << "[WS][HISTORY] channel_id=" << history.id_channel
@@ -166,14 +175,17 @@ void MainWindow::onChannelHistoryReceived(
   }
 
   // Mark messages as read and clear unread badge
+  int64_t lastMessageId = 0;
   if (!ordered.empty()) {
-    int64_t lastMessageId = ordered.back().id_message;
+    lastMessageId = ordered.back().id_message;
     wsClient->markAsRead(history.id_channel, lastMessageId);
   }
 
   // Clear unread count when channel is accessed
   if (channelPanel) {
-    channelPanel->updateChannelUnreadCount(history.id_channel, 0);
+    channelPanel->updateChannelUnreadCount(
+        history.id_channel, 0,
+        lastMessageId);  // TODO CHECK HOW TO GET REAL DATA INSTEAD OF 0!
   }
 }
 

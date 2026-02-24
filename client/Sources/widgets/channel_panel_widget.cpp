@@ -123,7 +123,8 @@ void ChannelPanelWidget::updateChannelOnNewMessage(int64_t channelId,
 }
 
 void ChannelPanelWidget::updateChannelUnreadCount(int64_t channelId,
-                                                  int unreadCount) {
+                                                  int unreadCount,
+                                                  int64_t last_id_message) {
   for (int i = 0; i < channelsList->count(); ++i) {
     QListWidgetItem* item = channelsList->item(i);
     if (!item) continue;
@@ -136,6 +137,11 @@ void ChannelPanelWidget::updateChannelUnreadCount(int64_t channelId,
 
     // Update stored unread count
     item->setData(Qt::UserRole + 3, static_cast<qint64>(unreadCount));
+
+    if (last_id_message != 0) {
+      // last read id !!!!
+      item->setData(Qt::UserRole + 6, static_cast<qint64>(last_id_message));
+    }
 
     // Replace widget with updated unread count
     ChannelRowWidget* newRow = new ChannelRowWidget(title, preview, unreadCount,

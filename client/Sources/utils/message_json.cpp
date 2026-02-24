@@ -77,7 +77,7 @@ QJsonObject toJson(const ClientSend::ChannelHistoryRequest& req) {
   return obj;
 }
 
-QJsonObject toJson(const ClientSend::MarkAsReadRequest& req) {
+QJsonObject toJson(const ClientSend::MarkAsRead& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
   obj["id_channel"] = static_cast<qint64>(req.id_channel);
@@ -214,6 +214,23 @@ bool fromJson(const QJsonObject& obj, ServerSend::ErrorResponse& out) {
   out.type = WizzMania::MessageType::ERROR;
   out.error_code = obj.value("error_code").toString().toStdString();
   out.message = obj.value("message").toString().toStdString();
+  return true;
+}
+
+bool fromJson(const QJsonObject& obj, ClientSend::MarkAsRead& mark) {
+  if (!obj.contains("type") || !obj.contains("unread_count") ||
+      !obj.contains("id_channel") || !obj.contains("last_id_message")) {
+    return false;
+  }
+  const int type = obj.value("type").toInt();
+  if (type != type_to_int(WizzMania::MessageType::MARK_AS_READ)) {
+    return false;
+  }
+  mark.type = WizzMania::MessageType::MARK_AS_READ;
+  mark.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  mark.unread_count = obj.value("unread_count").toVariant().toInt();
+  mark.last_id_message = obj.value("last_id_message").toVariant().toLongLong();
+
   return true;
 }
 }  // namespace MessageJson

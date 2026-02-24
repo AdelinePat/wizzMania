@@ -42,6 +42,7 @@ class MainWindow : public QMainWindow {
   void onWsDisconnected(const QString& reason);
   void onChannelSelected(int64_t channelId, const QString& title);
   void onSendMessageRequested(const QString& message);
+  void onUpdateChannelUnreadCount(int64_t id_channel, int count, int64_t last_id_message);
 
  private:
   void setupChatView();

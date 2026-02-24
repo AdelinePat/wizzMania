@@ -38,6 +38,10 @@ class WebSocketClient : public QObject {
   void channelHistoryReceived(
       const ServerSend::ChannelHistoryResponse& history);
   void newMessageReceived(const ServerSend::SendMessageResponse& msg);
+// signal to update unread count from server ???
+  void updateChannelUnreadCount(int64_t id_channel, int unread_count,
+                           int64_t last_id_message);
+
   void errorReceived(const QString& code, const QString& message);
 
  private slots:

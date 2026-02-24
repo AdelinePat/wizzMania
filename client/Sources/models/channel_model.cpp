@@ -32,6 +32,8 @@ QVariant ChannelModel::data(const QModelIndex& index, int role) const {
       return QString::fromStdString(channel.last_message.body);
     case LastMessageTimestampRole:
       return QString::fromStdString(channel.last_message.timestamp);
+    case LastReadMessageIdRole:
+      return QVariant::fromValue(channel.last_read_id_message);
     default:
       return QVariant();
   }
@@ -45,6 +47,7 @@ QHash<int, QByteArray> ChannelModel::roleNames() const {
   roles[UnreadCountRole] = "unreadCount";
   roles[LastMessageBodyRole] = "lastMessageBody";
   roles[LastMessageTimestampRole] = "lastMessageTimestamp";
+  roles[LastReadMessageIdRole] = "LastReadMessageId";
   return roles;
 }
 
@@ -61,11 +64,12 @@ void ChannelModel::setChannels(
   endResetModel();
 }
 
-void ChannelModel::updateChannelUnreadCount(int64_t channelId,
-                                            int64_t newCount) {
+void ChannelModel::updateChannelUnreadCount(int64_t channelId, int64_t newCount,
+                                            int64_t last_id_message) {
   for (size_t i = 0; i < channels.size(); ++i) {
     if (channels[i].id_channel == channelId) {
       channels[i].unread_count = newCount;
+      channels[i].last_read_id_message = last_id_message;
       QModelIndex idx = index(i);
       emit dataChanged(idx, idx, {UnreadCountRole});
       return;

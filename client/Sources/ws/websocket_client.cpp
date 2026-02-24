@@ -86,7 +86,7 @@ void WebSocketClient::markAsRead(int64_t channelId, int64_t lastMessageId) {
     return;
   }
 
-  ClientSend::MarkAsReadRequest req;
+  ClientSend::MarkAsRead req;
   req.type = WizzMania::MessageType::MARK_AS_READ;
   req.id_channel = channelId;
   req.last_id_message = lastMessageId;
@@ -188,6 +188,14 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
                          QString::fromStdString(err.message));
       return;
     }
+  }
+  //  use the server's unread count to keep things in sync:
+  if (type == static_cast<int>(WizzMania::MessageType::MARK_AS_READ)) {
+    ClientSend::MarkAsRead mark;
+    if (MessageJson::fromJson(obj, mark)) {
+      emit updateChannelUnreadCount(mark.id_channel, mark.unread_count, mark.last_id_message);
+    }
+    return;
   }
 
   // Unknown or unimplemented message type

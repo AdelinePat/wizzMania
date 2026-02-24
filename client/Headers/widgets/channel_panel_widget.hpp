@@ -27,7 +27,7 @@ class ChannelPanelWidget : public QWidget {
                                  bool incrementUnread);
   // Update the unread count for a channel to a specific value (0 to clear, or
   // any positive number to set)
-  void updateChannelUnreadCount(int64_t channelId, int unreadCount);
+  void updateChannelUnreadCount(int64_t channelId, int unreadCount, int64_t last_id_message);
 
  signals:
   // Emitted when the user portrait is clicked

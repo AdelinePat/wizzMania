@@ -18,6 +18,7 @@ class ChannelModel : public QAbstractListModel {
     UnreadCountRole,
     LastMessageBodyRole,
     LastMessageTimestampRole,
+    LastReadMessageIdRole,
   };
   Q_ENUM(ChannelRole)
 
@@ -32,7 +33,8 @@ class ChannelModel : public QAbstractListModel {
   // Data manipulation
   void addChannel(const ServerSend::ChannelInfo& channel);
   void setChannels(const std::vector<ServerSend::ChannelInfo>& channels);
-  void updateChannelUnreadCount(int64_t channelId, int64_t newCount);
+  void updateChannelUnreadCount(int64_t channelId, int64_t newCountn,
+                                int64_t last_id_message);
   void clear();
 
   // Helper
