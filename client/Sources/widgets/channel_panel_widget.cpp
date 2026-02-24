@@ -122,6 +122,30 @@ void ChannelPanelWidget::updateChannelOnNewMessage(int64_t channelId,
   }
 }
 
+void ChannelPanelWidget::updateChannelUnreadCount(int64_t channelId,
+                                                  int unreadCount) {
+  for (int i = 0; i < channelsList->count(); ++i) {
+    QListWidgetItem* item = channelsList->item(i);
+    if (!item) continue;
+    qint64 id = item->data(Qt::UserRole).toLongLong();
+    if (id != channelId) continue;
+
+    QString title = item->data(Qt::UserRole + 1).toString();
+    QString preview = item->data(Qt::UserRole + 2).toString();
+    bool isGroup = item->data(Qt::UserRole + 4).toBool();
+
+    // Update stored unread count
+    item->setData(Qt::UserRole + 3, static_cast<qint64>(unreadCount));
+
+    // Replace widget with updated unread count
+    ChannelRowWidget* newRow = new ChannelRowWidget(title, preview, unreadCount,
+                                                    isGroup, channelsList);
+    item->setSizeHint(newRow->sizeHint());
+    channelsList->setItemWidget(item, newRow);
+    return;
+  }
+}
+
 void ChannelPanelWidget::setUserInfo(const QString& username,
                                      const QString& initials) {
   if (userPortraitBtn) {

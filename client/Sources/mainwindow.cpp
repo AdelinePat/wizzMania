@@ -165,11 +165,16 @@ void MainWindow::onChannelHistoryReceived(
     appendMessageToView(history.id_channel, msg);
   }
 
-  // TODO: Mark messages as read when server implements MARK_AS_READ handler
-  // if (!ordered.empty()) {
-  //   int64_t lastMessageId = ordered.back().id_message;
-  //   wsClient->markAsRead(history.id_channel, lastMessageId);
-  // }
+  // Mark messages as read and clear unread badge
+  if (!ordered.empty()) {
+    int64_t lastMessageId = ordered.back().id_message;
+    wsClient->markAsRead(history.id_channel, lastMessageId);
+  }
+
+  // Clear unread count when channel is accessed
+  if (channelPanel) {
+    channelPanel->updateChannelUnreadCount(history.id_channel, 0);
+  }
 }
 
 void MainWindow::onNewMessageReceived(
