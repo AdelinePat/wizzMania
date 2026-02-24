@@ -14,39 +14,41 @@ echo "========================================"
 # done
 # echo "✅ Database is ready!"
 
-# echo ""
-# echo "========================================"
-# echo "Step 1: Running Tests"
-# echo "========================================"
+echo ""
+echo "========================================"
+echo "Step 1: Running Tests"
+echo "========================================"
 
-# # Build and run tests
-# mkdir -p build-test
-# cd build-test
+# Build and run tests
+mkdir -p build-test
+cd build-test
 
-# echo "Configuring tests..."
-# cmake ../server -DBUILD_TESTS=ON
+echo "Configuring tests..."
+cmake ../server -DBUILD_TESTS=ON
 
-# echo "Building tests..."
-# cmake --build . --target tests
+echo "Building tests..."
+cmake --build . --target tests
 
-# echo ""
-# echo "Running tests..."
-# ./tests
+echo ""
+echo "Running tests..."
+./tests
 
-# TEST_RESULT=$?
+TEST_RESULT=$?
 
-# if [ $TEST_RESULT -ne 0 ]; then
-#     echo ""
-#     echo "❌ Tests FAILED! Aborting build."
-#     exit 1
-# fi
+if [ $TEST_RESULT -ne 0 ]; then
+    echo ""
+    echo "❌ Tests FAILED! Aborting build."
+    exit 1
+fi
 
-# echo ""
-# echo "✅ All tests PASSED!"
-# echo ""
+echo ""
+echo "✅ All tests PASSED!"
+echo ""
 
-# cd ..
-# rm -rf build-test
+cd ..
+rm -rf build-test
+
+# end of uncomment
 
 echo "========================================"
 echo "Step 2: Building Server"
