@@ -40,6 +40,7 @@ set(CLIENT_SOURCES
     Sources/services/channel_service.cpp 
     Sources/ws/websocket_client.cpp
     Sources/utils/message_json.cpp
+    Sources/utils/display.cpp
     Sources/models/message_model.cpp
     Sources/models/channel_model.cpp
     Sources/widgets/login_widget.cpp
@@ -61,6 +62,7 @@ set(CLIENT_HEADERS
     Headers/ws/websocket_client.hpp
     Headers/utils/message_json.hpp
     Headers/utils/message_qt_types.hpp
+    Headers/utils/display.hpp
     Headers/models/message_model.hpp
     Headers/models/channel_model.hpp
     Headers/widgets/login_widget.hpp

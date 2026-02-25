@@ -8,6 +8,7 @@
 #include <QWidget>
 
 #include "message_structure.hpp"
+#include "utils/display.hpp"
 
 class MessageItemWidget : public QWidget {
   Q_OBJECT
