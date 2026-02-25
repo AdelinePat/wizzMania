@@ -21,7 +21,7 @@ const MessageType = {
   WS_AUTH: 0, LOGOUT: 1,
   SEND_MESSAGE: 10, CREATE_CHANNEL: 11, ACCEPT_INVITATION: 12, REJECT_INVITATION: 13,
   LEAVE_CHANNEL: 14, UPDATE_CHANNEL_TITLE: 15, MARK_AS_READ: 16,
-  TYPING_START: 17, TYPING_STOP: 18, REQUEST_CHANNEL_HISTORY: 19, CHANNEL_OPEN: 20,
+  TYPING_START: 17, TYPING_STOP: 18, CHANNEL_OPEN: 20,
   WS_AUTH_SUCCESS: 100, NEW_MESSAGE: 101, CHANNEL_CREATED: 102, CHANNEL_INVITATION: 103,
   INVITATION_ACCEPTED: 104, INVITATION_REJECTED: 105, USER_JOINED: 106, USER_LEFT: 107,
   CHANNEL_ACTIVATED: 108, CHANNEL_DELETED: 109, TITLE_UPDATED: 110, USER_STATUS: 111,
@@ -143,7 +143,7 @@ function connectWebSocket() {
         case MessageType.WS_AUTH_SUCCESS: onAuthSuccess(); break;
         case MessageType.INITIAL_DATA: handleInitialData(data); break;
         case MessageType.NEW_MESSAGE: handleNewMessage(data); break;
-        case MessageType.CHANNEL_HISTORY: handleChannelHistory(data); break;
+        // case MessageType.CHANNEL_HISTORY: handleChannelHistory(data); break;
         case MessageType.USER_TYPING: handleTypingNotification(data); break;
         case MessageType.INVITATION_ACCEPTED: handleInvitationAccepted(data); break;
         case MessageType.INVITATION_REJECTED: handleInvitationRejected(data); break;
@@ -498,9 +498,28 @@ function selectChannel(channelId) {
   requestChannelHistory(channelId, 0);
 }
 
-function requestChannelHistory(channelId, beforeMessageId) {
-  if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  ws.send(JSON.stringify({ type: MessageType.REQUEST_CHANNEL_HISTORY, id_channel: channelId, before_id_message: beforeMessageId, limit: 50 }));
+// ==================== CHANNEL HISTORY ====================
+async function requestChannelHistory(channelId, beforeMessageId) {
+  try {
+    const url = beforeMessageId > 0
+      ? `${SERVER_URL}/channels/${channelId}/history?before_id=${beforeMessageId}&limit=50`
+      : `${SERVER_URL}/channels/${channelId}/history?limit=50`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "X-Auth-Token": token }
+    });
+
+    if (!response.ok) {
+      console.error("[HISTORY] Error:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+    handleChannelHistory(data);
+  } catch (err) {
+    console.error("[HISTORY] Network error:", err.message);
+  }
 }
 
 // ==================== NEW MESSAGE ====================
@@ -549,12 +568,16 @@ function handleTypingNotification(data) {
 }
 
 // ==================== CHANNEL HISTORY ====================
+
 function handleChannelHistory(data) {
   if (data.id_channel !== activeChannelId) return;
   const container = document.getElementById("messages-container");
   container.innerHTML = "";
 
-  if (!data.messages || data.messages.length === 0) { addSystemMessage("No messages yet. Say hello!"); return; }
+  if (!data.messages || data.messages.length === 0) {
+    addSystemMessage("No messages yet. Say hello!");
+    return;
+  }
 
   data.messages.forEach(msg => {
     const isMe = msg.id_sender === userId;
@@ -571,7 +594,9 @@ function handleChannelHistory(data) {
     loadMore.style.cursor = "pointer";
     loadMore.style.color = "var(--accent)";
     loadMore.textContent = "↑ Load older messages";
-    loadMore.addEventListener("click", () => requestChannelHistory(activeChannelId, data.messages[0]?.id_message ?? 0));
+    loadMore.addEventListener("click", () =>
+      requestChannelHistory(activeChannelId, data.messages[0]?.id_message ?? 0)
+    );
     container.prepend(loadMore);
   }
 }

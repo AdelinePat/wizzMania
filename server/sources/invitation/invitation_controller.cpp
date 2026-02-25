@@ -39,7 +39,7 @@ crow::response InvitationController::reject_invitation(const crow::request& req,
   try {
     std::string responded_at = Utils::get_timestamp();
     // try {
-    int64_t id_creator = channel_service.get_creator_id(id_user, id_channel);
+    int64_t id_creator = channel_service.get_inviter_id(id_user, id_channel);
 
     invitation_service.reject_invitation(id_user, id_channel, responded_at);
 

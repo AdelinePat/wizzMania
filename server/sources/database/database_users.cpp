@@ -27,7 +27,7 @@ int64_t Database::verify_user(const std::string& username,
   }
 }
 
-bool Database::has_channel_access(int64_t id_user, int64_t id_channel,   ChannelStatus membership) {
+bool Database::has_channel_access(int64_t id_user, int64_t id_channel, ChannelStatus membership) {
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
