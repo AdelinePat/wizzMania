@@ -158,7 +158,7 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
     std::optional<ClientSend::MarkAsRead> mark =
         JsonHelpers::ClientSendHelpers::parse_mark_as_read(json_msg);
 
-    if (!mark.has_value()) {
+    // if (!mark.has_value()) {
     if (!mark.has_value()) {
       throw BadRequestError("Invalid MARK_AS_READ format");
     }
@@ -166,11 +166,11 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
     std::cout << "[MARK_AS_READ] User " << id_user << " -> Channel "
               << mark->id_channel << " read up to message "
               << mark->last_id_message << "\n";
-              << mark->id_channel << " read up to message "
-              << mark->last_id_message << "\n";
+              // << mark->id_channel << " read up to message "
+              // << mark->last_id_message << "\n";
 
     // check if user has access to this channel
-    bool has_access = user_service.has_access(id_user, mark->id_channel);
+    // bool has_access = user_service.has_access(id_user, mark->id_channel);
     // check if user has access to this channel
     bool has_access = user_service.has_access(id_user, mark->id_channel);
     if (!has_access) {
