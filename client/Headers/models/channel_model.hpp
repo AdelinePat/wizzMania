@@ -12,13 +12,13 @@ class ChannelModel : public QAbstractListModel {
 
  public:
   enum ChannelRole {
-    IdRole = Qt::UserRole + 1,
-    TitleRole,
-    IsGroupRole,
-    UnreadCountRole,
-    LastMessageBodyRole,
-    LastMessageTimestampRole,
-    LastReadMessageIdRole,
+    IdRole = Qt::UserRole,
+    TitleRole = Qt::UserRole + 1,
+    IsGroupRole = Qt::UserRole + 2,
+    UnreadCountRole = Qt::UserRole + 3,
+    LastMessageBodyRole = Qt::UserRole + 4,
+    LastMessageTimestampRole = Qt::UserRole + 5,
+    LastReadMessageIdRole = Qt::UserRole + 6,
   };
   Q_ENUM(ChannelRole)
 
@@ -42,6 +42,7 @@ class ChannelModel : public QAbstractListModel {
 
  private:
   std::vector<ServerSend::ChannelInfo> channels;
+  std::unordered_map<int64_t, ServerSend::ChannelInfo> channelIdToInfos;  // Map channel ID to index in channels vector
 };
 
 #endif  // CHANNELMODEL_H

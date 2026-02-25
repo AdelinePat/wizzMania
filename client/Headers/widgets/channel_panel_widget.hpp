@@ -11,6 +11,7 @@
 
 #include "message_structure.hpp"
 #include "widgets/channel_row_widget.hpp"
+#include "models/channel_model.hpp"
 
 class ChannelPanelWidget : public QWidget {
   Q_OBJECT

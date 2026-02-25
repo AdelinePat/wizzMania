@@ -20,7 +20,7 @@ QVariant MessageModel::data(const QModelIndex& index, int role) const {
   const ServerSend::Message& msg = messages[index.row()];
 
   switch (role) {
-    case IdRole:
+    case IdMessageRole:
       return QVariant::fromValue(msg.id_message);
     case SenderIdRole:
       return QVariant::fromValue(msg.id_sender);
@@ -37,7 +37,7 @@ QVariant MessageModel::data(const QModelIndex& index, int role) const {
 
 QHash<int, QByteArray> MessageModel::roleNames() const {
   QHash<int, QByteArray> roles;
-  roles[IdRole] = "idMessage";
+  roles[IdMessageRole] = "idMessage";
   roles[SenderIdRole] = "senderId";
   roles[BodyRole] = "body";
   roles[TimestampRole] = "timestamp";
