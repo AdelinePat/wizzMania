@@ -49,3 +49,99 @@ QLabel#systemLabel { color: #9aa6b2; font-style: italic; font-size: 12px; paddin
 /* Portrait and name */
 QPushButton#userPortraitBtn { border-radius: 24px; background-color: rgb(82,134,77); color: white; font-weight: 700; }
 QLabel#userPortraitName { color: rgb(220,230,240); font-size: 12px; }
+
+/* Buttons */
+QPushButton#channelLeaveBtn {
+  background-color: rgb(139,48,48);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 11px;
+  min-width: 40px;
+  max-width: 55px;
+}
+QPushButton#channelLeaveBtn:hover { background-color: rgb(159,68,68); }
+QPushButton#channelLeaveBtn:pressed { background-color: rgb(119,38,38); }
+
+QPushButton#deleteAccountBtn {
+  background-color: rgb(139,48,48);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+QPushButton#deleteAccountBtn:hover { background-color: rgb(159,68,68); }
+QPushButton#deleteAccountBtn:pressed { background-color: rgb(119,38,38); }
+
+QPushButton#createChannelBtn {
+  background-color: rgb(82,134,77);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 14px;
+}
+QPushButton#createChannelBtn:hover { background-color: rgb(92,144,87); }
+QPushButton#createChannelBtn:pressed { background-color: rgb(72,124,67); }
+
+QPushButton#logoutBtn {
+  background-color: rgb(66,126,157);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+QPushButton#logoutBtn:hover { background-color: rgb(76,136,167); }
+QPushButton#logoutBtn:pressed { background-color: rgb(56,116,147); }
+
+/* Invitation item buttons */
+QPushButton#invitationAcceptBtn {
+  background-color: rgb(82,134,77);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+QPushButton#invitationAcceptBtn:hover { background-color: rgb(92,144,87); }
+QPushButton#invitationAcceptBtn:pressed { background-color: rgb(72,124,67); }
+
+QPushButton#invitationRejectBtn, QPushButton#invitationCancelBtn {
+  background-color: rgb(100,110,120);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 11px;
+}
+QPushButton#invitationRejectBtn:hover, QPushButton#invitationCancelBtn:hover { background-color: rgb(110,120,130); }
+QPushButton#invitationRejectBtn:pressed, QPushButton#invitationCancelBtn:pressed { background-color: rgb(90,100,110); }
+
+/* Invitation item labels */
+QLabel#invitationTitleLabel {
+  color: rgb(220,230,240);
+  font-weight: 600;
+  font-size: 12px;
+}
+QLabel#invitationSubLabel {
+  color: rgb(135,150,165);
+  font-size: 11px;
+}
+
+/* Profile header */
+QLabel#profileHeaderLabel {
+  color: rgb(220,230,240);
+  font-weight: 700;
+  font-size: 14px;
+}
+
+/* Channels header */
+QLabel#channelsHeaderLabel {
+  color: rgb(220,230,240);
+  font-weight: 700;
+  font-size: 12px;
+}

@@ -1,7 +1,5 @@
 #include "ws/websocket_client.hpp"
 
-#include <QTimer>
-
 WebSocketClient::WebSocketClient(QObject* parent)
     : QObject(parent), reconnectTimer(new QTimer(this)), retryCount(0) {
   connect(&socket, &QWebSocket::connected, this, &WebSocketClient::onConnected);
@@ -99,24 +97,6 @@ void WebSocketClient::markAsRead(int64_t channelId, int64_t lastMessageId) {
   socket.sendTextMessage(payload);
 }
 
-void WebSocketClient::acceptInvitation(int64_t id_channel) {
-  if (!isConnected()) return;
-  ClientSend::AcceptInvitationRequest req;
-  req.type = WizzMania::MessageType::ACCEPT_INVITATION;
-  req.id_channel = id_channel;
-  const QJsonDocument doc(MessageJson::toJson(req));
-  socket.sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
-}
-
-void WebSocketClient::rejectInvitation(int64_t id_channel) {
-  if (!isConnected()) return;
-  ClientSend::RejectInvitationRequest req;
-  req.type = WizzMania::MessageType::REJECT_INVITATION;
-  req.id_channel = id_channel;
-  const QJsonDocument doc(MessageJson::toJson(req));
-  socket.sendTextMessage(QString::fromUtf8(doc.toJson(QJsonDocument::Compact)));
-}
-
 void WebSocketClient::onConnected() {
   resetReconnectState();
   qInfo() << "[WS][CONNECTED]";
@@ -193,7 +173,8 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
   if (type == static_cast<int>(WizzMania::MessageType::MARK_AS_READ)) {
     ClientSend::MarkAsRead mark;
     if (MessageJson::fromJson(obj, mark)) {
-      emit updateChannelUnreadCount(mark.id_channel, mark.unread_count, mark.last_id_message);
+      emit updateChannelUnreadCount(mark.id_channel, mark.unread_count,
+                                    mark.last_id_message);
     }
     return;
   }

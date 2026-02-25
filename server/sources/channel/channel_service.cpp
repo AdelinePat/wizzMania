@@ -17,12 +17,19 @@ ServerSend::ChannelInfo ChannelService::get_channel(
   return channel;
 }
 
-int64_t ChannelService::get_creator_id(int64_t id_user, int64_t id_channel) {
-  std::optional<int64_t> id_creator_opt = db.get_channel_creator(id_channel);
+int64_t ChannelService::get_inviter_id(int64_t id_user, int64_t id_channel) {
+  // std::optional<int64_t> id_creator_opt = db.get_channel_creator(id_channel);
+  int64_t id_creator = this->get_creator_id(id_channel);
+  if (!id_creator || id_creator == id_user) {
+    throw NotFoundError("Couldn't find inviter for this channel");
+  }
+  return id_creator;
+}
 
-  if (!id_creator_opt.has_value() || id_creator_opt.value() == id_user) {
-    // throw WsError("Couldn't find creator of channel");
-    throw NotFoundError("Couldn't find creator of channel");
+int64_t ChannelService::get_creator_id(int64_t id_channel) {
+  std::optional<int64_t> id_creator_opt = db.get_channel_creator(id_channel);
+  if (!id_creator_opt.has_value()) {
+    throw NotFoundError("Couldn't find creator for this channel");
   }
   return id_creator_opt.value();
 }

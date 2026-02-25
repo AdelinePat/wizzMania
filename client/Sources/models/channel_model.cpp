@@ -1,7 +1,5 @@
 #include "models/channel_model.hpp"
 
-#include <QString>
-
 ChannelModel::ChannelModel(QObject* parent) : QAbstractListModel(parent) {}
 
 int ChannelModel::rowCount(const QModelIndex& parent) const {
@@ -98,12 +96,12 @@ void ChannelModel::updateChannelUnreadCount(int64_t channelId, int64_t newCount,
   auto it = idToIndex.find(channelId);
   if (it == idToIndex.end()) return;
 
-  int idx = it->second;
-  channels[idx].unread_count = newCount;
-  channels[idx].last_read_id_message = lastReadId;
+  int row = it->second;
+  channels[row].unread_count = newCount;
+  channels[row].last_read_id_message = lastReadId;
 
-  QModelIndex modelIdx = index(idx);
-  emit dataChanged(modelIdx, modelIdx,
+  QModelIndex modelIndex = index(row);
+  emit dataChanged(modelIndex, modelIndex,
                    {UnreadCountRole, LastReadMessageIdRole});
 }
 

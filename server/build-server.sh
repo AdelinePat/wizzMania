@@ -2,9 +2,29 @@
 
 set -e
 
-echo "========================================"
-echo "  WizzMania Server Build & Run"
-echo "========================================"
+# ==================== COLORS ====================
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+RESET='\033[0m'
+
+title() {
+  echo -e "${BLUE}========================================${RESET}"
+  echo -e "${BLUE}  $1${RESET}"
+  echo -e "${BLUE}========================================${RESET}"
+}
+
+success() {
+  echo -e "${GREEN}$1${RESET}"
+}
+
+failure() {
+  echo -e "${RED}$1${RESET}"
+}
+
+# ==================== BUILD ====================
+
+title "WizzMania Server Build & Run"
 
 # Wait for database to be ready
 # echo "Waiting for database..."
@@ -12,14 +32,11 @@ echo "========================================"
 #     echo "Database is unavailable - sleeping"
 #     sleep 2
 # done
-# echo "✅ Database is ready!"
+# success "✅ Database is ready!"
 
 echo ""
-echo "========================================"
-echo "Step 1: Running Tests"
-echo "========================================"
+title "Step 1: Running Tests"
 
-# Build and run tests
 mkdir -p build-test
 cd build-test
 
@@ -37,22 +54,18 @@ TEST_RESULT=$?
 
 if [ $TEST_RESULT -ne 0 ]; then
     echo ""
-    echo "❌ Tests FAILED! Aborting build."
+    failure "❌ Tests FAILED! Aborting build."
     exit 1
 fi
 
 echo ""
-echo "✅ All tests PASSED!"
+success "✅ All tests PASSED!"
 echo ""
 
 cd ..
 rm -rf build-test
 
-# end of uncomment
-
-echo "========================================"
-echo "Step 2: Building Server"
-echo "========================================"
+title "Step 2: Building Server"
 
 mkdir -p build-server
 cd build-server
@@ -64,12 +77,9 @@ echo "Building server..."
 cmake --build . --target wizzmania-server -j$(nproc)
 
 echo ""
-echo "✅ Server build complete!"
+success "✅ Server build complete!"
 
 echo ""
-echo "========================================"
-echo "Step 3: Running Server"
-echo "========================================"
+title "Step 3: Running Server"
 
-# Run the server
 ./wizzmania-server

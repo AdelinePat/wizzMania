@@ -44,6 +44,7 @@ services:
       DB_PASSWORD: ${MYSQL_PASSWORD}
       # Server configuration
       SERVER_PORT: ${SERVER_PORT}
+      SECRET_KEY: ${SECRET_KEY}
     ports:
       - "8888:8888"
     volumes:

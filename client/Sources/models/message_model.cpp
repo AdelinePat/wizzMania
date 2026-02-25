@@ -1,7 +1,5 @@
 #include "models/message_model.hpp"
 
-#include <QString>
-
 MessageModel::MessageModel(QObject* parent) : QAbstractListModel(parent) {}
 
 int MessageModel::rowCount(const QModelIndex& parent) const {

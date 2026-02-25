@@ -79,9 +79,13 @@ crow::response ChannelController::create_channel(int64_t id_user,
   }
 }
 
-crow::response ChannelController::leave_channel(const crow::request& req,
-                                                int64_t id_user,
+crow::response ChannelController::leave_channel(int64_t id_user,
                                                 int64_t id_channel) {
+  if (!user_service.has_access(id_user, id_channel)) {
+    // already checks ACCEPTED
+    throw ForbiddenError("You are not a member of this channel");
+  }
+
   try {
     channel_service.leave_channel(id_user, id_channel);
 

@@ -126,7 +126,8 @@ bool Database::create_user_channels(
     std::string placeholder =
         "(?, ?, " + std::to_string(static_cast<int>(ChannelStatus::PENDING)) +
         "), ";
-    for (const int64_t& participant : participants) {
+        
+    for (size_t i = 0; i < participants.size(); i++) {
       query += placeholder;
     }
     query += "(?, ?, " +

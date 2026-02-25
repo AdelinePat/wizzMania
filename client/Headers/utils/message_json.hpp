@@ -14,6 +14,7 @@ QJsonObject toJson(const ClientSend::ChannelHistoryRequest& req);
 QJsonObject toJson(const ClientSend::MarkAsRead& req);
 QJsonObject toJson(const ClientSend::AcceptInvitationRequest& req);
 QJsonObject toJson(const ClientSend::RejectInvitationRequest& req);
+QJsonObject toJson(const ClientSend::LeaveChannelRequest& req);
 bool fromJson(const QJsonObject& obj, AuthMessages::WSAuthResponse& out);
 bool fromJson(const QJsonObject& obj, ServerSend::SendMessageResponse& out);
 bool fromJson(const QJsonObject& obj, ServerSend::InitialDataResponse& out);

@@ -14,7 +14,7 @@
 #include "json_helpers.hpp"        // use
 #include "message_controller.hpp"
 #include "message_structure.hpp"  // use
-#include "optional"               // use
+#include <optional>               // use
 #include "user_service.hpp"       // use
 #include "user_service.hpp"
 #include "utils.hpp"
@@ -45,15 +45,13 @@ class InvitationController {
   //   void accept_invitation(crow::websocket::connection& conn, int64_t
   //   id_user,
   //                          const crow::json::rvalue& json_msg);
-  crow::response accept_invitation(const crow::request& req, int64_t id_user,
-                                   int64_t id_channel);
+  crow::response accept_invitation(int64_t id_user, int64_t id_channel);
 
   //   void reject_invitation(crow::websocket::connection& conn, int64_t
   //   id_user,
   //                          const crow::json::rvalue& json_msg);
 
-  crow::response reject_invitation(const crow::request& req, int64_t id_user,
-                                   int64_t id_channel);
+  crow::response reject_invitation(int64_t id_user, int64_t id_channel);
   void broadcast_invitation_notification(
       std::unordered_set<int64_t> participants,
       ServerSend::ChannelInvitation& invitation);

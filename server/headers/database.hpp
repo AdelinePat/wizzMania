@@ -78,7 +78,7 @@ class Database {
   std::vector<ServerSend::ChannelInvitation> get_invitations_base(
       const int64_t id_user, ChannelStatus membership = ChannelStatus::PENDING);
 
-  bool has_channel_access(int64_t id_user, int64_t id_channel);
+  bool has_channel_access(int64_t id_user, int64_t id_channel, ChannelStatus membership = ChannelStatus::ACCEPTED);
 
   bool update_last_read_message(int64_t id_user, int64_t id_channel,int64_t last_read_id_message);
 
@@ -131,6 +131,9 @@ class Database {
 std::optional<int64_t> create_user(const std::string& username,
                                               const std::string& email,
                                               const std::string& password);
+
+
+bool delete_user(int64_t id_user); // true if user is delete
 };
 
 

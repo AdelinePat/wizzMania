@@ -3,6 +3,7 @@
 
 #include <crow.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -13,7 +14,6 @@
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 #include "messages.hpp"
-#include "optional"
 #include "user_service.hpp"
 #include "websocket_manager.hpp"
 
@@ -35,7 +35,9 @@ class UserController {
   crow::response send_login_response(const int64_t id_user,
                                      const std::string& username,
                                      const std::string& token);
-crow::response register_user(const crow::request& req);                                
+crow::response register_user(const crow::request& req); 
+
+crow::response delete_user(const crow::request& req, int64_t id_user);
 };
 
 #endif
