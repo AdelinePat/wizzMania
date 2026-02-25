@@ -1,5 +1,8 @@
 #include "widgets/user_home_widget.hpp"
 
+#include "widgets/incoming_invitation_item_widget.hpp"
+#include "widgets/outgoing_invitation_item_widget.hpp"
+
 UserHomeWidget::UserHomeWidget(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* root = new QVBoxLayout(this);
   root->setContentsMargins(0, 0, 0, 0);
@@ -30,21 +33,70 @@ void UserHomeWidget::setUsernameCache(const QHash<int64_t, QString>* cache) {
   usernameCache = cache;
 }
 
-void UserHomeWidget::setIncomingInvitations(
-    const std::vector<ServerSend::ChannelInvitation>& invs) {
+void UserHomeWidget::setModels(IncomingInvitationModel* incomingModel,
+                               OutgoingInvitationModel* outgoingModel) {
+  this->incomingModel = incomingModel;
+  this->outgoingModel = outgoingModel;
+
+  if (incomingModel) {
+    connect(incomingModel, &QAbstractListModel::rowsInserted, this,
+            &UserHomeWidget::onIncomingInvitationsChanged);
+    connect(incomingModel, &QAbstractListModel::rowsRemoved, this,
+            &UserHomeWidget::onIncomingInvitationsChanged);
+    connect(incomingModel, &QAbstractListModel::modelReset, this,
+            &UserHomeWidget::onIncomingInvitationsChanged);
+  }
+
+  if (outgoingModel) {
+    connect(outgoingModel, &QAbstractListModel::rowsInserted, this,
+            &UserHomeWidget::onOutgoingInvitationsChanged);
+    connect(outgoingModel, &QAbstractListModel::rowsRemoved, this,
+            &UserHomeWidget::onOutgoingInvitationsChanged);
+    connect(outgoingModel, &QAbstractListModel::modelReset, this,
+            &UserHomeWidget::onOutgoingInvitationsChanged);
+  }
+
+  rebuildIncomingInvitations();
+  rebuildOutgoingInvitations();
+}
+
+void UserHomeWidget::onIncomingInvitationsChanged() {
+  rebuildIncomingInvitations();
+}
+
+void UserHomeWidget::onOutgoingInvitationsChanged() {
+  rebuildOutgoingInvitations();
+}
+
+void UserHomeWidget::rebuildIncomingInvitations() {
   invitationsList->clear();
-  for (const auto& inv : invs) {
+  if (!incomingModel) return;
+
+  for (int i = 0; i < incomingModel->rowCount(); ++i) {
+    QModelIndex index = incomingModel->index(i);
+    int64_t channelId =
+        incomingModel->data(index, IncomingInvitationModel::IdChannelRole)
+            .toLongLong();
+    const ServerSend::ChannelInvitation* inv =
+        incomingModel->getInvitationById(channelId);
+
+    if (!inv) continue;
+
     // Resolve inviter name from cache
     QString inviterName;
-    if (usernameCache && usernameCache->contains(inv.id_inviter)) {
-      inviterName = usernameCache->value(inv.id_inviter);
+    int64_t inviterId =
+        incomingModel->data(index, IncomingInvitationModel::InviterIdRole)
+            .toLongLong();
+    if (usernameCache && usernameCache->contains(inviterId)) {
+      inviterName = usernameCache->value(inviterId);
     }
 
     QListWidgetItem* item = new QListWidgetItem();
-    InvitationWidget* w = new InvitationWidget(inv, inviterName);
-    connect(w, &InvitationWidget::acceptClicked, this,
+    IncomingInvitationItemWidget* w =
+        new IncomingInvitationItemWidget(*inv, inviterName);
+    connect(w, &IncomingInvitationItemWidget::acceptClicked, this,
             [this](int64_t id) { emit acceptInvitationRequested(id); });
-    connect(w, &InvitationWidget::rejectClicked, this,
+    connect(w, &IncomingInvitationItemWidget::rejectClicked, this,
             [this](int64_t id) { emit rejectInvitationRequested(id); });
     item->setSizeHint(w->sizeHint());
     invitationsList->addItem(item);
@@ -52,13 +104,23 @@ void UserHomeWidget::setIncomingInvitations(
   }
 }
 
-void UserHomeWidget::setSentInvitations(
-    const std::vector<ServerSend::ChannelInfo>& outs) {
+void UserHomeWidget::rebuildOutgoingInvitations() {
   sentInvitationsList->clear();
-  for (const auto& info : outs) {
+  if (!outgoingModel) return;
+
+  for (int i = 0; i < outgoingModel->rowCount(); ++i) {
+    QModelIndex index = outgoingModel->index(i);
+    int64_t channelId =
+        outgoingModel->data(index, OutgoingInvitationModel::IdChannelRole)
+            .toLongLong();
+    const ServerSend::ChannelInfo* info =
+        outgoingModel->getInvitationById(channelId);
+
+    if (!info) continue;
+
     QListWidgetItem* item = new QListWidgetItem();
-    InvitationWidget* w = new InvitationWidget(info);
-    connect(w, &InvitationWidget::cancelClicked, this,
+    OutgoingInvitationItemWidget* w = new OutgoingInvitationItemWidget(*info);
+    connect(w, &OutgoingInvitationItemWidget::cancelClicked, this,
             [this](int64_t id) { emit cancelInvitationRequested(id); });
     item->setSizeHint(w->sizeHint());
     sentInvitationsList->addItem(item);

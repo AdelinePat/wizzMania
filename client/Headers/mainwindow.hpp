@@ -5,7 +5,6 @@
 #include <QHash>
 #include <QMainWindow>
 #include <QMessageBox>
-#include <QNetworkReply>
 #include <QRegularExpression>
 #include <QString>
 #include <QTimer>
@@ -15,8 +14,10 @@
 #include <cstdint>
 
 #include "message_structure.hpp"
-#include "services/api_client.hpp"
+#include "models/incoming_invitation_model.hpp"
+#include "models/outgoing_invitation_model.hpp"
 #include "services/channel_service.hpp"
+#include "services/invitation_service.hpp"
 #include "widgets/channel_panel_widget.hpp"
 #include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
@@ -67,10 +68,12 @@ class MainWindow : public QMainWindow {
   LoginWidget* loginWidget;
   WebSocketClient* wsClient;
   ChannelService* channelService;
-  ApiClient* apiClient;
+  InvitationService* invitationService;
   ChannelPanelWidget* channelPanel;
   RightPanelWidget* rightPanel;
   UserHomeWidget* userHomeWidget;
+  IncomingInvitationModel* incomingInvitationModel;
+  OutgoingInvitationModel* outgoingInvitationModel;
   QString currentUser;
   QString authToken;
   int64_t currentUserId = -1;
