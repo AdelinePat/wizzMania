@@ -6,6 +6,7 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent),
       ui(new Ui::MainWindow),
       loginWidget(nullptr),
+      registerWidget(nullptr),
       wsClient(new WebSocketClient(this)),
       channelService(new ChannelService(this)),
       invitationService(new InvitationService(this)),
@@ -20,6 +21,11 @@ MainWindow::MainWindow(QWidget* parent)
   QVBoxLayout* loginLayout = new QVBoxLayout(ui->loginPage);
   loginLayout->setContentsMargins(0, 0, 0, 0);
   loginLayout->addWidget(loginWidget);
+
+  // Create register widget (hidden by default)
+  registerWidget = new RegisterWidget(this);
+  loginLayout->addWidget(registerWidget);
+  registerWidget->hide();
 
   channelPanel = new ChannelPanelWidget(ui->leftPanel);
   ui->appLabel->hide();
@@ -42,6 +48,14 @@ MainWindow::MainWindow(QWidget* parent)
   // Connect login signal
   connect(loginWidget, &LoginWidget::loginSuccessful, this,
           &MainWindow::onLoginSuccessful);
+
+  // Connect register signals
+  connect(loginWidget, &LoginWidget::registerRequested, this,
+          &MainWindow::onRegisterRequested);
+  connect(registerWidget, &RegisterWidget::registerRequested, this,
+          &MainWindow::onRegisterConfirmed);
+  connect(registerWidget, &RegisterWidget::cancelRequested, this,
+          &MainWindow::onRegisterCancelled);
 
   // WebSocket signals
   connect(wsClient, &WebSocketClient::authenticated, this,
@@ -433,6 +447,30 @@ void MainWindow::appendMessageToView(int64_t channelId,
 
 void MainWindow::setChatEnabled(bool enabled) {
   rightPanel->setInputEnabled(enabled);
+}
+
+void MainWindow::onRegisterRequested() {
+  qInfo() << "[UI] REGISTER_REQUESTED";
+  loginWidget->hide();
+  registerWidget->show();
+}
+
+void MainWindow::onRegisterConfirmed(const QString& username,
+                                     const QString& email,
+                                     const QString& password) {
+  Q_UNUSED(password);
+  qInfo() << "[UI] REGISTER_CONFIRMED username=" << username
+          << "email=" << email;
+  // TODO: Send registration request to server via HTTP
+  // For now, just log and show success message
+  registerWidget->hide();
+  loginWidget->show();
+}
+
+void MainWindow::onRegisterCancelled() {
+  qInfo() << "[UI] REGISTER_CANCELLED";
+  registerWidget->hide();
+  loginWidget->show();
 }
 
 void MainWindow::onHistoryFailed(int64_t channelId, const QString& message) {

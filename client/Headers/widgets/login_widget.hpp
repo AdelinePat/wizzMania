@@ -19,6 +19,7 @@ class LoginWidget : public QWidget {
 
  signals:
   void loginSuccessful(const QString& username, const QString& token);
+  void registerRequested();
 
  private slots:
   void onLoginClicked();

@@ -12,6 +12,10 @@ LoginWidget::LoginWidget(QWidget* parent)
   connect(ui->loginButton, &QPushButton::clicked, this,
           &LoginWidget::onLoginClicked);
 
+  // Connect register button
+  connect(ui->registerButton, &QPushButton::clicked, this,
+          &LoginWidget::registerRequested);
+
   // Allow Enter key to trigger login from password field
   connect(ui->passwordEdit, &QLineEdit::returnPressed, this,
           &LoginWidget::onLoginClicked);
@@ -60,7 +64,6 @@ void LoginWidget::sendLoginRequest(const QString& username,
   // TODO CLEAN inputs
   // differencier email & username
   authManager->login(username, password);
-
 }
 
 void LoginWidget::setErrorText(const QString& text) {

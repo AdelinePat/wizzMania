@@ -22,6 +22,7 @@
 #include "widgets/create_channel_widget.hpp"
 #include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
+#include "widgets/register_widget.hpp"
 #include "widgets/right_panel_widget.hpp"
 #include "widgets/user_home_widget.hpp"
 #include "ws/websocket_client.hpp"
@@ -39,6 +40,10 @@ class MainWindow : public QMainWindow {
 
  private slots:
   void onLoginSuccessful(const QString& username, const QString& token);
+  void onRegisterRequested();
+  void onRegisterConfirmed(const QString& username, const QString& email,
+                           const QString& password);
+  void onRegisterCancelled();
   void onWsAuthenticated(int64_t idUser);
   void onInitialDataReceived(const ServerSend::InitialDataResponse& data);
   // from ws to http, adding failing version of response?
@@ -68,6 +73,7 @@ class MainWindow : public QMainWindow {
 
   Ui::MainWindow* ui;
   LoginWidget* loginWidget;
+  RegisterWidget* registerWidget;
   WebSocketClient* wsClient;
   ChannelService* channelService;
   InvitationService* invitationService;
