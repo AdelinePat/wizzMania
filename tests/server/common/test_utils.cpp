@@ -1,161 +1,151 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "client_exception.hpp"
-#include "doctest.h"
+// #include "doctest.h"
+#include <gtest/gtest.h>
+
+#include "client_exception.hpp"
 #include "utils.hpp"
 
 // ==================== TRIM ====================
 
-TEST_CASE("trim - normal string with surrounding spaces") {
-  CHECK(Utils::trim("  hello  ") == "hello");
+TEST(TrimTest, RemovesSurroundingSpaces) {
+  EXPECT_EQ(Utils::trim("  hello  "), "hello");
 }
 
-TEST_CASE("trim - tabs and newlines") {
-  CHECK(Utils::trim("\t\nhello\r\n") == "hello");
+TEST(TrimTest, RemovesTabsAndNewlines) {
+  EXPECT_EQ(Utils::trim("\t\nhello\r\n"), "hello");
 }
 
-TEST_CASE("trim - no whitespace") { CHECK(Utils::trim("hello") == "hello"); }
+TEST(TrimTest, NoWhitespace) { EXPECT_EQ(Utils::trim("hello"), "hello"); }
 
-TEST_CASE("trim - single character") { CHECK(Utils::trim("  a  ") == "a"); }
+TEST(TrimTest, SingleCharacter) { EXPECT_EQ(Utils::trim("  a  "), "a"); }
 
-TEST_CASE("trim - empty string throws") {
-  CHECK_THROWS_AS(Utils::trim(""), BadInput);
+TEST(TrimTest, EmptyStringThrows) { EXPECT_THROW(Utils::trim(""), BadInput); }
+
+TEST(TrimTest, OnlyWhitespaceThrows) {
+  EXPECT_THROW(Utils::trim("     "), BadInput);
 }
 
-TEST_CASE("trim - only whitespace throws") {
-  CHECK_THROWS_AS(Utils::trim("     "), BadInput);
-}
-
-TEST_CASE("trim - only tabs and newlines throws") {
-  CHECK_THROWS_AS(Utils::trim("\t\n\r"), BadInput);
+TEST(TrimTest, OnlyTabsAndNewlinesThrows) {
+  EXPECT_THROW(Utils::trim("\t\n\r"), BadInput);
 }
 
 // ==================== CLEAN USERNAME ====================
 
-TEST_CASE("clean_username - valid lowercase") {
-  CHECK(Utils::clean_username("alice") == "alice");
+TEST(CleanUsernameTest, ValidLowercase) {
+  EXPECT_EQ(Utils::clean_username("alice"), "alice");
 }
 
-TEST_CASE("clean_username - valid uppercase gets lowercased") {
-  CHECK(Utils::clean_username("Alice") == "alice");
-  CHECK(Utils::clean_username("ALICE") == "alice");
+TEST(CleanUsernameTest, UppercaseGetsLowercased) {
+  EXPECT_EQ(Utils::clean_username("Alice"), "alice");
+  EXPECT_EQ(Utils::clean_username("ALICE"), "alice");
 }
 
-TEST_CASE("clean_username - valid with underscore") {
-  CHECK(Utils::clean_username("alice_bob") == "alice_bob");
+TEST(CleanUsernameTest, ValidWithUnderscore) {
+  EXPECT_EQ(Utils::clean_username("alice_bob"), "alice_bob");
 }
 
-TEST_CASE("clean_username - valid with numbers") {
-  CHECK(Utils::clean_username("alice123") == "alice123");
+TEST(CleanUsernameTest, ValidWithNumbers) {
+  EXPECT_EQ(Utils::clean_username("alice123"), "alice123");
 }
 
-TEST_CASE("clean_username - invalid space throws") {
-  CHECK_THROWS_AS(Utils::clean_username("alice bob"), BadInput);
+TEST(CleanUsernameTest, SpaceThrows) {
+  EXPECT_THROW(Utils::clean_username("alice bob"), BadInput);
 }
 
-TEST_CASE("clean_username - invalid exclamation mark throws") {
-  CHECK_THROWS_AS(Utils::clean_username("alice!"), BadInput);
+TEST(CleanUsernameTest, ExclamationMarkThrows) {
+  EXPECT_THROW(Utils::clean_username("alice!"), BadInput);
 }
 
-TEST_CASE("clean_username - invalid at sign throws") {
-  CHECK_THROWS_AS(Utils::clean_username("alice@bob"), BadInput);
+TEST(CleanUsernameTest, AtSignThrows) {
+  EXPECT_THROW(Utils::clean_username("alice@bob"), BadInput);
 }
 
-TEST_CASE("clean_username - invalid mixed throws") {
-  CHECK_THROWS_AS(Utils::clean_username("this!isMy_super USERNAME@"),
-                  BadInput);
+TEST(CleanUsernameTest, MixedInvalidCharsThrows) {
+  EXPECT_THROW(Utils::clean_username("this!isMy_super USERNAME@"), BadInput);
 }
 
 // ==================== IS VALID PASSWORD CHARS ====================
 
-TEST_CASE("is_valid_password_chars - normal ascii") {
-  CHECK(Utils::is_valid_password_chars("Password1!") == true);
+TEST(PasswordCharsTest, NormalAscii) {
+  EXPECT_TRUE(Utils::is_valid_password_chars("Password1!"));
 }
 
-TEST_CASE("is_valid_password_chars - special chars allowed") {
-  CHECK(Utils::is_valid_password_chars("P@ssw0rd#!") == true);
+TEST(PasswordCharsTest, SpecialCharsAllowed) {
+  EXPECT_TRUE(Utils::is_valid_password_chars("P@ssw0rd#!"));
 }
 
-TEST_CASE("is_valid_password_chars - space not allowed") {
-  CHECK(Utils::is_valid_password_chars("pass word1!") == false);
+TEST(PasswordCharsTest, SpaceNotAllowed) {
+  EXPECT_FALSE(Utils::is_valid_password_chars("pass word1!"));
 }
 
-TEST_CASE("is_valid_password_chars - non ASCII not allowed") {
-  CHECK(Utils::is_valid_password_chars("pässwörd1!") == false);
+TEST(PasswordCharsTest, NonAsciiNotAllowed) {
+  EXPECT_FALSE(Utils::is_valid_password_chars("pässwörd1!"));
 }
 
-TEST_CASE("is_valid_password_chars - empty string") {
-  CHECK(Utils::is_valid_password_chars("") ==
-        true);  // vacuously true, caught by other validators
-}
-
-TEST_CASE("is_valid_password - empty string is invalid") {
-    CHECK(Utils::is_valid_password("") == false); // caught by size() < 8
+TEST(PasswordCharsTest, EmptyStringVacuouslyTrue) {
+  // only checks character validity, length enforced by is_valid_password
+  EXPECT_TRUE(Utils::is_valid_password_chars(""));
 }
 
 // ==================== IS VALID EMAIL ====================
 
-TEST_CASE("is_valid_email - valid simple email") {
-  CHECK(Utils::is_valid_email("alice@mail.com") == true);
+TEST(EmailTest, ValidSimpleEmail) {
+  EXPECT_TRUE(Utils::is_valid_email("alice@mail.com"));
 }
 
-TEST_CASE("is_valid_email - valid with subdomain") {
-  CHECK(Utils::is_valid_email("alice@sub.domain.org") == true);
+TEST(EmailTest, ValidWithSubdomain) {
+  EXPECT_TRUE(Utils::is_valid_email("alice@sub.domain.org"));
 }
 
-TEST_CASE("is_valid_email - valid with dots and plus") {
-  CHECK(Utils::is_valid_email("alice.bob+tag@mail.com") == true);
+TEST(EmailTest, ValidWithDotsAndPlus) {
+  EXPECT_TRUE(Utils::is_valid_email("alice.bob+tag@mail.com"));
 }
 
-TEST_CASE("is_valid_email - missing @") {
-  CHECK(Utils::is_valid_email("alicemail.com") == false);
+TEST(EmailTest, MissingAt) {
+  EXPECT_FALSE(Utils::is_valid_email("alicemail.com"));
 }
 
-TEST_CASE("is_valid_email - missing domain") {
-  CHECK(Utils::is_valid_email("alice@") == false);
+TEST(EmailTest, MissingDomain) {
+  EXPECT_FALSE(Utils::is_valid_email("alice@"));
 }
 
-TEST_CASE("is_valid_email - missing TLD") {
-  CHECK(Utils::is_valid_email("alice@mail") == false);
+TEST(EmailTest, MissingTLD) {
+  EXPECT_FALSE(Utils::is_valid_email("alice@mail"));
 }
 
-TEST_CASE("is_valid_email - empty string") {
-  CHECK(Utils::is_valid_email("") == false);
-}
+TEST(EmailTest, EmptyString) { EXPECT_FALSE(Utils::is_valid_email("")); }
 
-TEST_CASE("is_valid_email - spaces") {
-  CHECK(Utils::is_valid_email("alice @mail.com") == false);
+TEST(EmailTest, ContainsSpace) {
+  EXPECT_FALSE(Utils::is_valid_email("alice @mail.com"));
 }
 
 // ==================== IS VALID PASSWORD ====================
 
-TEST_CASE("is_valid_password - valid strong password") {
-  CHECK(Utils::is_valid_password("Passw0rd!") == true);
+TEST(PasswordTest, ValidStrongPassword) {
+  EXPECT_TRUE(Utils::is_valid_password("Passw0rd!"));
 }
 
-TEST_CASE("is_valid_password - too short") {
-  CHECK(Utils::is_valid_password("Pa1!") == false);
+TEST(PasswordTest, TooShort) { EXPECT_FALSE(Utils::is_valid_password("Pa1!")); }
+
+TEST(PasswordTest, MissingUppercase) {
+  EXPECT_FALSE(Utils::is_valid_password("passw0rd!"));
 }
 
-TEST_CASE("is_valid_password - missing uppercase") {
-  CHECK(Utils::is_valid_password("passw0rd!") == false);
+TEST(PasswordTest, MissingLowercase) {
+  EXPECT_FALSE(Utils::is_valid_password("PASSW0RD!"));
 }
 
-TEST_CASE("is_valid_password - missing lowercase") {
-  CHECK(Utils::is_valid_password("PASSW0RD!") == false);
+TEST(PasswordTest, MissingDigit) {
+  EXPECT_FALSE(Utils::is_valid_password("Password!"));
 }
 
-TEST_CASE("is_valid_password - missing digit") {
-  CHECK(Utils::is_valid_password("Password!") == false);
+TEST(PasswordTest, MissingSpecialChar) {
+  EXPECT_FALSE(Utils::is_valid_password("Passw0rd"));
 }
 
-TEST_CASE("is_valid_password - missing special char") {
-  CHECK(Utils::is_valid_password("Passw0rd") == false);
-}
+TEST(PasswordTest, EmptyString) { EXPECT_FALSE(Utils::is_valid_password("")); }
 
-TEST_CASE("is_valid_password - empty string") {
-  CHECK(Utils::is_valid_password("") == false);
-}
-
-TEST_CASE("is_valid_password - exactly 8 chars valid") {
-  CHECK(Utils::is_valid_password("Passw0r!") == true);
+TEST(PasswordTest, Exactly8CharsValid) {
+  EXPECT_TRUE(Utils::is_valid_password("Passw0r!"));
 }

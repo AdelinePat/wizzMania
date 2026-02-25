@@ -36,8 +36,13 @@ RUN cd /tmp && \
     rm -rf /tmp/jwt-cpp
     
 # Install doctest for testing
-RUN wget -O /usr/local/include/doctest.h \
-    https://raw.githubusercontent.com/doctest/doctest/master/doctest/doctest.h
+# RUN wget -O /usr/local/include/doctest.h \
+#     https://raw.githubusercontent.com/doctest/doctest/master/doctest/doctest.h
+
+RUN apt-get update && apt-get install -y \
+    libgtest-dev \
+    libgmock-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 

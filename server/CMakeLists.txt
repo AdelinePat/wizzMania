@@ -108,23 +108,96 @@ endif()
 # ============================================
 # Tests Target
 # ============================================
+# if(BUILD_TESTS)
+#     find_package(GTest REQUIRED) 
+
+#     add_executable(tests
+#         # ../tests/server/test_main.cpp
+#         ../common/utils.cpp
+#         ../tests/common/test_utils.cpp
+#         # Add your test files here
+#     )
+    
+#     target_include_directories(tests PRIVATE
+#         ${CMAKE_CURRENT_SOURCE_DIR}
+#         ${CMAKE_CURRENT_SOURCE_DIR}/../common
+#         ${Boost_INCLUDE_DIRS}
+#     )
+    
+#     target_link_libraries(tests PRIVATE
+#         nlohmann_json::nlohmann_json
+#         Threads::Threads
+#         GTest::gtest
+#         GTest::gmock
+#         GTest::gtest_main 
+#         ${Boost_LIBRARIES}
+#     )
+
+# endif()
+
 if(BUILD_TESTS)
+    find_package(GTest REQUIRED) 
+
     add_executable(tests
-        # ../tests/server/test_main.cpp
+        sources/auth/auth_service.cpp
         ../common/utils.cpp
         ../tests/common/test_utils.cpp
-        # Add your test files here
+        ../tests/auth/test_auth_service.cpp
     )
     
     target_include_directories(tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/auth
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
         ${Boost_INCLUDE_DIRS}
     )
-    
+
+    target_compile_definitions(tests PRIVATE
+        CROW_ENABLE_SSL
+        CROW_USE_BOOST
+    )
+
     target_link_libraries(tests PRIVATE
         nlohmann_json::nlohmann_json
         Threads::Threads
+        GTest::gtest
+        GTest::gmock
+        GTest::gtest_main
         ${Boost_LIBRARIES}
+        OpenSSL::SSL
+        OpenSSL::Crypto
     )
 endif()
+
+
+# if(BUILD_TESTS)
+#     find_package(GTest REQUIRED)
+
+#     add_executable(tests
+#         ../common/utils.cpp
+#         ../tests/server/common/test_utils.cpp
+#         ../tests/server/auth/test_auth_service.cpp
+#     )
+
+#     target_include_directories(tests PRIVATE
+#         ${CMAKE_CURRENT_SOURCE_DIR}
+#         ${CMAKE_CURRENT_SOURCE_DIR}/headers
+#         ${CMAKE_CURRENT_SOURCE_DIR}/../common
+#         ${Boost_INCLUDE_DIRS}
+#     )
+
+#     target_compile_definitions(tests PRIVATE
+#         CROW_ENABLE_SSL
+#         CROW_USE_BOOST
+#     )
+
+#     target_link_libraries(tests PRIVATE
+#         nlohmann_json::nlohmann_json
+#         Threads::Threads
+#         GTest::gtest
+#         GTest::gmock
+#         GTest::gtest_main
+#         ${Boost_LIBRARIES}
+#     )
+# endif()
