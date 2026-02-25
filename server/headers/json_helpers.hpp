@@ -96,6 +96,7 @@ inline std::optional<::ClientSend::SendMessageRequest> parse_send_message(
   return req;
 }
 
+
 // FROM JSON MARK AS READ REQUEST
 inline std::optional<::ClientSend::MarkAsRead> parse_mark_as_read(
     const crow::json::rvalue& json) {
@@ -233,6 +234,16 @@ inline crow::json::wvalue to_json(const ::ServerSend::Message& msg) {
   json["body"] = msg.body;
   json["timestamp"] = msg.timestamp;
   json["is_system"] = msg.is_system;
+  return json;
+}
+
+// TO JSON MARK AS READ
+inline crow::json::wvalue to_json(const ::MarkAsRead& mark) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(mark.type);
+  json["id_channel"] = mark.id_channel;
+  json["last_id_message"] = mark.last_id_message;
+  json["unread_count"] = mark.unread_count;
   return json;
 }
 
