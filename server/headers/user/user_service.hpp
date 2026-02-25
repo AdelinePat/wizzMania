@@ -13,7 +13,8 @@
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
-#include "message_structure.hpp"
+#include "message_structure.hpp"#include "utils.hpp"
+#include "utils.hpp"
 
 class UserService {
   Database& db;
@@ -37,6 +38,9 @@ class UserService {
   std::vector<ServerSend::Contact> get_contacts_from_channel(
       int64_t id_channel);
   std::vector<ServerSend::Contact> get_all_user_contacts(int64_t id_user);
+
+  int64_t register_user(const std::string& username, const std::string& email,
+                      const std::string& password);
 };
 
 #endif

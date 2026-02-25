@@ -63,6 +63,13 @@ int main() {
         return user_controller.login(req);
       });
 
+  // POST / register endpoint ====
+// ===== POST /register endpoint =====
+  CROW_ROUTE(app, "/register")
+      .methods("POST"_method)([&user_controller](const crow::request& req) {
+        return user_controller.register_user(req);
+      });
+
   // ===== PATCH / /invitation/id_channel/accept endpoint =====
   CROW_ROUTE(app, "/invitations/<int>/accept")
       .methods("PATCH"_method)([&invitation_controller, &auth_controller](

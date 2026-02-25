@@ -57,6 +57,12 @@ class NotFoundError : public WizzManiaError {
  public:
   NotFoundError(const std::string& msg) : WizzManiaError(404, msg) {}
 };
+
+class ConflictError : public WizzManiaError {
+ public:
+  ConflictError(const std::string& msg) : WizzManiaError(409, msg) {}
+};
+
 class InternalError : public WizzManiaError {
  public:
   InternalError(const std::string& msg) : WizzManiaError(500, msg) {}
