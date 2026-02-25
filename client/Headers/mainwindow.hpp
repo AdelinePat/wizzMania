@@ -63,6 +63,7 @@ class MainWindow : public QMainWindow {
   void setChatEnabled(bool enabled);
   void acceptInvitation(int64_t id_channel);
   void rejectInvitation(int64_t id_channel);
+  QString getUserInitials(const QString& username) const;
 
   Ui::MainWindow* ui;
   LoginWidget* loginWidget;

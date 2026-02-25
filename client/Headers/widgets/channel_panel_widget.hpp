@@ -37,11 +37,19 @@ class ChannelPanelWidget : public QWidget {
   void userHomeRequested();
 
   void channelSelected(int64_t channelId, const QString& title);
+  
+  // Emitted when the create channel (+) button is clicked
+  void createChannelRequested();
+  
+  // Emitted when the logout button is clicked
+  void logoutRequested();
 
  private:
   QListWidget* channelsList;
   QPushButton* userPortraitBtn;
   QLabel* userPortraitName;
+  QPushButton* createChannelBtn;
+  QPushButton* logoutBtn;
   ChannelModel* channelModel;
   QMap<int64_t, QListWidgetItem*> itemByChannelId;
 };

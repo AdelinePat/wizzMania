@@ -1,4 +1,5 @@
 #include "widgets/channel_panel_widget.hpp"
+#include <QHBoxLayout>
 
 ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
   channelModel = new ChannelModel(this);
@@ -24,14 +25,43 @@ ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
   topLayout->addWidget(userPortraitBtn, 0, Qt::AlignHCenter);
   topLayout->addWidget(userPortraitName, 0, Qt::AlignHCenter);
 
+  // Channels header row ("Channels" label + "+" button)
+  QWidget* channelsHeader = new QWidget(this);
+  QHBoxLayout* headerLayout = new QHBoxLayout(channelsHeader);
+  headerLayout->setContentsMargins(8, 4, 8, 4);
+  headerLayout->setSpacing(8);
+  
+  QLabel* channelsLabel = new QLabel("Channels", this);
+  channelsLabel->setObjectName("channelsHeaderLabel");
+  
+  createChannelBtn = new QPushButton("+", this);
+  createChannelBtn->setObjectName("createChannelBtn");
+  createChannelBtn->setFixedSize(24, 24);
+  
+  headerLayout->addWidget(channelsLabel);
+  headerLayout->addStretch();
+  headerLayout->addWidget(createChannelBtn);
+
   channelsList = new QListWidget(this);
   channelsList->setObjectName("channelsList");
+  
+  // Logout button
+  logoutBtn = new QPushButton("Logout", this);
+  logoutBtn->setObjectName("logoutBtn");
 
   rootLayout->addWidget(topWidget);
+  rootLayout->addWidget(channelsHeader);
   rootLayout->addWidget(channelsList, 1);
+  rootLayout->addWidget(logoutBtn);
 
   connect(userPortraitBtn, &QPushButton::clicked, this,
           [this]() { emit userHomeRequested(); });
+  
+  connect(createChannelBtn, &QPushButton::clicked, this,
+          [this]() { emit createChannelRequested(); });
+  
+  connect(logoutBtn, &QPushButton::clicked, this,
+          [this]() { emit logoutRequested(); });
 
   connect(channelsList, &QListWidget::currentItemChanged, this,
           [this](QListWidgetItem* current, QListWidgetItem*) {
