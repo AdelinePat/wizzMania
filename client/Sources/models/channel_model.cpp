@@ -51,43 +51,99 @@ QHash<int, QByteArray> ChannelModel::roleNames() const {
   return roles;
 }
 
+// void ChannelModel::addChannel(const ServerSend::ChannelInfo& channel) {
+//   beginInsertRows(QModelIndex(), channels.size(), channels.size());
+//   channels.push_back(channel);
+//   endInsertRows();
+// }
 void ChannelModel::addChannel(const ServerSend::ChannelInfo& channel) {
   beginInsertRows(QModelIndex(), channels.size(), channels.size());
+  idToIndex[channel.id_channel] = static_cast<int>(channels.size());
   channels.push_back(channel);
   endInsertRows();
 }
 
+// void ChannelModel::setChannels(
+//     const std::vector<ServerSend::ChannelInfo>& chans) {
+//   beginResetModel();
+//   channels = chans;
+//   endResetModel();
+// }
 void ChannelModel::setChannels(
     const std::vector<ServerSend::ChannelInfo>& chans) {
   beginResetModel();
   channels = chans;
+  idToIndex.clear();
+  for (int i = 0; i < static_cast<int>(channels.size()); ++i) {
+    idToIndex[channels[i].id_channel] = i;
+  }
   endResetModel();
 }
 
+// void ChannelModel::updateChannelUnreadCount(int64_t channelId, int64_t
+// newCount,
+//                                             int64_t last_id_message) {
+//   for (size_t i = 0; i < channels.size(); ++i) {
+//     if (channels[i].id_channel == channelId) {
+//       channels[i].unread_count = newCount;
+//       channels[i].last_read_id_message = last_id_message;
+//       QModelIndex idx = index(i);
+//       emit dataChanged(idx, idx, {UnreadCountRole});
+//       return;
+//     }
+//   }
+// }
 void ChannelModel::updateChannelUnreadCount(int64_t channelId, int64_t newCount,
-                                            int64_t last_id_message) {
-  for (size_t i = 0; i < channels.size(); ++i) {
-    if (channels[i].id_channel == channelId) {
-      channels[i].unread_count = newCount;
-      channels[i].last_read_id_message = last_id_message;
-      QModelIndex idx = index(i);
-      emit dataChanged(idx, idx, {UnreadCountRole});
-      return;
-    }
-  }
+                                            int64_t lastReadId) {
+  auto it = idToIndex.find(channelId);
+  if (it == idToIndex.end()) return;
+
+  int idx = it->second;
+  channels[idx].unread_count = newCount;
+  channels[idx].last_read_id_message = lastReadId;
+
+  QModelIndex modelIdx = index(idx);
+  emit dataChanged(modelIdx, modelIdx,
+                   {UnreadCountRole, LastReadMessageIdRole});
 }
 
+// void ChannelModel::clear() {
+//   beginResetModel();
+//   channels.clear();
+//   endResetModel();
+// }
 void ChannelModel::clear() {
   beginResetModel();
   channels.clear();
+  idToIndex.clear();
   endResetModel();
 }
 
+// const ServerSend::ChannelInfo* ChannelModel::getChannelById(int64_t id) const
+// {
+//   for (const auto& ch : channels) {
+//     if (ch.id_channel == id) {
+//       return &ch;
+//     }
+//   }
+//   return nullptr;
+// }
+
 const ServerSend::ChannelInfo* ChannelModel::getChannelById(int64_t id) const {
-  for (const auto& ch : channels) {
-    if (ch.id_channel == id) {
-      return &ch;
-    }
-  }
-  return nullptr;
+  auto it = idToIndex.find(id);
+  if (it == idToIndex.end()) return nullptr;
+  return &channels[it->second];
 }
+
+void ChannelModel::updateLastMessage(int64_t channelId,
+                                     const QString& preview) {
+  auto it = idToIndex.find(channelId);
+  if (it == idToIndex.end()) return;
+
+  int idx = it->second;
+  channels[idx].last_message.body = preview.toStdString();;
+
+  QModelIndex modelIdx = index(idx);
+  emit dataChanged(modelIdx, modelIdx, {LastMessageBodyRole, LastMessageTimestampRole});
+}
+

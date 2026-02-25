@@ -1,6 +1,7 @@
 #include "widgets/channel_panel_widget.hpp"
 
 ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
+  channelModel = new ChannelModel(this);
   QVBoxLayout* rootLayout = new QVBoxLayout(this);
   rootLayout->setContentsMargins(0, 0, 0, 0);
   rootLayout->setSpacing(8);
@@ -37,23 +38,29 @@ ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
             if (!current) {
               return;
             }
-            const int64_t channelId = current->data(ChannelModel::ChannelRole::IdChannelRole).toLongLong();
+            const int64_t channelId =
+                current->data(ChannelModel::ChannelRole::IdChannelRole)
+                    .toLongLong();
             if (channelId <= 0) {
               return;
             }
-            emit channelSelected(channelId,
-                                 current->data(ChannelModel::ChannelRole::IdChannelRole).toString());
+            emit channelSelected(
+                channelId,
+                current->data(ChannelModel::ChannelRole::TitleRole).toString());
           });
 
   // Ensure clicking an already-selected channel still triggers selection
-  connect(channelsList, &QListWidget::itemClicked, this,
-          [this](QListWidgetItem* item) {
-            if (!item) return;
-            const int64_t channelId = item->data(ChannelModel::ChannelRole::IdChannelRole).toLongLong();
-            if (channelId <= 0) return;
-            emit channelSelected(channelId,
-                                 item->data(ChannelModel::ChannelRole::IdChannelRole).toString());
-          });
+  connect(
+      channelsList, &QListWidget::itemClicked, this,
+      [this](QListWidgetItem* item) {
+        if (!item) return;
+        const int64_t channelId =
+            item->data(ChannelModel::ChannelRole::IdChannelRole).toLongLong();
+        if (channelId <= 0) return;
+        emit channelSelected(
+            channelId,
+            item->data(ChannelModel::ChannelRole::IdChannelRole).toString());
+      });
 }
 
 void ChannelPanelWidget::setChannels(
@@ -63,20 +70,47 @@ void ChannelPanelWidget::setChannels(
   if (channels.empty()) {
     QListWidgetItem* item = new QListWidgetItem("No channels", channelsList);
     item->setFlags(item->flags() & ~Qt::ItemIsSelectable);
-    item->setData(ChannelModel::ChannelRole::IdChannelRole, static_cast<qint64>(-1));
+    item->setData(ChannelModel::ChannelRole::IdChannelRole,
+                  static_cast<qint64>(-1));
     return;
   }
+
+  // for (const auto& channel : channels) {
+  //   const QString title = QString::fromStdString(channel.title);
+  //   const QString preview =
+  //   QString::fromStdString(channel.last_message.body);
+
+  //   QListWidgetItem* item = new QListWidgetItem();
+  //   item->setData(ChannelModel::ChannelRole::IdChannelRole,
+  //   static_cast<qint64>(channel.id_channel));
+  //   item->setData(ChannelModel::ChannelRole::TitleRole, title);
+  //   // store preview, unread_count and is_group in item data for later
+  //   updates item->setData(ChannelModel::ChannelRole::LastMessageBodyRole,
+  //   preview); item->setData(ChannelModel::ChannelRole::UnreadCountRole,
+  //   static_cast<qint64>(channel.unread_count));
+  //   item->setData(ChannelModel::ChannelRole::IsGroupRole, channel.is_group);
+
+  //   ChannelRowWidget* row = new ChannelRowWidget(
+  //       title, preview, static_cast<int>(channel.unread_count),
+  //       channel.is_group, channelsList);
+  //   item->setSizeHint(row->sizeHint());
+  //   channelsList->addItem(item);
+  //   channelsList->setItemWidget(item, row);
+  // }
+  channelModel->setChannels(channels);  // ← model is now the source of truth
+  itemByChannelId.clear();              // ← reset the lookup map
 
   for (const auto& channel : channels) {
     const QString title = QString::fromStdString(channel.title);
     const QString preview = QString::fromStdString(channel.last_message.body);
 
     QListWidgetItem* item = new QListWidgetItem();
-    item->setData(ChannelModel::ChannelRole::IdChannelRole, static_cast<qint64>(channel.id_channel));
+    item->setData(ChannelModel::ChannelRole::IdChannelRole,
+                  static_cast<qint64>(channel.id_channel));
     item->setData(ChannelModel::ChannelRole::TitleRole, title);
-    // store preview, unread_count and is_group in item data for later updates
     item->setData(ChannelModel::ChannelRole::LastMessageBodyRole, preview);
-    item->setData(ChannelModel::ChannelRole::UnreadCountRole, static_cast<qint64>(channel.unread_count));
+    item->setData(ChannelModel::ChannelRole::UnreadCountRole,
+                  static_cast<qint64>(channel.unread_count));
     item->setData(ChannelModel::ChannelRole::IsGroupRole, channel.is_group);
 
     ChannelRowWidget* row = new ChannelRowWidget(
@@ -85,71 +119,64 @@ void ChannelPanelWidget::setChannels(
     item->setSizeHint(row->sizeHint());
     channelsList->addItem(item);
     channelsList->setItemWidget(item, row);
+
+    itemByChannelId[channel.id_channel] = item;  // ← register in lookup map
   }
 }
 
 void ChannelPanelWidget::updateChannelOnNewMessage(int64_t channelId,
                                                    const QString& preview,
                                                    bool incrementUnread) {
-  for (int i = 0; i < channelsList->count(); ++i) {
-    QListWidgetItem* item = channelsList->item(i);
-    if (!item) continue;
-    qint64 id = item->data(ChannelModel::ChannelRole::IdChannelRole).toLongLong();
-    if (id != channelId) continue;
+  QListWidgetItem* item =
+      itemByChannelId.value(channelId, nullptr);  // ← one lookup, no loop
+  if (!item) return;
 
-    QString title = item->data(ChannelModel::ChannelRole::TitleRole).toString();
-    qint64 unread = item->data(ChannelModel::ChannelRole::UnreadCountRole).toLongLong();
-    if (incrementUnread) unread += 1;
+  QString title = item->data(ChannelModel::ChannelRole::TitleRole).toString();
+  qint64 unread =
+      item->data(ChannelModel::ChannelRole::UnreadCountRole).toLongLong();
+  if (incrementUnread) unread += 1;
 
-    // Update stored data
-    item->setData(ChannelModel::ChannelRole::LastMessageBodyRole, preview);
-    item->setData(ChannelModel::ChannelRole::UnreadCountRole, unread);
+  // update model
+  channelModel->updateLastMessage(channelId, preview);  // ← model stays in sync
 
-    // Replace widget with updated preview/unread
-    bool isGroup = item->data(ChannelModel::ChannelRole::IsGroupRole).toBool();
-    ChannelRowWidget* newRow = new ChannelRowWidget(
-        title, preview, static_cast<int>(unread), isGroup, channelsList);
-    // preserve is_group if previously set: try to retrieve from existing
-    QWidget* existing = channelsList->itemWidget(item);
-    if (existing) {
-      // Heuristic: extract isGroup from the icon label text present in the
-      // existing widget's children (best-effort). If not found, keep false.
-    }
+  // update item data
+  item->setData(ChannelModel::ChannelRole::LastMessageBodyRole, preview);
+  item->setData(ChannelModel::ChannelRole::UnreadCountRole, unread);
 
-    item->setSizeHint(newRow->sizeHint());
-    channelsList->setItemWidget(item, newRow);
-    return;
-  }
+  bool isGroup = item->data(ChannelModel::ChannelRole::IsGroupRole).toBool();
+  ChannelRowWidget* newRow = new ChannelRowWidget(
+      title, preview, static_cast<int>(unread), isGroup, channelsList);
+  item->setSizeHint(newRow->sizeHint());
+  channelsList->setItemWidget(item, newRow);
 }
-
 void ChannelPanelWidget::updateChannelUnreadCount(int64_t channelId,
                                                   int unreadCount,
                                                   int64_t last_id_message) {
-  for (int i = 0; i < channelsList->count(); ++i) {
-    QListWidgetItem* item = channelsList->item(i);
-    if (!item) continue;
-    qint64 id = item->data(ChannelModel::ChannelRole::IdChannelRole).toLongLong();
-    if (id != channelId) continue;
+  QListWidgetItem* item =
+      itemByChannelId.value(channelId, nullptr);  // ← one lookup, no loop
+  if (!item) return;
 
-    QString title = item->data(ChannelModel::ChannelRole::TitleRole).toString();
-    QString preview = item->data(ChannelModel::ChannelRole::LastMessageBodyRole).toString();
-    bool isGroup = item->data(ChannelModel::ChannelRole::IsGroupRole).toBool();
+  QString title = item->data(ChannelModel::ChannelRole::TitleRole).toString();
+  QString preview =
+      item->data(ChannelModel::ChannelRole::LastMessageBodyRole).toString();
+  bool isGroup = item->data(ChannelModel::ChannelRole::IsGroupRole).toBool();
 
-    // Update stored unread count
-    item->setData(ChannelModel::ChannelRole::UnreadCountRole, static_cast<qint64>(unreadCount));
+  // update model
+  channelModel->updateChannelUnreadCount(
+      channelId, unreadCount, last_id_message);  // ← model stays in sync
 
-    if (last_id_message != 0) {
-      // last read id !!!!
-      item->setData(ChannelModel::ChannelRole::LastReadMessageIdRole, static_cast<qint64>(last_id_message));
-    }
-
-    // Replace widget with updated unread count
-    ChannelRowWidget* newRow = new ChannelRowWidget(title, preview, unreadCount,
-                                                    isGroup, channelsList);
-    item->setSizeHint(newRow->sizeHint());
-    channelsList->setItemWidget(item, newRow);
-    return;
+  // update item data
+  item->setData(ChannelModel::ChannelRole::UnreadCountRole,
+                static_cast<qint64>(unreadCount));
+  if (last_id_message != 0) {
+    item->setData(ChannelModel::ChannelRole::LastReadMessageIdRole,
+                  static_cast<qint64>(last_id_message));
   }
+
+  ChannelRowWidget* newRow =
+      new ChannelRowWidget(title, preview, unreadCount, isGroup, channelsList);
+  item->setSizeHint(newRow->sizeHint());
+  channelsList->setItemWidget(item, newRow);
 }
 
 void ChannelPanelWidget::setUserInfo(const QString& username,

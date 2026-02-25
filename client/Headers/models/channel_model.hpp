@@ -3,6 +3,7 @@
 
 #include <QAbstractListModel>
 #include <QString>
+#include <unordered_map>
 #include <vector>
 
 #include "message_structure.hpp"
@@ -35,6 +36,10 @@ class ChannelModel : public QAbstractListModel {
   void setChannels(const std::vector<ServerSend::ChannelInfo>& channels);
   void updateChannelUnreadCount(int64_t channelId, int64_t newCountn,
                                 int64_t last_id_message);
+
+  void updateLastMessage(int64_t channelId, const QString& preview);
+  // void updateUnreadCount(int64_t channelId, int64_t newCount,
+  //                        int64_t lastReadId);
   void clear();
 
   // Helper
@@ -42,7 +47,10 @@ class ChannelModel : public QAbstractListModel {
 
  private:
   std::vector<ServerSend::ChannelInfo> channels;
-  std::unordered_map<int64_t, ServerSend::ChannelInfo> channelIdToInfos;
+  // std::unordered_map<int64_t, ServerSend::ChannelInfo> channelIdToInfos;
+  std::unordered_map<int64_t, int>
+      idToIndex;  //  get the index from channels vector with id_channel key,
+                  //  making the updates in the vector easier
 };
 
 #endif  // CHANNELMODEL_H
