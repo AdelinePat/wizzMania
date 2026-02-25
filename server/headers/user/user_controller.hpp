@@ -35,6 +35,7 @@ class UserController {
   crow::response send_login_response(const int64_t id_user,
                                      const std::string& username,
                                      const std::string& token);
+crow::response register_user(const crow::request& req);                                
 };
 
 #endif

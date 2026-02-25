@@ -70,3 +70,45 @@ crow::response UserController::send_login_response(const int64_t id_user,
   success_resp.username = username;
   return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
 }
+
+
+
+crow::response UserController::register_user(const crow::request&req) {
+  std::cout <<"[REGISTER] Received register request\n";
+
+  //Parsed json BODY
+  crow::json::rvalue json_body = crow::json::load(req.body);
+  if(!json_body) {
+    return WizzManiaError::send_http_error(400, "Invalid JSON");
+  }
+
+  // extract the fields
+  if(!json_body.has("username") || !json_body.has("email") || !json_body.has("password")) {
+    return WizzManiaError::send_http_error(400, "Missing username, email or password");
+  }
+
+  std::string username = json_body["username"].s();
+  std::string email = json_body["email"].s();
+  std::string password = json_body["password"].s();
+
+  //call service (all validation happens there)
+  try
+  {
+   int64_t new_id = this->user_service.register_user(username, email, password);
+
+    crow::json::wvalue response;
+    response["success"] = true;
+    response["message"] = "Account created successfully";
+    response["id_user"] = new_id;
+
+
+   crow::response res(201, response.dump());
+    res.add_header("Content-Type", "application/json");
+    return res;
+
+  }
+ catch (const WizzManiaError& e) {
+    return WizzManiaError::send_http_error(e.get_code(), e.get_message());
+  }
+  
+}
