@@ -12,7 +12,7 @@ class ChannelModel : public QAbstractListModel {
 
  public:
   enum ChannelRole {
-    IdRole = Qt::UserRole,
+    IdChannelRole = Qt::UserRole,
     TitleRole = Qt::UserRole + 1,
     IsGroupRole = Qt::UserRole + 2,
     UnreadCountRole = Qt::UserRole + 3,
@@ -42,7 +42,7 @@ class ChannelModel : public QAbstractListModel {
 
  private:
   std::vector<ServerSend::ChannelInfo> channels;
-  std::unordered_map<int64_t, ServerSend::ChannelInfo> channelIdToInfos;  // Map channel ID to index in channels vector
+  std::unordered_map<int64_t, ServerSend::ChannelInfo> channelIdToInfos;
 };
 
 #endif  // CHANNELMODEL_H

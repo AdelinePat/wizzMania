@@ -20,7 +20,7 @@ QVariant ChannelModel::data(const QModelIndex& index, int role) const {
   const ServerSend::ChannelInfo& channel = channels[index.row()];
 
   switch (role) {
-    case IdRole:
+    case IdChannelRole:
       return QVariant::fromValue(channel.id_channel);
     case TitleRole:
       return QString::fromStdString(channel.title);
@@ -41,7 +41,7 @@ QVariant ChannelModel::data(const QModelIndex& index, int role) const {
 
 QHash<int, QByteArray> ChannelModel::roleNames() const {
   QHash<int, QByteArray> roles;
-  roles[IdRole] = "idChannel";
+  roles[IdChannelRole] = "idChannelChannel";
   roles[TitleRole] = "title";
   roles[IsGroupRole] = "isGroup";
   roles[UnreadCountRole] = "unreadCount";
