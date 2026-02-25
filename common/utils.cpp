@@ -16,10 +16,11 @@ const std::string Utils::get_env_var(const std::string& name,
 
 uint16_t Utils::get_server_port() {
   //   const char* portStr = std::getenv("SERVER_PORT");
-  const char* portStr = Utils::get_env_var("SERVER_PORT").c_str();
+  // const char* portStr = Utils::get_env_var("SERVER_PORT").c_str();
+  std::string portStr = Utils::get_env_var("SERVER_PORT");
   uint16_t port = 8888;
 
-  if (!portStr) {
+  if (portStr.empty()) {
     std::cout << "[WARN] SERVER_PORT not set. Using default 8888\n";
     portStr = "8888";
   }
