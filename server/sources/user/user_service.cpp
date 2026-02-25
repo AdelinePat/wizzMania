@@ -90,3 +90,20 @@ const std::string& email, const std::string& password)
   }
   return new_id.value();
 }
+
+
+// DELETE USER
+
+void UserService::delete_user(int64_t id_user) {
+  // verify user exists
+  std::optional<ServerSend::Contact> user = db.get_contact(id_user);
+  if(!user.has_value()) {
+    throw NotFoundError("User not found");
+  }
+
+  //Delete the user in the DB
+  bool deleted = db.delete_user(id_user);
+  if(!deleted) {
+    throw InternalError("Failed to delete user");
+  }
+}

@@ -13,8 +13,9 @@
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
-#include "message_structure.hpp"#include "utils.hpp"
+#include "message_structure.hpp"
 #include "utils.hpp"
+
 
 class UserService {
   Database& db;
@@ -41,6 +42,9 @@ class UserService {
 
   int64_t register_user(const std::string& username, const std::string& email,
                       const std::string& password);
+
+
+void delete_user(int64_t id_user);
 };
 
 #endif
