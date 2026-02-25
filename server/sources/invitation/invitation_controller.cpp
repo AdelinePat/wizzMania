@@ -1,7 +1,6 @@
 #include "invitation_controller.hpp"
 
-crow::response InvitationController::accept_invitation(const crow::request& req,
-                                                       int64_t id_user,
+crow::response InvitationController::accept_invitation(int64_t id_user,
                                                        int64_t id_channel) {
   if (!user_service.has_pending_invitation(id_user, id_channel)) {
     throw ForbiddenError("No pending invitation for this channel");
@@ -30,8 +29,7 @@ crow::response InvitationController::accept_invitation(const crow::request& req,
   return crow::response(200, channel_info_str);
 }
 
-crow::response InvitationController::reject_invitation(const crow::request& req,
-                                                       int64_t id_user,
+crow::response InvitationController::reject_invitation(int64_t id_user,
                                                        int64_t id_channel) {
   if (!user_service.has_pending_invitation(id_user, id_channel)) {
     throw ForbiddenError("No pending invitation for this channel");

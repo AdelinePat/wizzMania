@@ -39,7 +39,7 @@ class ChannelController {
   //                     const crow::json::rvalue& json_msg);
   crow::response create_channel(int64_t id_user, const crow::request& req);
 
-  crow::response leave_channel(const crow::request& req, int64_t id_user,
+  crow::response leave_channel(int64_t id_user,
                                int64_t id_channel);
 };
 

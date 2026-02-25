@@ -69,8 +69,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          return invitation_controller.accept_invitation(
-              req, id_user, static_cast<int64_t>(id_channel));
+          return invitation_controller.accept_invitation(id_user, static_cast<int64_t>(id_channel));
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
         }
@@ -82,8 +81,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          return invitation_controller.reject_invitation(
-              req, id_user, static_cast<int64_t>(id_channel));
+          return invitation_controller.reject_invitation(id_user, static_cast<int64_t>(id_channel));
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
         }
@@ -106,8 +104,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          return channel_controller.leave_channel(
-              req, id_user, static_cast<int64_t>(id_channel));
+          return channel_controller.leave_channel(id_user, static_cast<int64_t>(id_channel));
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
         }
@@ -131,7 +128,8 @@ int main() {
       .methods("POST"_method)(
           [&user_controller, &auth_controller](const crow::request& req) {
             try {
-              int64_t id_user = auth_controller.authenticate_http(req);
+              // int64_t id_user = auth_controller.authenticate_http(req);
+              auth_controller.authenticate_http(req);
               return user_controller.logout(req);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
