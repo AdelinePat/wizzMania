@@ -43,6 +43,8 @@ set(CLIENT_SOURCES
     Sources/utils/display.cpp
     Sources/models/message_model.cpp
     Sources/models/channel_model.cpp
+    Sources/models/incoming_invitation_model.cpp
+    Sources/models/outgoing_invitation_model.cpp
     Sources/widgets/login_widget.cpp
     Sources/widgets/message_item_widget.cpp
     Sources/widgets/channel_row_widget.cpp
@@ -66,6 +68,8 @@ set(CLIENT_HEADERS
     Headers/utils/display.hpp
     Headers/models/message_model.hpp
     Headers/models/channel_model.hpp
+    Headers/models/incoming_invitation_model.hpp
+    Headers/models/outgoing_invitation_model.hpp
     Headers/widgets/login_widget.hpp
     Headers/widgets/message_item_widget.hpp
     Headers/widgets/channel_row_widget.hpp
