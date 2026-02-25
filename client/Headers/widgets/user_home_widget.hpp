@@ -4,6 +4,7 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QTabWidget>
 #include <QVBoxLayout>
@@ -26,10 +27,7 @@ class UserHomeWidget : public QWidget {
   void acceptInvitationRequested(int64_t id_channel);
   void rejectInvitationRequested(int64_t id_channel);
   void cancelInvitationRequested(int64_t id_channel);
-
- private slots:
-  void onIncomingInvitationsChanged();
-  void onOutgoingInvitationsChanged();
+  void deleteAccountRequested();
 
  private:
   void rebuildIncomingInvitations();

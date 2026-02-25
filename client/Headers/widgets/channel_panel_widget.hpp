@@ -1,6 +1,7 @@
 #ifndef CHANNELPANELWIDGET_HPP
 #define CHANNELPANELWIDGET_HPP
 
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
@@ -37,12 +38,15 @@ class ChannelPanelWidget : public QWidget {
   void userHomeRequested();
 
   void channelSelected(int64_t channelId, const QString& title);
-  
+
   // Emitted when the create channel (+) button is clicked
   void createChannelRequested();
-  
+
   // Emitted when the logout button is clicked
   void logoutRequested();
+
+  // Emitted when the leave button on a channel row is clicked
+  void leaveChannelRequested(int64_t channelId);
 
  private:
   QListWidget* channelsList;

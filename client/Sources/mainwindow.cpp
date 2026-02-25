@@ -74,16 +74,25 @@ MainWindow::MainWindow(QWidget* parent)
       userHomeWidget->show();
     }
   });
-  
+
   // Channel panel create channel button (not functional yet)
-  connect(channelPanel, &ChannelPanelWidget::createChannelRequested, this, [this]() {
-    qInfo() << "[UI] Create channel requested (not implemented yet)";
-  });
-  
+  connect(channelPanel, &ChannelPanelWidget::createChannelRequested, this,
+          [this]() {
+            qInfo() << "[UI] Create channel requested (not implemented yet)";
+          });
+
   // Channel panel logout button (not functional yet)
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this, [this]() {
     qInfo() << "[UI] Logout requested (not implemented yet)";
   });
+
+  // Channel panel leave channel button
+  connect(channelPanel, &ChannelPanelWidget::leaveChannelRequested, this,
+          [this](int64_t channelId) {
+            if (invitationService) {
+              invitationService->leaveChannel(channelId, authToken);
+            }
+          });
 
   // Forward invitation actions to HTTP API (not WebSocket)
   connect(userHomeWidget, &UserHomeWidget::acceptInvitationRequested, this,
@@ -94,6 +103,11 @@ MainWindow::MainWindow(QWidget* parent)
           [this](int64_t id) {
             if (invitationService)
               invitationService->leaveChannel(id, authToken);
+          });
+  connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
+          [this]() {
+            qInfo() << "[HTTP] DELETE_ACCOUNT requested (not implemented yet)";
+            // TODO: Implement account deletion endpoint
           });
 
   connect(invitationService, &InvitationService::invitationAccepted, this,
@@ -167,7 +181,7 @@ void MainWindow::onWsAuthenticated(int64_t idUser) {
   userNamesById.insert(currentUserId, currentUser);
   setChatEnabled(true);
   rightPanel->setChatTitle("Select a chat to start messaging");
-  
+
   // Update user info in channel panel
   if (channelPanel && !currentUser.isEmpty()) {
     QString initials = getUserInitials(currentUser);
@@ -437,22 +451,22 @@ QString MainWindow::getUserInitials(const QString& username) const {
   if (username.isEmpty()) {
     return "??";
   }
-  
+
   // Split username by spaces and take first letter of each word
   QStringList words = username.split(' ', Qt::SkipEmptyParts);
   QString initials;
-  
+
   if (words.isEmpty()) {
     return "??";
   }
-  
+
   // Take first letter of first word
   initials += words.first()[0].toUpper();
-  
+
   // If there's a second word, add its first letter too
   if (words.size() > 1) {
     initials += words[1][0].toUpper();
   }
-  
+
   return initials;
 }

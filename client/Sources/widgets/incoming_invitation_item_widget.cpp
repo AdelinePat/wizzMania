@@ -5,9 +5,13 @@ IncomingInvitationItemWidget::IncomingInvitationItemWidget(
     QWidget* parent)
     : QWidget(parent) {
   titleLabel = new QLabel(QString::fromStdString(inv.title), this);
+  titleLabel->setObjectName("invitationTitleLabel");
   subLabel = new QLabel(this);
+  subLabel->setObjectName("invitationSubLabel");
   acceptBtn = new QPushButton("Accept", this);
+  acceptBtn->setObjectName("invitationAcceptBtn");
   rejectBtn = new QPushButton("Reject", this);
+  rejectBtn->setObjectName("invitationRejectBtn");
 
   // Build subtitle: show inviter and other participants
   QString inviter = inviterName.isEmpty()

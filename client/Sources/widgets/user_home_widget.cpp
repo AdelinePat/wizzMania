@@ -8,6 +8,36 @@ UserHomeWidget::UserHomeWidget(QWidget* parent) : QWidget(parent) {
   root->setContentsMargins(0, 0, 0, 0);
   root->setSpacing(8);
 
+  // Header with delete account button
+  QWidget* header = new QWidget(this);
+  QHBoxLayout* headerLayout = new QHBoxLayout(header);
+  headerLayout->setContentsMargins(6, 6, 6, 6);
+
+  QLabel* profileLabel = new QLabel("Profile", this);
+  profileLabel->setObjectName("profileHeaderLabel");
+
+  QPushButton* deleteAccountBtn = new QPushButton("Delete Account", this);
+  deleteAccountBtn->setObjectName("deleteAccountBtn");
+  connect(deleteAccountBtn, &QPushButton::clicked, this, [this]() {
+    QMessageBox msgBox;
+    msgBox.setWindowTitle("Delete Account");
+    msgBox.setText("Are you sure you want to delete your account?");
+    msgBox.setInformativeText(
+        "This action is permanent and cannot be undone. All your data will be "
+        "lost.");
+    msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Yes);
+    msgBox.setDefaultButton(QMessageBox::Cancel);
+    msgBox.button(QMessageBox::Yes)->setText("Confirm");
+
+    if (msgBox.exec() == QMessageBox::Yes) {
+      emit deleteAccountRequested();
+    }
+  });
+
+  headerLayout->addWidget(profileLabel);
+  headerLayout->addStretch();
+  headerLayout->addWidget(deleteAccountBtn);
+
   tabs = new QTabWidget(this);
 
   // Invitations tab
@@ -26,6 +56,7 @@ UserHomeWidget::UserHomeWidget(QWidget* parent) : QWidget(parent) {
   sentLayout->addWidget(sentInvitationsList);
   tabs->addTab(sentTab, "Sent");
 
+  root->addWidget(header);
   root->addWidget(tabs);
 }
 
@@ -40,31 +71,23 @@ void UserHomeWidget::setModels(IncomingInvitationModel* incomingModel,
 
   if (incomingModel) {
     connect(incomingModel, &QAbstractListModel::rowsInserted, this,
-            &UserHomeWidget::onIncomingInvitationsChanged);
+            &UserHomeWidget::rebuildIncomingInvitations);
     connect(incomingModel, &QAbstractListModel::rowsRemoved, this,
-            &UserHomeWidget::onIncomingInvitationsChanged);
+            &UserHomeWidget::rebuildIncomingInvitations);
     connect(incomingModel, &QAbstractListModel::modelReset, this,
-            &UserHomeWidget::onIncomingInvitationsChanged);
+            &UserHomeWidget::rebuildIncomingInvitations);
   }
 
   if (outgoingModel) {
     connect(outgoingModel, &QAbstractListModel::rowsInserted, this,
-            &UserHomeWidget::onOutgoingInvitationsChanged);
+            &UserHomeWidget::rebuildOutgoingInvitations);
     connect(outgoingModel, &QAbstractListModel::rowsRemoved, this,
-            &UserHomeWidget::onOutgoingInvitationsChanged);
+            &UserHomeWidget::rebuildOutgoingInvitations);
     connect(outgoingModel, &QAbstractListModel::modelReset, this,
-            &UserHomeWidget::onOutgoingInvitationsChanged);
+            &UserHomeWidget::rebuildOutgoingInvitations);
   }
 
   rebuildIncomingInvitations();
-  rebuildOutgoingInvitations();
-}
-
-void UserHomeWidget::onIncomingInvitationsChanged() {
-  rebuildIncomingInvitations();
-}
-
-void UserHomeWidget::onOutgoingInvitationsChanged() {
   rebuildOutgoingInvitations();
 }
 

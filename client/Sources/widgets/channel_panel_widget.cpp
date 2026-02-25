@@ -1,5 +1,4 @@
 #include "widgets/channel_panel_widget.hpp"
-#include <QHBoxLayout>
 
 ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
   channelModel = new ChannelModel(this);
@@ -30,21 +29,21 @@ ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
   QHBoxLayout* headerLayout = new QHBoxLayout(channelsHeader);
   headerLayout->setContentsMargins(8, 4, 8, 4);
   headerLayout->setSpacing(8);
-  
+
   QLabel* channelsLabel = new QLabel("Channels", this);
   channelsLabel->setObjectName("channelsHeaderLabel");
-  
+
   createChannelBtn = new QPushButton("+", this);
   createChannelBtn->setObjectName("createChannelBtn");
   createChannelBtn->setFixedSize(24, 24);
-  
+
   headerLayout->addWidget(channelsLabel);
   headerLayout->addStretch();
   headerLayout->addWidget(createChannelBtn);
 
   channelsList = new QListWidget(this);
   channelsList->setObjectName("channelsList");
-  
+
   // Logout button
   logoutBtn = new QPushButton("Logout", this);
   logoutBtn->setObjectName("logoutBtn");
@@ -56,10 +55,10 @@ ChannelPanelWidget::ChannelPanelWidget(QWidget* parent) : QWidget(parent) {
 
   connect(userPortraitBtn, &QPushButton::clicked, this,
           [this]() { emit userHomeRequested(); });
-  
+
   connect(createChannelBtn, &QPushButton::clicked, this,
           [this]() { emit createChannelRequested(); });
-  
+
   connect(logoutBtn, &QPushButton::clicked, this,
           [this]() { emit logoutRequested(); });
 
@@ -144,8 +143,10 @@ void ChannelPanelWidget::setChannels(
     item->setData(ChannelModel::ChannelRole::IsGroupRole, channel.is_group);
 
     ChannelRowWidget* row = new ChannelRowWidget(
-        title, preview, static_cast<int>(channel.unread_count),
-        channel.is_group, channelsList);
+        channel.id_channel, title, preview,
+        static_cast<int>(channel.unread_count), channel.is_group, channelsList);
+    connect(row, &ChannelRowWidget::leaveChannelRequested, this,
+            &ChannelPanelWidget::leaveChannelRequested);
     item->setSizeHint(row->sizeHint());
     channelsList->addItem(item);
     channelsList->setItemWidget(item, row);
@@ -174,8 +175,11 @@ void ChannelPanelWidget::updateChannelOnNewMessage(int64_t channelId,
   item->setData(ChannelModel::ChannelRole::UnreadCountRole, unread);
 
   bool isGroup = item->data(ChannelModel::ChannelRole::IsGroupRole).toBool();
-  ChannelRowWidget* newRow = new ChannelRowWidget(
-      title, preview, static_cast<int>(unread), isGroup, channelsList);
+  ChannelRowWidget* newRow =
+      new ChannelRowWidget(channelId, title, preview, static_cast<int>(unread),
+                           isGroup, channelsList);
+  connect(newRow, &ChannelRowWidget::leaveChannelRequested, this,
+          &ChannelPanelWidget::leaveChannelRequested);
   item->setSizeHint(newRow->sizeHint());
   channelsList->setItemWidget(item, newRow);
 }
@@ -203,8 +207,10 @@ void ChannelPanelWidget::updateChannelUnreadCount(int64_t channelId,
                   static_cast<qint64>(last_id_message));
   }
 
-  ChannelRowWidget* newRow =
-      new ChannelRowWidget(title, preview, unreadCount, isGroup, channelsList);
+  ChannelRowWidget* newRow = new ChannelRowWidget(
+      channelId, title, preview, unreadCount, isGroup, channelsList);
+  connect(newRow, &ChannelRowWidget::leaveChannelRequested, this,
+          &ChannelPanelWidget::leaveChannelRequested);
   item->setSizeHint(newRow->sizeHint());
   channelsList->setItemWidget(item, newRow);
 }

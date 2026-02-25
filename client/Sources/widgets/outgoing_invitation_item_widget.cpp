@@ -4,8 +4,11 @@ OutgoingInvitationItemWidget::OutgoingInvitationItemWidget(
     const ServerSend::ChannelInfo& info, QWidget* parent)
     : QWidget(parent) {
   titleLabel = new QLabel(QString::fromStdString(info.title), this);
+  titleLabel->setObjectName("invitationTitleLabel");
   subLabel = new QLabel(this);
+  subLabel->setObjectName("invitationSubLabel");
   cancelBtn = new QPushButton("Cancel", this);
+  cancelBtn->setObjectName("invitationCancelBtn");
 
   // Display participants by name
   QStringList participantNames;
