@@ -75,10 +75,18 @@ MainWindow::MainWindow(QWidget* parent)
     }
   });
 
-  // Channel panel create channel button (not functional yet)
+  // Channel panel create channel button
   connect(channelPanel, &ChannelPanelWidget::createChannelRequested, this,
           [this]() {
-            qInfo() << "[UI] Create channel requested (not implemented yet)";
+            auto* dialog = new CreateChannelWidget(this);
+            connect(dialog, &CreateChannelWidget::createChannelRequested, this,
+                    [this](const QStringList& usernames, const QString& title) {
+                      qInfo() << "[UI] CREATE_CHANNEL usernames=" << usernames
+                              << " title=" << title;
+                      // TODO: Implement channel creation API call
+                    });
+            dialog->exec();
+            dialog->deleteLater();
           });
 
   // Channel panel logout button (not functional yet)

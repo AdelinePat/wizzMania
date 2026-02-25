@@ -54,6 +54,7 @@ set(CLIENT_SOURCES
     Sources/widgets/user_home_widget.cpp
     Sources/widgets/incoming_invitation_item_widget.cpp
     Sources/widgets/outgoing_invitation_item_widget.cpp
+    Sources/widgets/create_channel_widget.cpp
     ../common/utils.cpp
 )
 
@@ -81,6 +82,7 @@ set(CLIENT_HEADERS
     Headers/widgets/user_home_widget.hpp
     Headers/widgets/incoming_invitation_item_widget.hpp
     Headers/widgets/outgoing_invitation_item_widget.hpp
+    Headers/widgets/create_channel_widget.hpp
     ../common/utils.hpp
 )
 

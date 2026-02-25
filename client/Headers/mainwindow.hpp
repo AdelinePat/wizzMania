@@ -19,6 +19,7 @@
 #include "services/channel_service.hpp"
 #include "services/invitation_service.hpp"
 #include "widgets/channel_panel_widget.hpp"
+#include "widgets/create_channel_widget.hpp"
 #include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
 #include "widgets/right_panel_widget.hpp"
