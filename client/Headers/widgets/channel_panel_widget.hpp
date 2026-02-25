@@ -4,12 +4,14 @@
 #include <QLabel>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QMap>
 #include <QPushButton>
 #include <QString>
 #include <QVBoxLayout>
 #include <QWidget>
 
 #include "message_structure.hpp"
+#include "models/channel_model.hpp"
 #include "widgets/channel_row_widget.hpp"
 
 class ChannelPanelWidget : public QWidget {
@@ -27,7 +29,8 @@ class ChannelPanelWidget : public QWidget {
                                  bool incrementUnread);
   // Update the unread count for a channel to a specific value (0 to clear, or
   // any positive number to set)
-  void updateChannelUnreadCount(int64_t channelId, int unreadCount, int64_t last_id_message);
+  void updateChannelUnreadCount(int64_t channelId, int unreadCount,
+                                int64_t last_id_message);
 
  signals:
   // Emitted when the user portrait is clicked
@@ -39,6 +42,8 @@ class ChannelPanelWidget : public QWidget {
   QListWidget* channelsList;
   QPushButton* userPortraitBtn;
   QLabel* userPortraitName;
+  ChannelModel* channelModel;
+  QMap<int64_t, QListWidgetItem*> itemByChannelId;
 };
 
 #endif  // CHANNELPANELWIDGET_HPP

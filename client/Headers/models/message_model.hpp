@@ -12,11 +12,11 @@ class MessageModel : public QAbstractListModel {
 
  public:
   enum MessageRole {
-    IdRole = Qt::UserRole + 1,
-    SenderIdRole,
-    BodyRole,
-    TimestampRole,
-    IsSystemRole,
+    IdMessageRole = Qt::UserRole,
+    SenderIdRole = Qt::UserRole + 1,
+    BodyRole = Qt::UserRole + 2,
+    TimestampRole = Qt::UserRole + 3,
+    IsSystemRole = Qt::UserRole + 4,
   };
   Q_ENUM(MessageRole)
 
