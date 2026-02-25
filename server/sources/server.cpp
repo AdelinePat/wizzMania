@@ -48,7 +48,7 @@ int main() {
   // ===== OPTIONS for CORS preflight =====
   CROW_ROUTE(app, "/<path>")
       .methods("OPTIONS"_method)(
-          [](const crow::request& req, crow::response& res, std::string path) {
+          [](const crow::request& /*req*/, crow::response& res, std::string /*path*/) {
             res.add_header("Access-Control-Allow-Origin", "*");
             res.add_header("Access-Control-Allow-Methods", "*");
             res.add_header("Access-Control-Allow-Headers", "*");
@@ -144,7 +144,7 @@ int main() {
             << "[WS] New WebSocket connection opened (waiting for auth)\n";
       })
       .onclose([&](crow::websocket::connection& conn, const std::string& reason,
-                   uint16_t status_code) {
+                   uint16_t /*status_code*/) {
         std::optional<int64_t> id_user = ws_manager.get_id_user(&conn);
         if (id_user.has_value()) {
           std::cout << "[WS] User " << id_user.value()

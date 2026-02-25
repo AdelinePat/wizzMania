@@ -39,12 +39,13 @@ ServerSend::ChannelInfo Structure::create_empty_channel_info_struct(
 }
 
 ServerSend::ChannelHistoryResponse Structure::create_history_response_struct(
-    int64_t id_channel, std::vector<ServerSend::Message>& messages, int limit) {
+    int64_t id_channel, std::vector<ServerSend::Message>& messages, size_t limit) {
   ServerSend::ChannelHistoryResponse res;
   res.type = WizzMania::MessageType::CHANNEL_HISTORY;
   res.id_channel = id_channel;
   res.messages = messages;
   res.has_more = messages.size() == limit;
+  
   // conn.send_text(JsonHelpers::ServerSendHelpers::to_json(res).dump());
   return res;
 }

@@ -29,7 +29,7 @@ class Structure {
 
   static ServerSend::ChannelHistoryResponse create_history_response_struct(
       int64_t id_channel, std::vector<ServerSend::Message>& messages,
-      int limit);
+      size_t limit);
 
   // void send_error(crow::websocket::connection& conn,
   //                 const std::string& error_code,
