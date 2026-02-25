@@ -68,42 +68,86 @@ void MessageController::broadcast_new_message(const int64_t id_channel,
   ws_manager.broadcast_to_users(participants, broadcast_json_str);
 }
 
-void MessageController::send_history(crow::websocket::connection& conn,
-                                     int64_t id_user,
-                                     const crow::json::rvalue& json_msg) {
-  try {
-    std::optional<::ClientSend::ChannelHistoryRequest> req =
-        JsonHelpers::ClientSendHelpers::parse_request_channel_history(json_msg);
+// switch to HTTP
+crow::response MessageController::get_history(const crow::request& req,
+                                              int64_t id_user,
+                                              int64_t id_channel) {
+  // crow::json::rvalue body = crow::json::load(req.body);
+  // if (!body || !body.has("usernames")) {
+  //   throw BadRequestError("Invalid HISTORY_REQUEST format");
+  // }
 
-    if (!req.has_value()) {
-      throw BadRequestError("Invalid REQUEST_CHANNEL_HISTORY format");
-      // send_error(conn, "INVALID_FORMAT",
-      //            "Invalid REQUEST_CHANNEL_HISTORY format");
-      // return;
-    }
-
-    std::cout << "[HISTORY] User " << id_user << " -> Channel "
-              << req->id_channel << "\n";
-    std::vector<ServerSend::Message> messages =
-        message_service.get_messages_history_from_channel(
-            req->id_channel, req->before_id_message, req->limit);
-
-    this->send_history_response(conn, req->id_channel, messages, req->limit);
-  } catch (const WizzManiaError& e) {
-    WizzManiaError::send_ws_error(conn, e);
+  // int64_t id_channel = req->id_channel;
+  bool has_access = user_service.has_access(id_user, id_channel);
+  if (!has_access) {
+    throw UnauthorizedError(
+        "User has no permission to GET_HISTORY for this channel");
   }
+
+  int64_t before_id_message = 0;
+  int limit = 50;
+  if (req.url_params.get("before_id")) {
+    before_id_message = std::stoll(req.url_params.get("before_id"));
+  }
+  if (req.url_params.get("limit")) {
+    limit = std::stoi(req.url_params.get("limit"));
+    if (limit > 100) {
+      limit = 100;
+    }
+  }
+
+  std::cout << "[HISTORY] User " << id_user << " -> Channel " << id_channel
+            << "\n";
+  std::vector<ServerSend::Message> messages =
+      message_service.get_messages_history_from_channel(
+          id_channel, before_id_message, limit);
+  ServerSend::ChannelHistoryResponse resp =
+      Structure::create_history_response_struct(id_channel, messages, limit);
+
+  std::string history_str =
+      JsonHelpers::ServerSendHelpers::to_json(resp).dump();
+
+  crow::response response(200, history_str);
+  response.add_header("Content-Type", "application/json");
+  return response;
 }
 
-void MessageController::send_history_response(
-    crow::websocket::connection& conn, int64_t id_channel,
-    std::vector<ServerSend::Message>& messages, int limit) {
-  ServerSend::ChannelHistoryResponse res;
-  res.type = WizzMania::MessageType::CHANNEL_HISTORY;
-  res.id_channel = id_channel;
-  res.messages = messages;
-  res.has_more = messages.size() == limit;
-  conn.send_text(JsonHelpers::ServerSendHelpers::to_json(res).dump());
-}
+// void MessageController::send_history(crow::websocket::connection& conn,
+//                                      int64_t id_user,
+//                                      const crow::json::rvalue& json_msg) {
+//   try {
+//     std::optional<::ClientSend::ChannelHistoryRequest> req =
+//         JsonHelpers::ClientSendHelpers::parse_request_channel_history(json_msg);
+
+//     if (!req.has_value()) {
+//       throw BadRequestError("Invalid REQUEST_CHANNEL_HISTORY format");
+//       // send_error(conn, "INVALID_FORMAT",
+//       //            "Invalid REQUEST_CHANNEL_HISTORY format");
+//       // return;
+//     }
+
+//     std::cout << "[HISTORY] User " << id_user << " -> Channel "
+//               << req->id_channel << "\n";
+//     std::vector<ServerSend::Message> messages =
+//         message_service.get_messages_history_from_channel(
+//             req->id_channel, req->before_id_message, req->limit);
+
+//     this->send_history_response(conn, req->id_channel, messages, req->limit);
+//   } catch (const WizzManiaError& e) {
+//     WizzManiaError::send_ws_error(conn, e);
+//   }
+// }
+
+// void MessageController::send_history_response(
+//     crow::websocket::connection& conn, int64_t id_channel,
+//     std::vector<ServerSend::Message>& messages, int limit) {
+//   ServerSend::ChannelHistoryResponse res;
+//   res.type = WizzMania::MessageType::CHANNEL_HISTORY;
+//   res.id_channel = id_channel;
+//   res.messages = messages;
+//   res.has_more = messages.size() == limit;
+//   conn.send_text(JsonHelpers::ServerSendHelpers::to_json(res).dump());
+// }
 
 // === Mark as Read === //
 void MessageController::mark_as_read(crow::websocket::connection& conn,

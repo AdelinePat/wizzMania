@@ -1,8 +1,8 @@
 #include "helpers.hpp"
 
-ServerSend::Message Structure::create_message_struct(int64_t id_message, int64_t id_user,
-                                          const std::string& body,
-                                          const std::string& timestamp) {
+ServerSend::Message Structure::create_message_struct(
+    int64_t id_message, int64_t id_user, const std::string& body,
+    const std::string& timestamp) {
   ServerSend::Message message;
   message.id_message = id_message;
   message.id_sender = id_user;
@@ -38,3 +38,13 @@ ServerSend::ChannelInfo Structure::create_empty_channel_info_struct(
   return info;
 }
 
+ServerSend::ChannelHistoryResponse Structure::create_history_response_struct(
+    int64_t id_channel, std::vector<ServerSend::Message>& messages, int limit) {
+  ServerSend::ChannelHistoryResponse res;
+  res.type = WizzMania::MessageType::CHANNEL_HISTORY;
+  res.id_channel = id_channel;
+  res.messages = messages;
+  res.has_more = messages.size() == limit;
+  // conn.send_text(JsonHelpers::ServerSendHelpers::to_json(res).dump());
+  return res;
+}

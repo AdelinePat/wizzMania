@@ -47,7 +47,7 @@ MessageItemWidget::MessageItemWidget(const ServerSend::Message& message,
   bodyLabel->setObjectName("bodyLabel");
   bubbleLayout->addWidget(bodyLabel);
 
-  QLabel* timeLabel = new QLabel(timestamp, messageColumn);
+  QLabel* timeLabel = new QLabel(DisplayUtils::formatTimestamp(timestamp), messageColumn);
   timeLabel->setObjectName("timeLabel");
   timeLabel->setAlignment(isCurrentUser ? Qt::AlignLeft : Qt::AlignRight);
 

@@ -9,8 +9,8 @@ MainWindow::MainWindow(QWidget* parent)
       ui(new Ui::MainWindow),
       loginWidget(nullptr),
       wsClient(new WebSocketClient(this)),
-      channelPanel(nullptr),
-      rightPanel(nullptr) {
+      channelService(new ChannelService(this)),
+channelPanel(nullptr), rightPanel(nullptr) {
   ui->setupUi(this);
 
   // Create and add login widget to the login page
@@ -45,8 +45,14 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onWsAuthenticated);
   connect(wsClient, &WebSocketClient::initialDataReceived, this,
           &MainWindow::onInitialDataReceived);
-  connect(wsClient, &WebSocketClient::channelHistoryReceived, this,
+  // connect(wsClient, &WebSocketClient::channelHistoryReceived, this,
+  //         &MainWindow::onChannelHistoryReceived);
+  connect(channelService, &ChannelService::historyReceived, this,
           &MainWindow::onChannelHistoryReceived);
+
+  connect(channelService, &ChannelService::historyFailed, this,
+          &MainWindow::onHistoryFailed);
+
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
   // signal for update channel unread count
@@ -257,7 +263,8 @@ void MainWindow::onChannelSelected(int64_t channelId, const QString& title) {
   }
 
   rightPanel->addPlainMessage("Loading messages...");
-  wsClient->openChannel(channelId);
+  // wsClient->openChannel(channelId);
+  channelService->fetchHistory(channelId, 0, 50, authToken);
 }
 
 void MainWindow::onSendMessageRequested(const QString& message) {
@@ -278,11 +285,11 @@ void MainWindow::onSendMessageRequested(const QString& message) {
 
   // Fallback refresh: ensures UI catches up even if a NEW_MESSAGE event is
   // missed.
-  QTimer::singleShot(120, this, [this]() {
-    if (currentChannelId > 0 && wsClient && wsClient->isConnected()) {
-      wsClient->openChannel(currentChannelId);
-    }
-  });
+  // QTimer::singleShot(120, this, [this]() {
+  //   if (currentChannelId > 0 && wsClient && wsClient->isConnected()) {
+  //     wsClient->openChannel(currentChannelId);
+  //   }
+  // });
 }
 
 void MainWindow::cacheKnownUsers(const ServerSend::InitialDataResponse& data) {
@@ -356,4 +363,10 @@ void MainWindow::appendMessageToView(int64_t channelId,
 
 void MainWindow::setChatEnabled(bool enabled) {
   rightPanel->setInputEnabled(enabled);
+}
+
+void MainWindow::onHistoryFailed(int64_t channelId, const QString& message) {
+  Q_UNUSED(channelId);
+  rightPanel->clearMessages();
+  rightPanel->addPlainMessage("Failed to load messages: " + message);
 }

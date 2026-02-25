@@ -37,8 +37,10 @@ set(CLIENT_SOURCES
     Sources/services/api_client.cpp
     Sources/services/auth_manager.cpp
     Sources/services/server_config.cpp
+    Sources/services/channel_service.cpp 
     Sources/ws/websocket_client.cpp
     Sources/utils/message_json.cpp
+    Sources/utils/display.cpp
     Sources/models/message_model.cpp
     Sources/models/channel_model.cpp
     Sources/widgets/login_widget.cpp
@@ -56,9 +58,11 @@ set(CLIENT_HEADERS
     Headers/services/api_client.hpp
     Headers/services/auth_manager.hpp
     Headers/services/server_config.hpp
+    Headers/services/channel_service.hpp  
     Headers/ws/websocket_client.hpp
     Headers/utils/message_json.hpp
     Headers/utils/message_qt_types.hpp
+    Headers/utils/display.hpp
     Headers/models/message_model.hpp
     Headers/models/channel_model.hpp
     Headers/widgets/login_widget.hpp

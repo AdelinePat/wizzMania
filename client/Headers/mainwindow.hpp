@@ -13,6 +13,7 @@
 #include <cstdint>
 
 #include "message_structure.hpp"
+#include "services/channel_service.hpp"
 #include "widgets/channel_panel_widget.hpp"
 #include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
@@ -35,14 +36,17 @@ class MainWindow : public QMainWindow {
   void onLoginSuccessful(const QString& username, const QString& token);
   void onWsAuthenticated(int64_t idUser);
   void onInitialDataReceived(const ServerSend::InitialDataResponse& data);
+  // from ws to http, adding failing version of response?
   void onChannelHistoryReceived(
       const ServerSend::ChannelHistoryResponse& history);
+  void onHistoryFailed(int64_t channelId, const QString& message);
   void onNewMessageReceived(const ServerSend::SendMessageResponse& msg);
   void onWsError(const QString& code, const QString& message);
   void onWsDisconnected(const QString& reason);
   void onChannelSelected(int64_t channelId, const QString& title);
   void onSendMessageRequested(const QString& message);
-  void onUpdateChannelUnreadCount(int64_t id_channel, int count, int64_t last_id_message);
+  void onUpdateChannelUnreadCount(int64_t id_channel, int count,
+                                  int64_t last_id_message);
 
  private:
   void setupChatView();
@@ -57,6 +61,7 @@ class MainWindow : public QMainWindow {
   Ui::MainWindow* ui;
   LoginWidget* loginWidget;
   WebSocketClient* wsClient;
+  ChannelService* channelService;
   ChannelPanelWidget* channelPanel;
   RightPanelWidget* rightPanel;
   UserHomeWidget* userHomeWidget;

@@ -113,6 +113,19 @@ int main() {
         }
       });
 
+  // ===== GET / /channels/id_channel/leave endpoint =====
+  CROW_ROUTE(app, "/channels/<int>/history")
+      .methods("GET"_method)([&message_controller, &auth_controller](
+                                 const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          return message_controller.get_history(
+              req, id_user, static_cast<int64_t>(id_channel));
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
+      });
+
   // ===== PATCH / /channels/id_channel/leave endpoint =====
   CROW_ROUTE(app, "/logout")
       .methods("POST"_method)(
@@ -192,10 +205,10 @@ int main() {
             break;
           }
 
-          case WizzMania::MessageType::REQUEST_CHANNEL_HISTORY: {
-            message_controller.send_history(conn, id_user, json_msg);
-            break;
-          }
+            // case WizzMania::MessageType::REQUEST_CHANNEL_HISTORY: {
+            //   message_controller.send_history(conn, id_user, json_msg);
+            //   break;
+            // }
 
           case WizzMania::MessageType::MARK_AS_READ: {
             message_controller.mark_as_read(conn, id_user, json_msg);
