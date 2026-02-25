@@ -131,6 +131,9 @@ class Database {
 std::optional<int64_t> create_user(const std::string& username,
                                               const std::string& email,
                                               const std::string& password);
+
+
+bool delete_user(int64_t id_user); // true if user is delete
 };
 
 

@@ -42,6 +42,8 @@ class UserService {
 
   int64_t register_user(const std::string& username, const std::string& email,
                         const std::string& password);
+
+  void delete_user(int64_t id_user);
 };
 
 #endif

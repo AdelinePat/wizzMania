@@ -118,3 +118,17 @@ std::optional<int64_t> WebSocketManager::get_user_id(WSConn conn) {
     return std::nullopt;
   }
 }
+
+
+std::vector<WSConn> WebSocketManager::get_user_connections(int64_t id_user) {
+  std::lock_guard<std::mutex> lock(ws_mutex);
+  std::vector<WSConn> connections;
+  std::unordered_map<int64_t, std::unordered_set<WSConn>>::iterator it = user_sockets.find(id_user);
+  if (it != user_sockets.end()) {
+    for (WSConn conn : it->second) {
+      connections.push_back(conn);
+    }
+  }
+  return connections;
+
+}

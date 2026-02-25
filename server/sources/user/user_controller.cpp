@@ -71,7 +71,7 @@ crow::response UserController::send_login_response(const int64_t id_user,
   return crow::response(200, JsonHelpers::Auth::to_json(success_resp));
 }
 
-
+// create account
 
 crow::response UserController::register_user(const crow::request&req) {
   std::cout <<"[REGISTER] Received register request\n";
@@ -108,6 +108,35 @@ crow::response UserController::register_user(const crow::request&req) {
 
   }
  catch (const WizzManiaError& e) {
+    return WizzManiaError::send_http_error(e.get_code(), e.get_message());
+  }
+  
+}
+
+// delete user
+crow::response UserController::delete_user(const crow::request& req, int64_t id_user) {
+  std::cout << "[DELETE ACCOUNT] User" << id_user << "requested account deletion\n";
+  try
+  {
+    this->user_service.delete_user(id_user);
+
+    //Disconnect all webSocket sessions for this user
+    std::vector<WSConn> connections = ws.get_user_connections(id_user);
+    for(WSConn conn : connections) {
+      conn->close("Account deleted");
+    }
+
+    crow::json::wvalue response;
+    response["success"] = true;
+    response["message"] = "Account deleted successfully";
+
+    crow::response res(200, response.dump());
+    res.add_header("Content-Type", "application/json");
+    return res;
+
+  }
+  catch(const WizzManiaError& e)
+  {
     return WizzManiaError::send_http_error(e.get_code(), e.get_message());
   }
   

@@ -63,12 +63,29 @@ int main() {
         return user_controller.login(req);
       });
 
-  // POST / register endpoint ====
+
 // ===== POST /register endpoint =====
   CROW_ROUTE(app, "/register")
       .methods("POST"_method)([&user_controller](const crow::request& req) {
         return user_controller.register_user(req);
       });
+
+  //====DELETE / account endpoint ====
+CROW_ROUTE(app, "/account")
+      .methods("DELETE"_method)(
+        [&user_controller, &auth_controller](const crow::request& req) {
+          try
+          {
+            int64_t id_user = auth_controller.authenticate_http(req);
+            return user_controller.delete_user(req, id_user);
+          }
+          catch(const WizzManiaError& e)
+          {
+            return crow::response(e.get_code(), e.get_message());
+          }
+          
+        }
+      );
 
   // ===== PATCH / /invitation/id_channel/accept endpoint =====
   CROW_ROUTE(app, "/invitations/<int>/accept")
