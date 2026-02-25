@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WizzMania — Data Flow Diagram</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+        :root {
+            --bg: #0d0f14;
+            --surface: #13161e;
+            --border: #1e2330;
+            --border-bright: #2a3045;
+            --text: #c8cdd8;
+            --text-dim: #5a6175;
+            --text-bright: #e8ecf4;
+
+            --user: #4a9eff;
+            --widget: #6c63ff;
+            --service: #00d4aa;
+            --ws: #ff7043;
+            --server: #ffd54f;
+            --model: #ab47bc;
+
+            --arrow: #3a4055;
+            --arrow-bright: #5a6480;
+
+            --http-color: #4a9eff;
+            --ws-color: #ff7043;
+            --signal-color: #00d4aa;
+            --event-color: #ffd54f;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            line-height: 1.5;
+            padding: 40px 24px 80px;
+            min-width: 1100px;
+        }
+
+        /* ── HEADER ── */
+        header {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+
+        header h1 {
+            font-family: 'Syne', sans-serif;
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--text-bright);
+            letter-spacing: -0.5px;
+        }
+
+        header h1 span {
+            color: var(--ws);
+        }
+
+        header p {
+            margin-top: 8px;
+            color: var(--text-dim);
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* ── LEGEND ── */
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 0.5px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .legend-line {
+            width: 24px;
+            height: 2px;
+            flex-shrink: 0;
+        }
+
+        /* ── FLOW SECTIONS ── */
+        .flow-section {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .flow-section-title {
+            font-family: 'Syne', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            padding: 12px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .flow-section-title::before {
+            content: '';
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .flow-section-title.login {
+            color: var(--http-color);
+        }
+
+        .flow-section-title.login::before {
+            background: var(--http-color);
+        }
+
+        .flow-section-title.wsauth {
+            color: var(--ws-color);
+        }
+
+        .flow-section-title.wsauth::before {
+            background: var(--ws-color);
+        }
+
+        .flow-section-title.initdata {
+            color: var(--signal-color);
+        }
+
+        .flow-section-title.initdata::before {
+            background: var(--signal-color);
+        }
+
+        .flow-section-title.chanselect {
+            color: var(--model);
+        }
+
+        .flow-section-title.chanselect::before {
+            background: var(--model);
+        }
+
+        .flow-section-title.sendmsg {
+            color: var(--event-color);
+        }
+
+        .flow-section-title.sendmsg::before {
+            background: var(--event-color);
+        }
+
+        .flow-section-title.recvmsg {
+            color: var(--ws-color);
+        }
+
+        .flow-section-title.recvmsg::before {
+            background: var(--ws-color);
+        }
+
+        .flow-section-title.markread {
+            color: var(--signal-color);
+        }
+
+        .flow-section-title.markread::before {
+            background: var(--signal-color);
+        }
+
+        .flow-section-title.invitations {
+            color: var(--widget);
+        }
+
+        .flow-section-title.invitations::before {
+            background: var(--widget);
+        }
+
+        .flow-section-title.reconnect {
+            color: var(--text-dim);
+        }
+
+        .flow-section-title.reconnect::before {
+            background: var(--text-dim);
+        }
+
+        .flow-inner {
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        /* ── STEP CHAIN ── */
+        .chain {
+            display: flex;
+            align-items: stretch;
+            gap: 0;
+            min-width: max-content;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 148px;
+            max-width: 148px;
+        }
+
+        .step-box {
+            border: 1px solid var(--border-bright);
+            border-radius: 8px;
+            padding: 10px 12px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            background: var(--bg);
+            transition: border-color 0.2s;
+        }
+
+        .step-box:hover {
+            border-color: var(--border-bright);
+        }
+
+        .step-box .entity {
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .step-box .action {
+            font-size: 11px;
+            color: var(--text-bright);
+            line-height: 1.4;
+        }
+
+        .step-box .detail {
+            font-size: 10px;
+            color: var(--text-dim);
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        /* Entity color coding */
+        .step-box.entity-user {
+            border-color: var(--user);
+        }
+
+        .step-box.entity-user .entity {
+            color: var(--user);
+        }
+
+        .step-box.entity-widget {
+            border-color: var(--widget);
+        }
+
+        .step-box.entity-widget .entity {
+            color: var(--widget);
+        }
+
+        .step-box.entity-service {
+            border-color: var(--service);
+        }
+
+        .step-box.entity-service .entity {
+            color: var(--service);
+        }
+
+        .step-box.entity-ws {
+            border-color: var(--ws);
+        }
+
+        .step-box.entity-ws .entity {
+            color: var(--ws);
+        }
+
+        .step-box.entity-server {
+            border-color: var(--server);
+        }
+
+        .step-box.entity-server .entity {
+            color: var(--server);
+        }
+
+        .step-box.entity-model {
+            border-color: var(--model);
+        }
+
+        .step-box.entity-model .entity {
+            color: var(--model);
+        }
+
+        .step-box.entity-mainwindow {
+            border-color: #7986cb;
+        }
+
+        .step-box.entity-mainwindow .entity {
+            color: #7986cb;
+        }
+
+        /* ── ARROW CONNECTOR ── */
+        .connector {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-width: 64px;
+            padding: 0 4px;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .arrow-label {
+            font-size: 9px;
+            color: var(--text-dim);
+            text-align: center;
+            max-width: 60px;
+            margin-bottom: 4px;
+            line-height: 1.3;
+            letter-spacing: 0.3px;
+        }
+
+        .arrow-line {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .arrow-line .line {
+            height: 2px;
+            flex: 1;
+        }
+
+        .arrow-line .head {
+            width: 0;
+            height: 0;
+            border-top: 5px solid transparent;
+            border-bottom: 5px solid transparent;
+        }
+
+        .arrow-line.right .head {
+            border-left: 8px solid;
+        }
+
+        .arrow-type-http .line {
+            background: var(--http-color);
+            opacity: 0.7;
+        }
+
+        .arrow-type-http .head {
+            border-left-color: var(--http-color);
+        }
+
+        .arrow-type-ws .line {
+            background: var(--ws-color);
+            opacity: 0.7;
+        }
+
+        .arrow-type-ws .head {
+            border-left-color: var(--ws-color);
+        }
+
+        .arrow-type-signal .line {
+            background: var(--signal-color);
+            opacity: 0.7;
+        }
+
+        .arrow-type-signal .head {
+            border-left-color: var(--signal-color);
+        }
+
+        .arrow-type-event .line {
+            background: var(--event-color);
+            opacity: 0.7;
+        }
+
+        .arrow-type-event .head {
+            border-left-color: var(--event-color);
+        }
+
+        .arrow-type-call .line {
+            background: var(--arrow-bright);
+            opacity: 0.8;
+        }
+
+        .arrow-type-call .head {
+            border-left-color: var(--arrow-bright);
+        }
+
+        /* ── BRANCH NOTES ── */
+        .branch {
+            margin-top: 12px;
+            padding: 10px 14px;
+            background: #0a0c10;
+            border-left: 3px solid var(--border-bright);
+            border-radius: 0 6px 6px 0;
+            font-size: 11px;
+            color: var(--text-dim);
+        }
+
+        .branch strong {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .branch .ok {
+            color: var(--signal-color);
+        }
+
+        .branch .fail {
+            color: #ef5350;
+        }
+
+        /* ── OVERALL ENTITY MAP ── */
+        .entity-map {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .em-card {
+            border: 1px solid var(--border-bright);
+            border-radius: 8px;
+            padding: 14px 12px;
+            background: var(--bg);
+            text-align: center;
+        }
+
+        .em-card .em-tag {
+            display: inline-block;
+            font-size: 9px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .em-card .em-name {
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-bright);
+            margin-bottom: 4px;
+        }
+
+        .em-card .em-desc {
+            font-size: 10px;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* tag colors */
+        .tag-user {
+            background: rgba(74, 158, 255, 0.15);
+            color: var(--user);
+        }
+
+        .tag-widget {
+            background: rgba(108, 99, 255, 0.15);
+            color: var(--widget);
+        }
+
+        .tag-mw {
+            background: rgba(121, 134, 203, 0.15);
+            color: #7986cb;
+        }
+
+        .tag-service {
+            background: rgba(0, 212, 170, 0.15);
+            color: var(--service);
+        }
+
+        .tag-ws {
+            background: rgba(255, 112, 67, 0.15);
+            color: var(--ws);
+        }
+
+        .tag-model {
+            background: rgba(171, 71, 188, 0.15);
+            color: var(--model);
+        }
+
+        .tag-server {
+            background: rgba(255, 213, 79, 0.15);
+            color: var(--server);
+        }
+
+        /* border tints */
+        .em-card.c-user {
+            border-color: rgba(74, 158, 255, 0.3);
+        }
+
+        .em-card.c-widget {
+            border-color: rgba(108, 99, 255, 0.3);
+        }
+
+        .em-card.c-mw {
+            border-color: rgba(121, 134, 203, 0.3);
+        }
+
+        .em-card.c-service {
+            border-color: rgba(0, 212, 170, 0.3);
+        }
+
+        .em-card.c-ws {
+            border-color: rgba(255, 112, 67, 0.3);
+        }
+
+        .em-card.c-model {
+            border-color: rgba(171, 71, 188, 0.3);
+        }
+
+        .em-card.c-server {
+            border-color: rgba(255, 213, 79, 0.3);
+        }
+
+        /* ── SECTION HEADING ── */
+        .section-heading {
+            font-family: 'Syne', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 16px;
+            margin-top: 40px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>WizzMania <span>Client</span> — Data Flow</h1>
+        <p>Complete signal & data path · all features</p>
+    </header>
+
+    <!-- LEGEND -->
+    <div class="legend">
+        <div class="legend-item">
+            <div class="legend-dot" style="background:var(--user)"></div>User / Input
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:var(--widget)"></div>UI Widget
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:#7986cb"></div>MainWindow
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:var(--service)"></div>Service
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:var(--ws)"></div>WebSocket
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:var(--model)"></div>Model / Cache
+        </div>
+        <div class="legend-item">
+            <div class="legend-dot" style="background:var(--server)"></div>Server
+        </div>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 4px;"></div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:var(--http-color)"></div>HTTP
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:var(--ws-color)"></div>WebSocket
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:var(--signal-color)"></div>Qt Signal
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:var(--event-color)"></div>Direct call
+        </div>
+        <div class="legend-item">
+            <div class="legend-line" style="background:var(--arrow-bright)"></div>Internal call
+        </div>
+    </div>
+
+    <!-- ENTITY MAP -->
+    <div class="section-heading">Entities</div>
+    <div class="entity-map">
+        <div class="em-card c-user">
+            <span class="em-tag tag-user">Input</span>
+            <div class="em-name">User</div>
+            <div class="em-desc">Keyboard & mouse. Types credentials, clicks channels, writes messages.</div>
+        </div>
+        <div class="em-card c-widget">
+            <span class="em-tag tag-widget">Widget</span>
+            <div class="em-name">UI Widgets</div>
+            <div class="em-desc">LoginWidget, ChannelPanelWidget, RightPanelWidget, UserHomeWidget. Emit signals on user
+                actions.</div>
+        </div>
+        <div class="em-card c-mw">
+            <span class="em-tag tag-mw">Core</span>
+            <div class="em-name">MainWindow</div>
+            <div class="em-desc">Central hub. Connects all signals. Owns wsClient, channelPanel, rightPanel. Holds
+                user/channel state.</div>
+        </div>
+        <div class="em-card c-service">
+            <span class="em-tag tag-service">Service</span>
+            <div class="em-name">AuthManager<br>+ ApiClient</div>
+            <div class="em-desc">HTTP login only. Builds request, parses response, emits loginSucceeded / loginFailed.
+            </div>
+        </div>
+        <div class="em-card c-ws">
+            <span class="em-tag tag-ws">Transport</span>
+            <div class="em-name">WebSocketClient</div>
+            <div class="em-desc">Manages WS connection, auth handshake, JSON dispatch, reconnect timer. Emits typed
+                signals per message type.</div>
+        </div>
+        <div class="em-card c-model">
+            <span class="em-tag tag-model">State</span>
+            <div class="em-name">userNamesById<br>channelTitles</div>
+            <div class="em-desc">QMap caches in MainWindow. Resolve IDs → names. Populated from InitialData.</div>
+        </div>
+        <div class="em-card c-server">
+            <span class="em-tag tag-server">Backend</span>
+            <div class="em-name">Server</div>
+            <div class="em-desc">REST (login) + WebSocket. Sends typed JSON messages with integer "type" field.</div>
+        </div>
+    </div>
+
+    <!-- ─────────────────────────────────────────── FLOWS ── -->
+    <div class="section-heading">Flows</div>
+
+    <!-- 1. LOGIN -->
+    <div class="flow-section">
+        <div class="flow-section-title login">① Login (HTTP REST)</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-user">
+                        <span class="entity">User</span>
+                        <div class="action">Types username + password</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">click / Enter</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-widget">
+                        <span class="entity">LoginWidget</span>
+                        <div class="action">Validates fields, disables button</div>
+                        <div class="detail">onLoginClicked()</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">login(user, pass)</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-service">
+                        <span class="entity">AuthManager</span>
+                        <div class="action">Builds JSON payload</div>
+                        <div class="detail">{username, password[, email]}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">POST /login</div>
+                    <div class="arrow-line right arrow-type-http">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Authenticates user</div>
+                        <div class="detail">HTTP 200 + token<br>or HTTP 4xx + message</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                <strong>Response parsed in AuthManager → lambda callback:</strong><br>
+                <span class="ok">✓ token present</span> → emit <code>loginSucceeded(username, token)</code> →
+                LoginWidget re-enables → emits <code>loginSuccessful</code> →
+                <strong>MainWindow::onLoginSuccessful</strong> stores token, calls
+                <code>wsClient→connectWithToken(token)</code>, switches to chat view.<br>
+                <span class="fail">✗ error / missing token</span> → emit <code>loginFailed(message)</code> → LoginWidget
+                shows error label, re-enables button.
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. WS AUTH -->
+    <div class="flow-section">
+        <div class="flow-section-title wsauth">② WebSocket — Connection &amp; Auth Handshake</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">connectWithToken(token)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">socket.open(wsUrl)</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Accepts WS upgrade</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">connected signal</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">onConnected() → sendAuth()</div>
+                        <div class="detail">{type:WS_AUTH, token}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON → server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Validates token</div>
+                        <div class="detail">{type:WS_AUTH_SUCCESS, id_user}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON ← server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Parses → emit authenticated(id_user)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onWsAuthenticated(id)</div>
+                        <div class="detail">stores currentUserId, enables UI, shows userHomeWidget</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                Server also immediately sends <code>INITIAL_DATA</code> after auth success — handled in flow ③.
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. INITIAL DATA -->
+    <div class="flow-section">
+        <div class="flow-section-title initdata">③ Initial Data — Channels, Contacts, Invitations</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Sends INITIAL_DATA unprompted</div>
+                        <div class="detail">{channels[], contacts[], invitations[]}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON ← server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Parses InitialDataResponse, emit initialDataReceived(data)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onInitialDataReceived()</div>
+                        <div class="detail">calls 3 sub-routines:</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">populateChannels()</div>
+                    <div class="arrow-line right arrow-type-event">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-widget">
+                        <span class="entity">ChannelPanel</span>
+                        <div class="action">setChannels() → builds QListWidget rows (ChannelRowWidget)</div>
+                        <div class="detail">title, preview, unread badge, isGroup icon</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                <strong>Simultaneously:</strong><br>
+                → <code>cacheKnownUsers(data)</code> — populates <code>userNamesById</code> map from contacts + channel
+                participants + sets id 1 = "System"<br>
+                → <code>userHomeWidget→setIncomingInvitations(data.invitations)</code> — builds Accept/Reject rows in
+                the UserHomeWidget tab<br>
+                → <code>channelTitles</code> map filled for quick lookup
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. CHANNEL SELECT -->
+    <div class="flow-section">
+        <div class="flow-section-title chanselect">④ Channel Selection — Load History</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-user">
+                        <span class="entity">User</span>
+                        <div class="action">Clicks a channel row</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">currentItemChanged</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-widget">
+                        <span class="entity">ChannelPanel</span>
+                        <div class="action">emit channelSelected(channelId, title)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onChannelSelected() — stores currentChannelId, shows rightPanel, clears
+                            messages</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">openChannel(id)</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Sends REQUEST_CHANNEL_HISTORY</div>
+                        <div class="detail">{id_channel, before:0, limit:50}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON → server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Returns CHANNEL_HISTORY</div>
+                        <div class="detail">{messages[], has_more}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON ← server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Parses → emit channelHistoryReceived(history)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onChannelHistoryReceived() — sorts by id_message, renders each → RightPanel
+                        </div>
+                        <div class="detail">+ calls markAsRead + clears unread badge</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                Each message is rendered via <code>createMessageWidget(msg)</code>:<br>
+                → resolves <code>id_sender</code> → username via <code>userNamesById</code><br>
+                → system messages: <code>resolveAtMentions()</code> replaces <code>@ID</code> with
+                <code>@username</code><br>
+                → creates <strong>MessageItemWidget</strong> (own messages left-aligned, others right-aligned)<br>
+                → added via <code>rightPanel→addMessageWidget(widget)</code> — auto-scrolls to bottom
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. SEND MESSAGE -->
+    <div class="flow-section">
+        <div class="flow-section-title sendmsg">⑤ Send Message</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-user">
+                        <span class="entity">User</span>
+                        <div class="action">Types text, presses Send / Enter</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">emit sendRequested(text)</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onSendMessageRequested(text) — validates currentChannelId</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">sendMessage(channelId, text)</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Builds SEND_MESSAGE JSON, sends over socket</div>
+                        <div class="detail">{type, id_channel, body}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON → server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Persists, broadcasts NEW_MESSAGE to all members</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                ⚠️ <strong>Note:</strong> After sending, MainWindow fires a 120ms fallback timer calling
+                <code>openChannel(currentChannelId)</code> again — re-fetches history as a safety net in case the
+                NEW_MESSAGE event is missed. The message will appear via flow ⑥ if properly received, or via this
+                re-fetch otherwise.
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. RECEIVE MESSAGE -->
+    <div class="flow-section">
+        <div class="flow-section-title recvmsg">⑥ Receive New Message (real-time push)</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Pushes NEW_MESSAGE to all channel members</div>
+                        <div class="detail">{type, id_channel, message{…}}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON ← server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Parses SendMessageResponse, emit newMessageReceived(msg)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onNewMessageReceived()</div>
+                        <div class="detail">always updates channel preview</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">updateChannelOnNewMessage()</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-widget">
+                        <span class="entity">ChannelPanel</span>
+                        <div class="action">Rebuilds ChannelRowWidget with new preview + incremented badge (if not
+                            active channel)</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                <strong>If msg.id_channel == currentChannelId:</strong> → <code>appendMessageToView()</code> → new
+                MessageItemWidget appended to RightPanel, auto-scroll<br>
+                <strong>If different channel &amp; not from self:</strong> → badge incremented on the channel row only
+                (user is notified visually)
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. MARK AS READ -->
+    <div class="flow-section">
+        <div class="flow-section-title markread">⑦ Mark as Read — Unread Count Sync</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">Called at end of onChannelHistoryReceived</div>
+                        <div class="detail">lastMessageId from sorted history</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">markAsRead(channelId, lastId)</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Sends MARK_AS_READ</div>
+                        <div class="detail">{id_channel, last_id_message}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON → server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Updates read state, echoes back MARK_AS_READ with confirmed unread_count
+                        </div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON ← server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">Parses MarkAsRead, emit updateChannelUnreadCount(id, count, lastId)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onUpdateChannelUnreadCount() → channelPanel→updateChannelUnreadCount()</div>
+                        <div class="detail">Rebuilds row widget, badge updated / cleared</div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                The client also immediately zeroes the local badge when the channel history loads (optimistic clear),
+                without waiting for the server echo.
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. INVITATIONS -->
+    <div class="flow-section">
+        <div class="flow-section-title invitations">⑧ Invitations — Accept / Reject</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-user">
+                        <span class="entity">User</span>
+                        <div class="action">Opens portrait → UserHomeWidget shows Invitations tab</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">userHomeRequested signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">hides rightPanel, shows userHomeWidget</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">clicks Accept/Reject</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-widget">
+                        <span class="entity">UserHomeWidget</span>
+                        <div class="action">emit acceptInvitationRequested(id) or rejectInvitationRequested(id)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal → lambda</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">acceptInvitation() or rejectInvitation()</div>
+                        <div class="detail">{type:ACCEPT/REJECT_INVITATION, id_channel}</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">JSON → server</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server</span>
+                        <div class="action">Processes. Presumably sends updated INITIAL_DATA or channel added event.
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="branch">
+                ⚠️ <strong>Incomplete flow:</strong> There is no handler for the server's response to accept/reject. The
+                client sends the action but the UI (invitation list, channel panel) is <strong>not updated
+                    automatically</strong> — the user would need to reconnect to see the change.
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. RECONNECT -->
+    <div class="flow-section">
+        <div class="flow-section-title reconnect">⑨ Automatic Reconnection</div>
+        <div class="flow-inner">
+            <div class="chain">
+
+                <div class="step">
+                    <div class="step-box entity-server">
+                        <span class="entity">Server / Network</span>
+                        <div class="action">WS connection drops</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">disconnected signal</div>
+                    <div class="arrow-line right arrow-type-ws">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">onDisconnected() → emit disconnected() → startReconnectTimer()</div>
+                        <div class="detail">Exponential backoff: 1s, 2s, 4s, 8s, 16s (max 5 retries)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">Qt signal</div>
+                    <div class="arrow-line right arrow-type-signal">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-mainwindow">
+                        <span class="entity">MainWindow</span>
+                        <div class="action">onWsDisconnected() → disables UI, shows dialog</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">timer fires → attempt</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">onReconnectTimer() → socket.open(wsUrl)</div>
+                        <div class="detail">On success: resets counter, triggers auth flow (→ ②)</div>
+                    </div>
+                </div>
+
+                <div class="connector">
+                    <div class="arrow-label">if 5 retries fail</div>
+                    <div class="arrow-line right arrow-type-call">
+                        <div class="line"></div>
+                        <div class="head"></div>
+                    </div>
+                </div>
+
+                <div class="step">
+                    <div class="step-box entity-ws">
+                        <span class="entity">WebSocketClient</span>
+                        <div class="action">emit errorReceived("RECONNECT_FAILED", …)</div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>
