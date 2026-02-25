@@ -50,3 +50,7 @@ std::vector<ServerSend::Contact> UserService::get_all_user_contacts(
     int64_t id_user) {
   return db.get_user_contacts(id_user);
 }
+
+bool UserService::has_pending_invitation(int64_t id_user, int64_t id_channel) {
+  return db.has_channel_access(id_user, id_channel, ChannelStatus::PENDING);
+}

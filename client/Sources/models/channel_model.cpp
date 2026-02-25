@@ -98,12 +98,12 @@ void ChannelModel::updateChannelUnreadCount(int64_t channelId, int64_t newCount,
   auto it = idToIndex.find(channelId);
   if (it == idToIndex.end()) return;
 
-  int idx = it->second;
-  channels[idx].unread_count = newCount;
-  channels[idx].last_read_id_message = lastReadId;
+  int index = it->second;
+  channels[index].unread_count = newCount;
+  channels[index].last_read_id_message = lastReadId;
 
-  QModelIndex modelIdx = index(idx);
-  emit dataChanged(modelIdx, modelIdx,
+  QModelIndex modelIndex = index(index);
+  emit dataChanged(modelIndex, modelIndex,
                    {UnreadCountRole, LastReadMessageIdRole});
 }
 

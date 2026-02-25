@@ -37,6 +37,7 @@ class UserService {
   std::vector<ServerSend::Contact> get_contacts_from_channel(
       int64_t id_channel);
   std::vector<ServerSend::Contact> get_all_user_contacts(int64_t id_user);
+  bool has_pending_invitation(int64_t id_user, int64_t id_channel);
 };
 
 #endif

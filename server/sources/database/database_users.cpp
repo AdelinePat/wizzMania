@@ -27,17 +27,18 @@ int64_t Database::verify_user(const std::string& username,
   }
 }
 
-bool Database::has_channel_access(int64_t id_user, int64_t id_channel) {
+bool Database::has_channel_access(int64_t id_user, int64_t id_channel,   ChannelStatus membership) {
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
         this->conn->prepareStatement("SELECT 1 FROM userChannel "
                                      "WHERE id_user = ? "
                                      "AND id_channel = ? "
-                                     "AND membership = 1;"));
+                                     "AND membership = ?;"));
 
     prep_statement->setInt64(1, id_user);
     prep_statement->setInt64(2, id_channel);
+     prep_statement->setInt(3, static_cast<int32_t>(membership));
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     if (res->next()) {

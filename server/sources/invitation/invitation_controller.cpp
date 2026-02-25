@@ -3,6 +3,9 @@
 crow::response InvitationController::accept_invitation(const crow::request& req,
                                                        int64_t id_user,
                                                        int64_t id_channel) {
+  if (!user_service.has_pending_invitation(id_user, id_channel)) {
+    throw ForbiddenError("No pending invitation for this channel");
+  }
   std::cout << "[INVITATION] User " << id_user << " -> accepts to Channel "
             << id_channel << "\n";
 
@@ -30,6 +33,9 @@ crow::response InvitationController::accept_invitation(const crow::request& req,
 crow::response InvitationController::reject_invitation(const crow::request& req,
                                                        int64_t id_user,
                                                        int64_t id_channel) {
+  if (!user_service.has_pending_invitation(id_user, id_channel)) {
+    throw ForbiddenError("No pending invitation for this channel");
+  }
   try {
     std::string responded_at = Utils::get_timestamp();
     // try {
