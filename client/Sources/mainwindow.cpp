@@ -1,7 +1,5 @@
 #include "mainwindow.hpp"
 
-#include <QRegularExpression>
-
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -10,7 +8,9 @@ MainWindow::MainWindow(QWidget* parent)
       loginWidget(nullptr),
       wsClient(new WebSocketClient(this)),
       channelService(new ChannelService(this)),
-channelPanel(nullptr), rightPanel(nullptr) {
+      apiClient(new ApiClient(this)),
+      channelPanel(nullptr),
+      rightPanel(nullptr) {
   ui->setupUi(this);
 
   // Create and add login widget to the login page
@@ -72,14 +72,14 @@ channelPanel(nullptr), rightPanel(nullptr) {
     }
   });
 
-  // Forward invitation actions from user home to websocket client
+  // Forward invitation actions to HTTP API (not WebSocket)
   connect(userHomeWidget, &UserHomeWidget::acceptInvitationRequested, this,
-          [this](int64_t id) {
-            if (wsClient) wsClient->acceptInvitation(id);
-          });
+          [this](int64_t id) { acceptInvitation(id); });
   connect(userHomeWidget, &UserHomeWidget::rejectInvitationRequested, this,
+          [this](int64_t id) { rejectInvitation(id); });
+  connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
           [this](int64_t id) {
-            if (wsClient) wsClient->rejectInvitation(id);
+            if (wsClient) wsClient->leaveChannel(id);
           });
 
   // Setup chat view connections
@@ -145,7 +145,9 @@ void MainWindow::onInitialDataReceived(
   populateChannels(data.channels);
   // Populate user home invitations
   if (userHomeWidget) {
+    userHomeWidget->setUsernameCache(&userNamesById);
     userHomeWidget->setIncomingInvitations(data.invitations);
+    userHomeWidget->setSentInvitations(data.outgoing_invitations);
   }
 
   if (data.channels.empty()) {
@@ -369,4 +371,55 @@ void MainWindow::onHistoryFailed(int64_t channelId, const QString& message) {
   Q_UNUSED(channelId);
   rightPanel->clearMessages();
   rightPanel->addPlainMessage("Failed to load messages: " + message);
+}
+
+void MainWindow::acceptInvitation(int64_t id_channel) {
+  qInfo() << "[HTTP] ACCEPT_INVITATION channel_id=" << id_channel;
+  QString path = QString("invitations/%1/accept").arg(id_channel);
+  QNetworkReply* reply = apiClient->patchAuth(path, authToken);
+
+  connect(reply, &QNetworkReply::finished, this, [this, reply, id_channel]() {
+    reply->deleteLater();
+    if (reply->error() != QNetworkReply::NoError) {
+      qWarning() << "[HTTP] Accept invitation failed:" << reply->errorString();
+      QMessageBox::warning(
+          this, tr("Accept Invitation"),
+          tr("Failed to accept invitation: %1").arg(reply->errorString()));
+      return;
+    }
+
+    // On success, request fresh initial data to update UI
+    qInfo() << "[HTTP] Invitation accepted for channel" << id_channel;
+    if (userHomeWidget) {
+      // Remove the invitation from the list (will be refreshed on reconnect)
+      // For now, just hide and show home again to refresh
+      rightPanel->hide();
+      userHomeWidget->show();
+    }
+  });
+}
+
+void MainWindow::rejectInvitation(int64_t id_channel) {
+  qInfo() << "[HTTP] REJECT_INVITATION channel_id=" << id_channel;
+  QString path = QString("invitations/%1/reject").arg(id_channel);
+  QNetworkReply* reply = apiClient->patchAuth(path, authToken);
+
+  connect(reply, &QNetworkReply::finished, this, [this, reply, id_channel]() {
+    reply->deleteLater();
+    if (reply->error() != QNetworkReply::NoError) {
+      qWarning() << "[HTTP] Reject invitation failed:" << reply->errorString();
+      QMessageBox::warning(
+          this, tr("Reject Invitation"),
+          tr("Failed to reject invitation: %1").arg(reply->errorString()));
+      return;
+    }
+
+    // On success, remove invitation from UI
+    qInfo() << "[HTTP] Invitation rejected for channel" << id_channel;
+    if (userHomeWidget) {
+      // Remove the invitation from the list
+      rightPanel->hide();
+      userHomeWidget->show();
+    }
+  });
 }

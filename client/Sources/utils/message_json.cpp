@@ -42,6 +42,42 @@ bool parse_channel(const QJsonObject& obj, ServerSend::ChannelInfo& out) {
     parse_message(obj.value("last_message").toObject(), out.last_message);
   }
 
+  if (obj.contains("participants") && obj.value("participants").isArray()) {
+    const QJsonArray arr = obj.value("participants").toArray();
+    for (const QJsonValue& val : arr) {
+      if (!val.isObject()) continue;
+      ServerSend::Contact contact;
+      if (parse_contact(val.toObject(), contact)) {
+        out.participants.push_back(contact);
+      }
+    }
+  }
+
+  return true;
+}
+
+bool parse_invitation(const QJsonObject& obj,
+                      ServerSend::ChannelInvitation& out) {
+  if (!obj.contains("id_channel") || !obj.contains("title") ||
+      !obj.contains("id_inviter")) {
+    return false;
+  }
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  out.title = obj.value("title").toString().toStdString();
+  out.id_inviter = obj.value("id_inviter").toVariant().toLongLong();
+
+  if (obj.contains("other_participant_ids") &&
+      obj.value("other_participant_ids").isArray()) {
+    const QJsonArray arr = obj.value("other_participant_ids").toArray();
+    for (const QJsonValue& val : arr) {
+      if (!val.isObject()) continue;
+      ServerSend::Contact contact;
+      if (parse_contact(val.toObject(), contact)) {
+        out.other_participant_ids.push_back(contact);
+      }
+    }
+  }
+
   return true;
 }
 }  // namespace
@@ -99,6 +135,13 @@ QJsonObject toJson(const ClientSend::RejectInvitationRequest& req) {
   return obj;
 }
 
+QJsonObject toJson(const ClientSend::LeaveChannelRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["id_channel"] = static_cast<qint64>(req.id_channel);
+  return obj;
+}
+
 bool fromJson(const QJsonObject& obj, AuthMessages::WSAuthResponse& out) {
   if (!obj.contains("type")) {
     return false;
@@ -143,6 +186,7 @@ bool fromJson(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
   out.contacts.clear();
   out.channels.clear();
   out.invitations.clear();
+  out.outgoing_invitations.clear();
 
   if (obj.contains("contacts") && obj.value("contacts").isArray()) {
     const QJsonArray arr = obj.value("contacts").toArray();
@@ -166,6 +210,33 @@ bool fromJson(const QJsonObject& obj, ServerSend::InitialDataResponse& out) {
       ServerSend::ChannelInfo channel;
       if (parse_channel(val.toObject(), channel)) {
         out.channels.push_back(channel);
+      }
+    }
+  }
+
+  if (obj.contains("invitations") && obj.value("invitations").isArray()) {
+    const QJsonArray arr = obj.value("invitations").toArray();
+    for (const QJsonValue& val : arr) {
+      if (!val.isObject()) {
+        continue;
+      }
+      ServerSend::ChannelInvitation inv;
+      if (parse_invitation(val.toObject(), inv)) {
+        out.invitations.push_back(inv);
+      }
+    }
+  }
+
+  if (obj.contains("outgoing_invitations") &&
+      obj.value("outgoing_invitations").isArray()) {
+    const QJsonArray arr = obj.value("outgoing_invitations").toArray();
+    for (const QJsonValue& val : arr) {
+      if (!val.isObject()) {
+        continue;
+      }
+      ServerSend::ChannelInfo channel;
+      if (parse_channel(val.toObject(), channel)) {
+        out.outgoing_invitations.push_back(channel);
       }
     }
   }

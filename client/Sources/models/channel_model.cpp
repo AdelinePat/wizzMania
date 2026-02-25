@@ -1,7 +1,5 @@
 #include "models/channel_model.hpp"
 
-#include <QString>
-
 ChannelModel::ChannelModel(QObject* parent) : QAbstractListModel(parent) {}
 
 int ChannelModel::rowCount(const QModelIndex& parent) const {

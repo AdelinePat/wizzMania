@@ -29,6 +29,7 @@ class WebSocketClient : public QObject {
   void markAsRead(int64_t channelId, int64_t lastMessageId);
   void acceptInvitation(int64_t id_channel);
   void rejectInvitation(int64_t id_channel);
+  void leaveChannel(int64_t id_channel);
 
  signals:
   void connected();
@@ -38,9 +39,9 @@ class WebSocketClient : public QObject {
   void channelHistoryReceived(
       const ServerSend::ChannelHistoryResponse& history);
   void newMessageReceived(const ServerSend::SendMessageResponse& msg);
-// signal to update unread count from server ???
+  // signal to update unread count from server ???
   void updateChannelUnreadCount(int64_t id_channel, int unread_count,
-                           int64_t last_id_message);
+                                int64_t last_id_message);
 
   void errorReceived(const QString& code, const QString& message);
 

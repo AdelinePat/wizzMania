@@ -49,6 +49,7 @@ set(CLIENT_SOURCES
     Sources/widgets/channel_panel_widget.cpp
     Sources/widgets/right_panel_widget.cpp
     Sources/widgets/user_home_widget.cpp
+    Sources/widgets/invitation_widget.cpp
     ../common/utils.cpp
 )
 
@@ -71,6 +72,7 @@ set(CLIENT_HEADERS
     Headers/widgets/channel_panel_widget.hpp
     Headers/widgets/right_panel_widget.hpp
     Headers/widgets/user_home_widget.hpp
+    Headers/widgets/invitation_widget.hpp
     ../common/utils.hpp
 )
 

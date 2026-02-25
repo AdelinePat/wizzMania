@@ -1,9 +1,5 @@
 #include "widgets/user_home_widget.hpp"
 
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QPushButton>
-
 UserHomeWidget::UserHomeWidget(QWidget* parent) : QWidget(parent) {
   QVBoxLayout* root = new QVBoxLayout(this);
   root->setContentsMargins(0, 0, 0, 0);
@@ -19,39 +15,53 @@ UserHomeWidget::UserHomeWidget(QWidget* parent) : QWidget(parent) {
   invLayout->addWidget(invitationsList);
   tabs->addTab(invTab, "Invitations");
 
+  // Sent invitations tab
+  QWidget* sentTab = new QWidget(this);
+  QVBoxLayout* sentLayout = new QVBoxLayout(sentTab);
+  sentLayout->setContentsMargins(6, 6, 6, 6);
+  sentInvitationsList = new QListWidget(sentTab);
+  sentLayout->addWidget(sentInvitationsList);
+  tabs->addTab(sentTab, "Sent");
+
   root->addWidget(tabs);
+}
+
+void UserHomeWidget::setUsernameCache(const QHash<int64_t, QString>* cache) {
+  usernameCache = cache;
 }
 
 void UserHomeWidget::setIncomingInvitations(
     const std::vector<ServerSend::ChannelInvitation>& invs) {
   invitationsList->clear();
   for (const auto& inv : invs) {
-    QString title = QString::fromStdString(inv.title);
-    QString inviter = QString::fromStdString("Unknown");
-    // if we have inviter info, use it
-    // ChannelInvitation has id_inviter and other_participant_ids; inviter name
-    // may not be present here — caller should populate user cache if needed
+    // Resolve inviter name from cache
+    QString inviterName;
+    if (usernameCache && usernameCache->contains(inv.id_inviter)) {
+      inviterName = usernameCache->value(inv.id_inviter);
+    }
 
     QListWidgetItem* item = new QListWidgetItem();
-    QWidget* row = new QWidget();
-    QHBoxLayout* h = new QHBoxLayout(row);
-    h->setContentsMargins(4, 4, 4, 4);
-    QLabel* lbl = new QLabel(title + " \u2022 From " + inviter, row);
-    QPushButton* accept = new QPushButton("Accept", row);
-    QPushButton* reject = new QPushButton("Reject", row);
-    h->addWidget(lbl, 1);
-    h->addWidget(accept);
-    h->addWidget(reject);
-
-    // capture id for the lambdas
-    int64_t id = inv.id_channel;
-    connect(accept, &QPushButton::clicked, this,
-            [this, id]() { emit acceptInvitationRequested(id); });
-    connect(reject, &QPushButton::clicked, this,
-            [this, id]() { emit rejectInvitationRequested(id); });
-
-    item->setSizeHint(row->sizeHint());
+    InvitationWidget* w = new InvitationWidget(inv, inviterName);
+    connect(w, &InvitationWidget::acceptClicked, this,
+            [this](int64_t id) { emit acceptInvitationRequested(id); });
+    connect(w, &InvitationWidget::rejectClicked, this,
+            [this](int64_t id) { emit rejectInvitationRequested(id); });
+    item->setSizeHint(w->sizeHint());
     invitationsList->addItem(item);
-    invitationsList->setItemWidget(item, row);
+    invitationsList->setItemWidget(item, w);
+  }
+}
+
+void UserHomeWidget::setSentInvitations(
+    const std::vector<ServerSend::ChannelInfo>& outs) {
+  sentInvitationsList->clear();
+  for (const auto& info : outs) {
+    QListWidgetItem* item = new QListWidgetItem();
+    InvitationWidget* w = new InvitationWidget(info);
+    connect(w, &InvitationWidget::cancelClicked, this,
+            [this](int64_t id) { emit cancelInvitationRequested(id); });
+    item->setSizeHint(w->sizeHint());
+    sentInvitationsList->addItem(item);
+    sentInvitationsList->setItemWidget(item, w);
   }
 }
