@@ -20,6 +20,7 @@ class ApiClient : public QObject {
 
   QNetworkReply* postJson(const QString& path, const QJsonObject& payload);
   QNetworkReply* getAuth(const QString& path, const QString& token);
+  QNetworkReply* patchAuth(const QString& path, const QString& token);
 
  private:
   QNetworkAccessManager network;

@@ -5,6 +5,7 @@
 #include <QHash>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QRegularExpression>
 #include <QString>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -13,7 +14,10 @@
 #include <cstdint>
 
 #include "message_structure.hpp"
+#include "models/incoming_invitation_model.hpp"
+#include "models/outgoing_invitation_model.hpp"
 #include "services/channel_service.hpp"
+#include "services/invitation_service.hpp"
 #include "widgets/channel_panel_widget.hpp"
 #include "widgets/login_widget.hpp"
 #include "widgets/message_item_widget.hpp"
@@ -57,14 +61,20 @@ class MainWindow : public QMainWindow {
   QWidget* createMessageWidget(const ServerSend::Message& msg) const;
   void appendMessageToView(int64_t channelId, const ServerSend::Message& msg);
   void setChatEnabled(bool enabled);
+  void acceptInvitation(int64_t id_channel);
+  void rejectInvitation(int64_t id_channel);
+  QString getUserInitials(const QString& username) const;
 
   Ui::MainWindow* ui;
   LoginWidget* loginWidget;
   WebSocketClient* wsClient;
   ChannelService* channelService;
+  InvitationService* invitationService;
   ChannelPanelWidget* channelPanel;
   RightPanelWidget* rightPanel;
   UserHomeWidget* userHomeWidget;
+  IncomingInvitationModel* incomingInvitationModel;
+  OutgoingInvitationModel* outgoingInvitationModel;
   QString currentUser;
   QString authToken;
   int64_t currentUserId = -1;

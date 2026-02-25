@@ -3,16 +3,16 @@
 
 #include <crow.h>
 
+#include <optional>
 #include <string>
 #include <vector>
 
-#include "database.hpp"      // use
-#include "exception.hpp"     // use
-#include "helpers.hpp"       // use
-#include "json_helpers.hpp"  // use
+#include "database.hpp"
+#include "exception.hpp"
+#include "helpers.hpp"
+#include "json_helpers.hpp"
 #include "message_service.hpp"
-#include "message_structure.hpp"  // use
-#include "optional"               // use
+#include "message_structure.hpp"
 #include "user_service.hpp"
 #include "utils.hpp"
 #include "websocket_manager.hpp"
@@ -38,18 +38,18 @@ class MessageController {
   void send_message_internal(int64_t id_user, int64_t id_channel,
                              std::string& body, std::string& timestamp);
 
-    // void send_history(crow::websocket::connection& conn, int64_t id_user,
-    //                   const crow::json::rvalue& json_msg);
+  // void send_history(crow::websocket::connection& conn, int64_t id_user,
+  //                   const crow::json::rvalue& json_msg);
 
   crow::response get_history(const crow::request& req, int64_t id_user,
                              int64_t id_channel);
   void mark_as_read(crow::websocket::connection& conn, int64_t id_user,
                     const crow::json::rvalue& json_msg);
 
-//   void send_history_response(crow::websocket::connection& conn,
-//                              int64_t id_channel,
-//                              std::vector<ServerSend::Message>& messages,
-//                              int limit);
+  //   void send_history_response(crow::websocket::connection& conn,
+  //                              int64_t id_channel,
+  //                              std::vector<ServerSend::Message>& messages,
+  //                              int limit);
 };
 
 #endif

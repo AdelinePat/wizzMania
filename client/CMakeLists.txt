@@ -38,6 +38,7 @@ set(CLIENT_SOURCES
     Sources/services/auth_manager.cpp
     Sources/services/server_config.cpp
     Sources/services/channel_service.cpp 
+    Sources/services/invitation_service.cpp
     Sources/ws/websocket_client.cpp
     Sources/utils/message_json.cpp
     Sources/utils/display.cpp
@@ -51,6 +52,8 @@ set(CLIENT_SOURCES
     Sources/widgets/channel_panel_widget.cpp
     Sources/widgets/right_panel_widget.cpp
     Sources/widgets/user_home_widget.cpp
+    Sources/widgets/incoming_invitation_item_widget.cpp
+    Sources/widgets/outgoing_invitation_item_widget.cpp
     ../common/utils.cpp
 )
 
@@ -61,6 +64,7 @@ set(CLIENT_HEADERS
     Headers/services/auth_manager.hpp
     Headers/services/server_config.hpp
     Headers/services/channel_service.hpp  
+    Headers/services/invitation_service.hpp
     Headers/ws/websocket_client.hpp
     Headers/utils/message_json.hpp
     Headers/utils/message_qt_types.hpp
@@ -75,6 +79,8 @@ set(CLIENT_HEADERS
     Headers/widgets/channel_panel_widget.hpp
     Headers/widgets/right_panel_widget.hpp
     Headers/widgets/user_home_widget.hpp
+    Headers/widgets/incoming_invitation_item_widget.hpp
+    Headers/widgets/outgoing_invitation_item_widget.hpp
     ../common/utils.hpp
 )
 

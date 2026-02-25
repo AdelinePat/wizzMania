@@ -125,5 +125,14 @@ class Database {
   std::optional<int64_t> find_existing_channel(
       const std::unordered_set<int64_t>& all_participants);
   std::optional<bool> does_channel_exist(int64_t id_channel);
+
+
+  bool email_exists(const std::string& email);
+std::optional<int64_t> create_user(const std::string& username,
+                                              const std::string& email,
+                                              const std::string& password);
 };
+
+
+
 #endif

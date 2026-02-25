@@ -54,3 +54,45 @@ std::vector<ServerSend::Contact> UserService::get_all_user_contacts(
 bool UserService::has_pending_invitation(int64_t id_user, int64_t id_channel) {
   return db.has_channel_access(id_user, id_channel, ChannelStatus::PENDING);
 }
+
+int64_t UserService::register_user(const std::string& username,
+                                   const std::string& email,
+                                   const std::string& password) {
+  // clean and validate username
+  std::string clean_name =
+      Utils::clean_username(username);  // throws badInput if invalid char
+  // clean username already calls trim() inside
+
+  // validate email fomai
+  if (!Utils::is_valid_email(email)) {
+    throw BadRequestError("Invalid email format");
+  }
+
+  // validate password
+  if (!Utils::is_valid_password(password)) {
+    throw BadRequestError(
+        "Password must be at least 8 characters with uppercase, lowercase and "
+        "special character");
+  }
+  if (!Utils::is_valid_password_chars(password)) {
+    throw BadRequestError("Password contains invalid character");
+  }
+
+  // check if username already taken (reuse existing get_id_user)
+  std::optional<int64_t> existing_user = db.get_id_user(clean_name);
+  if (existing_user.has_value()) {
+    throw ConflictError("Username already taken");
+  }
+
+  // check if email is already taken
+  if (db.email_exists(email)) {
+    throw ConflictError("Email already in use");
+  }
+
+  // create user in Database
+  std::optional<int64_t> new_id = db.create_user(clean_name, email, password);
+  if (!new_id.has_value()) {
+    throw InternalError("Failed to create user");
+  }
+  return new_id.value();
+}

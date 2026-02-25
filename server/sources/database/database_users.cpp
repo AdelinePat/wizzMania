@@ -294,3 +294,48 @@ std::vector<ServerSend::Contact> Database::get_channel_contacts(
     return contacts;
   }
 }
+
+// == CREATE ACCOUNT ===//
+bool Database::email_exists(const std::string& email) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+  try {
+    this->ensure_connection(); //Ensure if connection SQL is active
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "SELECT 1 FROM users WHERE email = ? LIMIT 1;"));// prepare the requeste SQL
+    prep_statement->setString(1, email);
+    std::unique_ptr<sql::ResultSet> result(prep_statement->executeQuery());
+    return result->next();
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] email_exists error: " << e.what() << std::endl;
+    return false;
+  }
+}
+
+std::optional<int64_t> Database::create_user(const std::string& username,
+                                              const std::string& email,
+                                              const std::string& password) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement(
+            "INSERT INTO users (username, email, password) VALUES (?, ?, ?);"));
+    prep_statement->setString(1, username); // fill in the ? with the values
+    prep_statement->setString(2, email);
+    prep_statement->setString(3, password);
+    prep_statement->executeUpdate(); // execute the query
+
+    // get the auto-generated id
+    std::unique_ptr<sql::Statement> stmt(this->conn->createStatement());
+    std::unique_ptr<sql::ResultSet> result(
+        stmt->executeQuery("SELECT LAST_INSERT_ID() AS id;"));
+    if (result->next()) {
+      return result->getInt64("id");
+    }
+    return std::nullopt;
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] create_user error: " << e.what() << std::endl;
+    return std::nullopt;
+  }
+}

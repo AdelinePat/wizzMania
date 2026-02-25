@@ -1,7 +1,5 @@
 #include "mainwindow.hpp"
 
-#include <QRegularExpression>
-
 #include "ui_mainwindow.h"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -10,7 +8,11 @@ MainWindow::MainWindow(QWidget* parent)
       loginWidget(nullptr),
       wsClient(new WebSocketClient(this)),
       channelService(new ChannelService(this)),
-channelPanel(nullptr), rightPanel(nullptr) {
+      invitationService(new InvitationService(this)),
+      channelPanel(nullptr),
+      rightPanel(nullptr),
+      incomingInvitationModel(new IncomingInvitationModel(this)),
+      outgoingInvitationModel(new OutgoingInvitationModel(this)) {
   ui->setupUi(this);
 
   // Create and add login widget to the login page
@@ -34,6 +36,7 @@ channelPanel(nullptr), rightPanel(nullptr) {
   // User home widget (hidden by default)
   userHomeWidget = new UserHomeWidget(ui->rightPanel);
   ui->rightPanelLayout->addWidget(userHomeWidget);
+  userHomeWidget->setModels(incomingInvitationModel, outgoingInvitationModel);
   userHomeWidget->hide();
 
   // Connect login signal
@@ -72,14 +75,65 @@ channelPanel(nullptr), rightPanel(nullptr) {
     }
   });
 
-  // Forward invitation actions from user home to websocket client
-  connect(userHomeWidget, &UserHomeWidget::acceptInvitationRequested, this,
-          [this](int64_t id) {
-            if (wsClient) wsClient->acceptInvitation(id);
+  // Channel panel create channel button (not functional yet)
+  connect(channelPanel, &ChannelPanelWidget::createChannelRequested, this,
+          [this]() {
+            qInfo() << "[UI] Create channel requested (not implemented yet)";
           });
+
+  // Channel panel logout button (not functional yet)
+  connect(channelPanel, &ChannelPanelWidget::logoutRequested, this, [this]() {
+    qInfo() << "[UI] Logout requested (not implemented yet)";
+  });
+
+  // Channel panel leave channel button
+  connect(channelPanel, &ChannelPanelWidget::leaveChannelRequested, this,
+          [this](int64_t channelId) {
+            if (invitationService) {
+              invitationService->leaveChannel(channelId, authToken);
+            }
+          });
+
+  // Forward invitation actions to HTTP API (not WebSocket)
+  connect(userHomeWidget, &UserHomeWidget::acceptInvitationRequested, this,
+          [this](int64_t id) { acceptInvitation(id); });
   connect(userHomeWidget, &UserHomeWidget::rejectInvitationRequested, this,
+          [this](int64_t id) { rejectInvitation(id); });
+  connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
           [this](int64_t id) {
-            if (wsClient) wsClient->rejectInvitation(id);
+            if (invitationService)
+              invitationService->leaveChannel(id, authToken);
+          });
+  connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
+          [this]() {
+            qInfo() << "[HTTP] DELETE_ACCOUNT requested (not implemented yet)";
+            // TODO: Implement account deletion endpoint
+          });
+
+  connect(invitationService, &InvitationService::invitationAccepted, this,
+          [this](int64_t id) {
+            if (incomingInvitationModel) {
+              incomingInvitationModel->removeInvitation(id);
+            }
+          });
+  connect(invitationService, &InvitationService::invitationRejected, this,
+          [this](int64_t id) {
+            if (incomingInvitationModel) {
+              incomingInvitationModel->removeInvitation(id);
+            }
+          });
+  connect(invitationService, &InvitationService::channelLeft, this,
+          [this](int64_t id) {
+            if (outgoingInvitationModel) {
+              outgoingInvitationModel->removeInvitation(id);
+            }
+          });
+  connect(invitationService, &InvitationService::invitationFailed, this,
+          [this](int64_t id, const QString& action, const QString& message) {
+            Q_UNUSED(id);
+            QMessageBox::warning(
+                this, tr("Invitation"),
+                tr("Failed to %1 invitation: %2").arg(action, message));
           });
 
   // Setup chat view connections
@@ -128,6 +182,12 @@ void MainWindow::onWsAuthenticated(int64_t idUser) {
   setChatEnabled(true);
   rightPanel->setChatTitle("Select a chat to start messaging");
 
+  // Update user info in channel panel
+  if (channelPanel && !currentUser.isEmpty()) {
+    QString initials = getUserInitials(currentUser);
+    channelPanel->setUserInfo(currentUser, initials);
+  }
+
   // If no channel is currently selected, show the user home by default
   // so the user sees invitations and profile info immediately after login.
   if (currentChannelId <= 0 && userHomeWidget) {
@@ -143,9 +203,11 @@ void MainWindow::onInitialDataReceived(
           << " invitations=" << data.invitations.size();
   cacheKnownUsers(data);
   populateChannels(data.channels);
-  // Populate user home invitations
-  if (userHomeWidget) {
-    userHomeWidget->setIncomingInvitations(data.invitations);
+  // Populate user home invitations via models
+  if (userHomeWidget && incomingInvitationModel && outgoingInvitationModel) {
+    userHomeWidget->setUsernameCache(&userNamesById);
+    incomingInvitationModel->setInvitations(data.invitations);
+    outgoingInvitationModel->setInvitations(data.outgoing_invitations);
   }
 
   if (data.channels.empty()) {
@@ -369,4 +431,42 @@ void MainWindow::onHistoryFailed(int64_t channelId, const QString& message) {
   Q_UNUSED(channelId);
   rightPanel->clearMessages();
   rightPanel->addPlainMessage("Failed to load messages: " + message);
+}
+
+void MainWindow::acceptInvitation(int64_t id_channel) {
+  qInfo() << "[HTTP] ACCEPT_INVITATION channel_id=" << id_channel;
+  if (invitationService) {
+    invitationService->acceptInvitation(id_channel, authToken);
+  }
+}
+
+void MainWindow::rejectInvitation(int64_t id_channel) {
+  qInfo() << "[HTTP] REJECT_INVITATION channel_id=" << id_channel;
+  if (invitationService) {
+    invitationService->rejectInvitation(id_channel, authToken);
+  }
+}
+
+QString MainWindow::getUserInitials(const QString& username) const {
+  if (username.isEmpty()) {
+    return "??";
+  }
+
+  // Split username by spaces and take first letter of each word
+  QStringList words = username.split(' ', Qt::SkipEmptyParts);
+  QString initials;
+
+  if (words.isEmpty()) {
+    return "??";
+  }
+
+  // Take first letter of first word
+  initials += words.first()[0].toUpper();
+
+  // If there's a second word, add its first letter too
+  if (words.size() > 1) {
+    initials += words[1][0].toUpper();
+  }
+
+  return initials;
 }

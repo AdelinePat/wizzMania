@@ -1,0 +1,67 @@
+#include "services/invitation_service.hpp"
+
+InvitationService::InvitationService(QObject* parent) : QObject(parent) {}
+
+void InvitationService::acceptInvitation(int64_t channelId,
+                                         const QString& token) {
+  sendInvitationAction("accept", channelId, token);
+}
+
+void InvitationService::rejectInvitation(int64_t channelId,
+                                         const QString& token) {
+  sendInvitationAction("reject", channelId, token);
+}
+
+void InvitationService::leaveChannel(int64_t channelId, const QString& token) {
+  const QString path = QString("channels/%1/leave").arg(channelId);
+  QNetworkReply* reply = api.patchAuth(path, token);
+
+  connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
+    const int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray body = reply->readAll();
+
+    if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+      const QString message = QString::fromUtf8(body);
+      emit invitationFailed(channelId, "leave",
+                            message.isEmpty() ? reply->errorString() : message);
+      reply->deleteLater();
+      return;
+    }
+
+    emit channelLeft(channelId);
+    reply->deleteLater();
+  });
+}
+
+void InvitationService::sendInvitationAction(const QString& action,
+                                             int64_t channelId,
+                                             const QString& token) {
+  const QString path = QString("invitations/%1/%2").arg(channelId).arg(action);
+  QNetworkReply* reply = api.patchAuth(path, token);
+
+  connect(
+      reply, &QNetworkReply::finished, this,
+      [this, reply, channelId, action]() {
+        const int statusCode =
+            reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+        const QByteArray body = reply->readAll();
+
+        if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+          const QString message = QString::fromUtf8(body);
+          emit invitationFailed(
+              channelId, action,
+              message.isEmpty() ? reply->errorString() : message);
+          reply->deleteLater();
+          return;
+        }
+
+        if (action == "accept") {
+          emit invitationAccepted(channelId);
+        } else if (action == "reject") {
+          emit invitationRejected(channelId);
+        }
+
+        reply->deleteLater();
+      });
+}
