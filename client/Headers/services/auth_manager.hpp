@@ -18,9 +18,14 @@ class AuthManager : public QObject {
 
   void login(const QString& username, const QString& password);
 
+  void logout(const QString& token);
+
  signals:
   void loginSucceeded(const QString& username, const QString& token);
   void loginFailed(const QString& message);
+
+  void logoutSucceeded();
+  void logoutFailed(const QString& message);
 
  private:
   ApiClient api;
