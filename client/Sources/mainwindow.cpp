@@ -150,8 +150,10 @@ MainWindow::MainWindow(QWidget* parent)
           [this](int64_t id) { rejectInvitation(id); });
   connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
           [this](int64_t id) {
-            if (invitationService)
-              invitationService->leaveChannel(id, authToken);
+            // TODO IMPLEMENT CANCEL INVITATION ONLY AND ONLY IF SERVER MANAGES
+            // IT !!!!!!!!!!!!!!
+            //  if (invitationService)
+            //   invitationService->leaveChannel(id, authToken);
           });
 
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
