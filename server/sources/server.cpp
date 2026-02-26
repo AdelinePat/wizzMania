@@ -87,8 +87,9 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
+          std::string token = req.get_header_value("Authorization");
           return invitation_controller.accept_invitation(
-              id_user, static_cast<int64_t>(id_channel));
+              id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
         }

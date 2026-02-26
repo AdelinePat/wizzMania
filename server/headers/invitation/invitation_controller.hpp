@@ -3,6 +3,7 @@
 
 #include <crow.h>
 
+#include <optional>  // use
 #include <string>
 #include <vector>
 
@@ -14,7 +15,6 @@
 #include "json_helpers.hpp"        // use
 #include "message_controller.hpp"
 #include "message_structure.hpp"  // use
-#include <optional>               // use
 #include "user_service.hpp"       // use
 #include "user_service.hpp"
 #include "utils.hpp"
@@ -33,6 +33,10 @@ class InvitationController {
       const int64_t id_user, const int64_t id_channel,
       std::vector<ServerSend::Contact>& participants);
 
+  crow::response send_accept_invitation(int64_t id_user,
+                                        const std::string& channel_info_str,
+                                        const std::string& token);
+
  public:
   explicit InvitationController(Database& db, WebSocketManager& ws)
       : db(db),
@@ -45,7 +49,8 @@ class InvitationController {
   //   void accept_invitation(crow::websocket::connection& conn, int64_t
   //   id_user,
   //                          const crow::json::rvalue& json_msg);
-  crow::response accept_invitation(int64_t id_user, int64_t id_channel);
+  crow::response accept_invitation(int64_t id_user, int64_t id_channel,
+                                   std::string& token);
 
   //   void reject_invitation(crow::websocket::connection& conn, int64_t
   //   id_user,

@@ -1,7 +1,8 @@
 #include "invitation_controller.hpp"
 
 crow::response InvitationController::accept_invitation(int64_t id_user,
-                                                       int64_t id_channel) {
+                                                       int64_t id_channel,
+                                                       std::string& token) {
   if (!user_service.has_pending_invitation(id_user, id_channel)) {
     throw ForbiddenError("No pending invitation for this channel");
   }
@@ -21,16 +22,17 @@ crow::response InvitationController::accept_invitation(int64_t id_user,
       JsonHelpers::ServerSendHelpers::to_json(resp).dump();
 
   // send new participant list to all current participant of channel
-  broadcast_joined_notification(id_user, id_channel, resp.channel.participants);
+  broadcast_joined_notification(id_user, id_channel,
+                                resp.channel.participants);
 
   // need to let all the device of the user that the invitation was accepted and
   // remove it from "incoming invitation"
-  ws_manager.send_to_user(id_user, channel_info_str);
+  // ws_manager.send_to_user(id_user, channel_info_str);
 
   std::string body = "User @" + std::to_string(id_user) + " joined the chat!";
   message_controller.send_message_internal(1, id_channel, body, responded_at);
 
-  return crow::response(200, channel_info_str);
+  return send_accept_invitation(id_user, channel_info_str, token);
 }
 
 crow::response InvitationController::reject_invitation(int64_t id_user,
@@ -110,4 +112,14 @@ void InvitationController::broadcast_invitation_notification(
   participants.erase(invitation.id_inviter);
   ws_manager.broadcast_to_users(
       participants, JsonHelpers::ServerSendHelpers::to_json(invitation).dump());
+}
+
+crow::response InvitationController::send_accept_invitation(
+    int64_t id_user, const std::string& channel_info_str,
+    const std::string& token) {
+  // Only send WS to OTHER devices of this user, not the one that made the HTTP
+  // request
+  ws_manager.send_to_user_except(id_user, channel_info_str, token);
+
+  return crow::response(200, channel_info_str);
 }
