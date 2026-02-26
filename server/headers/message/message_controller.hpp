@@ -50,6 +50,9 @@ class MessageController {
   //                              int64_t id_channel,
   //                              std::vector<ServerSend::Message>& messages,
   //                              int limit);
+
+    void wizz(crow::websocket::connection& conn, int64_t id_user,
+            const crow::json::rvalue& json_msg);
 };
 
 #endif

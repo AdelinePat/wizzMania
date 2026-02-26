@@ -237,6 +237,11 @@ CROW_ROUTE(app, "/account")
             break;
           }
 
+          case WizzMania::MessageType::WIZZ: {
+            message_controller.wizz(conn, id_user, json_msg);
+            break;
+          }
+
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {
             //   auto req =

@@ -58,6 +58,11 @@ struct SendMessageRequest {
   std::string body;
 };
 
+struct WizzRequest {
+  WizzMania::MessageType type; // WIZZ
+  int64_t id_channel;
+};
+
 struct CreateChannelRequest {
   WizzMania::MessageType type;  // CREATE_CHANNEL
   std::unordered_set<std::string> usernames;
@@ -253,6 +258,12 @@ struct ErrorResponse {
   WizzMania::MessageType type;  // ERROR
   std::string error_code;
   std::string message;
+};
+
+struct WizzNotification {
+  WizzMania::MessageType type; // WIZZ
+  int64_t id_channel;
+  int64_t id_user;
 };
 }  // namespace ServerSend
 
