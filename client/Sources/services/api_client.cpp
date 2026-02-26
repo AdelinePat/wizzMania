@@ -30,3 +30,15 @@ QNetworkReply* ApiClient::patchAuth(const QString& path, const QString& token) {
   request.setRawHeader("X-Auth-Token", token.toUtf8());
   return network.sendCustomRequest(request, "PATCH", QByteArray());
 }
+
+QNetworkReply* ApiClient::postJsonAuth(const QString& path,
+                                        const QJsonObject& payload,
+                                        const QString& token) {
+  const QString base = ServerConfig::baseUrl();
+  const QString urlStr =
+      base.endsWith('/') ? (base + path) : (base + "/" + path);
+  QNetworkRequest request{QUrl(urlStr)};
+  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+  request.setRawHeader("X-Auth-Token", token.toUtf8());
+  return network.post(request, QJsonDocument(payload).toJson());
+}

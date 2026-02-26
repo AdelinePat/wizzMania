@@ -41,6 +41,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   // User home widget (hidden by default)
   userHomeWidget = new UserHomeWidget(ui->rightPanel);
+  authManager = new AuthManager(this);
   ui->rightPanelLayout->addWidget(userHomeWidget);
   userHomeWidget->setModels(incomingInvitationModel, outgoingInvitationModel);
   userHomeWidget->hide();
@@ -80,6 +81,12 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onWsError);
   connect(wsClient, &WebSocketClient::disconnected, this,
           &MainWindow::onWsDisconnected);
+
+  // logout
+  connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
+          &MainWindow::onLogoutRequested);
+  connect(authManager, &AuthManager::logoutSucceeded, this,
+          &MainWindow::onLogoutSucceeded);
 
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
@@ -515,4 +522,32 @@ QString MainWindow::getUserInitials(const QString& username) const {
   }
 
   return initials;
+}
+
+void MainWindow::onLogoutRequested() { authManager->logout(authToken); }
+
+void MainWindow::onLogoutSucceeded() {
+  // 1. Disconnect WebSocket
+  wsClient->disconnectFromServer();
+
+  // 2. Clear all state
+  authToken.clear();
+  currentUser.clear();
+  currentUserId = -1;
+  currentChannelId = -1;
+  userNamesById.clear();
+  channelTitles.clear();
+
+  // 3. Clear all models
+  channelPanel->clearChannels();
+  rightPanel->clearMessages();
+  rightPanel->setChatTitle("Select a chat to start messaging");
+
+  // 4. Hide right panel, show login
+  if (userHomeWidget) userHomeWidget->hide();
+  rightPanel->show();
+
+  // 5. Back to login page
+  ui->stackedWidget->setCurrentIndex(0);
+  setWindowTitle("WizzMania");
 }

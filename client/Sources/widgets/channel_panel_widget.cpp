@@ -224,3 +224,9 @@ void ChannelPanelWidget::setUserInfo(const QString& username,
     userPortraitName->setText(username);
   }
 }
+
+void ChannelPanelWidget::clearChannels() {
+  channelsList->clear();
+  itemByChannelId.clear();
+  channelModel->clear();
+}
