@@ -304,4 +304,12 @@ bool fromJson(const QJsonObject& obj, ClientSend::MarkAsRead& mark) {
 
   return true;
 }
+
+bool fromJson(const QJsonObject& obj,
+              ServerSend::AcceptInvitationResponse& out) {
+  if (!obj.contains("channel") || !obj.value("channel").isObject()) {
+    return false;
+  }
+  return parse_channel(obj.value("channel").toObject(), out.channel);
+}
 }  // namespace MessageJson

@@ -22,6 +22,7 @@ class ChannelPanelWidget : public QWidget {
   explicit ChannelPanelWidget(QWidget* parent = nullptr);
 
   void setChannels(const std::vector<ServerSend::ChannelInfo>& channels);
+  void addChannel(const ServerSend::ChannelInfo& channel);
   // Set displayed user (username + initials for avatar)
   void setUserInfo(const QString& username, const QString& initials);
   // Update UI for a channel when a new message arrives: replace preview and

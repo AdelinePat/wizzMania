@@ -155,6 +155,37 @@ void ChannelPanelWidget::setChannels(
   }
 }
 
+void ChannelPanelWidget::addChannel(const ServerSend::ChannelInfo& channel) {
+  // Add to internal model
+  channelModel->addChannel(channel);
+
+  const QString title = QString::fromStdString(channel.title);
+  const QString preview = QString::fromStdString(channel.last_message.body);
+
+  QListWidgetItem* item = new QListWidgetItem();
+  item->setData(ChannelModel::ChannelRole::IdChannelRole,
+                static_cast<qint64>(channel.id_channel));
+  item->setData(ChannelModel::ChannelRole::TitleRole, title);
+  item->setData(ChannelModel::ChannelRole::LastMessageBodyRole, preview);
+  item->setData(ChannelModel::ChannelRole::UnreadCountRole,
+                static_cast<qint64>(channel.unread_count));
+  item->setData(ChannelModel::ChannelRole::IsGroupRole, channel.is_group);
+
+  ChannelRowWidget* row = new ChannelRowWidget(
+      channel.id_channel, title, preview,
+      static_cast<int>(channel.unread_count), channel.is_group, channelsList);
+  connect(row, &ChannelRowWidget::leaveChannelRequested, this,
+          &ChannelPanelWidget::leaveChannelRequested);
+  item->setSizeHint(row->sizeHint());
+  channelsList->addItem(item);
+  channelsList->setItemWidget(item, row);
+
+  itemByChannelId[channel.id_channel] = item;
+
+  qInfo() << "[UI][CHANNEL_ADDED] id=" << channel.id_channel
+          << " title=" << title;
+}
+
 void ChannelPanelWidget::updateChannelOnNewMessage(int64_t channelId,
                                                    const QString& preview,
                                                    bool incrementUnread) {

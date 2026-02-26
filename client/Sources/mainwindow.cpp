@@ -133,7 +133,20 @@ MainWindow::MainWindow(QWidget* parent)
           });
 
   connect(invitationService, &InvitationService::invitationAccepted, this,
-          [this](int64_t id) {
+          [this](int64_t id, const ServerSend::ChannelInfo& channel) {
+            // Add channel to the display panel
+            if (channelPanel) {
+              channelPanel->addChannel(channel);
+            }
+            // Update local tracking maps
+            channelTitles.insert(channel.id_channel,
+                                 QString::fromStdString(channel.title));
+            for (const auto& participant : channel.participants) {
+              userNamesById.insert(
+                  participant.id_user,
+                  QString::fromStdString(participant.username));
+            }
+            // Remove from incoming invitations
             if (incomingInvitationModel) {
               incomingInvitationModel->removeInvitation(id);
             }
