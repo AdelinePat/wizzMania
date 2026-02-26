@@ -1,7 +1,8 @@
 #include "channel_controller.hpp"
 
 crow::response ChannelController::create_channel(int64_t id_user,
-                                                 const crow::request& req) {
+                                                 const crow::request& req,
+                                                 std::string& token) {
   crow::json::rvalue body = crow::json::load(req.body);
   if (!body || !body.has("usernames")) {
     BadRequestError error = BadRequestError("Invalid CREATE_CHANNEL format");
@@ -71,8 +72,13 @@ crow::response ChannelController::create_channel(int64_t id_user,
     resp.channel = Structure::create_empty_channel_info_struct(
         id_channel, id_user, contacts, title);
 
-    return crow::response(201,
-                          JsonHelpers::ServerSendHelpers::to_json(resp).dump());
+    std::string resp_json =
+        JsonHelpers::ServerSendHelpers::to_json(resp).dump();
+
+    // send CreateChannelResponse to every other device for creator
+    ws_manager.send_to_user_except(id_user, resp_json, token);
+
+    return crow::response(201, resp_json);
 
   } catch (const WizzManiaError& e) {
     return WizzManiaError::send_http_error(e.get_code(), e.get_message());
@@ -80,9 +86,9 @@ crow::response ChannelController::create_channel(int64_t id_user,
 }
 
 crow::response ChannelController::leave_channel(int64_t id_user,
-                                                int64_t id_channel) {
+                                                int64_t id_channel,
+                                                std::string& token) {
   if (!user_service.has_access(id_user, id_channel)) {
-    // already checks ACCEPTED
     throw ForbiddenError("You are not a member of this channel");
   }
 
@@ -95,11 +101,16 @@ crow::response ChannelController::leave_channel(int64_t id_user,
     notif.id_channel = id_channel;
     notif.id_user = id_user;
 
+    std::string notif_str = JsonHelpers::ServerSendHelpers::to_json(notif).dump();
+
     std::unordered_set<int64_t> remaining =
         user_service.get_users_by_channel(id_channel);
     ws_manager.broadcast_to_users(
-        remaining, JsonHelpers::ServerSendHelpers::to_json(notif).dump());
+        remaining, notif_str);
 
+    // send UserLeftNotification to every other device for the one that left the
+    // chat
+    ws_manager.send_to_user_except(id_user, notif_str, token);
     return crow::response(204);  // ok with no body
   } catch (const WizzManiaError& e) {
     return WizzManiaError::send_http_error(e.get_code(), e.get_message());
