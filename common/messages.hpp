@@ -31,6 +31,7 @@ enum class MessageType : uint8_t {
     // TYPING_STOP = 18,           // User stops typing
     REQUEST_CHANNEL_HISTORY = 19,// User requests old messages
     CHANNEL_OPEN = 20,          // Ask for a specific channel messages
+    WIZZ = 21,  //User sends a Wizz to a channel
     
     // ===== Server -> Client =====
     WS_AUTH_SUCCESS = 100,      // Response: Authentication successful

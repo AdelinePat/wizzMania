@@ -213,6 +213,23 @@ inline std::optional<::ClientSend::LeaveChannelRequest> parse_leave_channel(
   return req;
 }
 
+// FROM JSON WIZZ REQUEST
+inline std::optional<::ClientSend::WizzRequest> parse_wizz(
+    const crow::json::rvalue& json) {
+  if (!json.has("type") || !json.has("id_channel")) {
+    return std::nullopt;
+  }
+  int type_int = json["type"].i();
+  if (type_int != static_cast<int>(WizzMania::MessageType::WIZZ)) {
+    return std::nullopt;
+  }
+
+  ::ClientSend::WizzRequest req;
+  req.type = WizzMania::MessageType::WIZZ;
+  req.id_channel = json["id_channel"].i();
+  return req;
+}
+
 // TO JSON MARK AS READ
 inline crow::json::wvalue to_json(const ::ClientSend::MarkAsRead& mark) {
   crow::json::wvalue json;
@@ -411,6 +428,16 @@ inline crow::json::wvalue to_json(
   json["id_user"] = resp.id_user;
   return json;
 }
+
+// TO JSON WIZZ NOTIFICATION
+inline crow::json::wvalue to_json(const ::ServerSend::WizzNotification& wizz) {
+  crow::json::wvalue json;
+  json["type"] = static_cast<int>(wizz.type);
+  json["id_channel"] = wizz.id_channel;
+  json["id_user"] = wizz.id_user;
+  return json;
+}
+
 
 }  // namespace ServerSendHelpers
 
