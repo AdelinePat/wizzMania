@@ -47,6 +47,7 @@ set(CLIENT_SOURCES
     Sources/models/incoming_invitation_model.cpp
     Sources/models/outgoing_invitation_model.cpp
     Sources/widgets/login_widget.cpp
+    Sources/widgets/register_widget.cpp
     Sources/widgets/message_item_widget.cpp
     Sources/widgets/channel_row_widget.cpp
     Sources/widgets/channel_panel_widget.cpp
@@ -54,6 +55,7 @@ set(CLIENT_SOURCES
     Sources/widgets/user_home_widget.cpp
     Sources/widgets/incoming_invitation_item_widget.cpp
     Sources/widgets/outgoing_invitation_item_widget.cpp
+    Sources/widgets/create_channel_widget.cpp
     ../common/utils.cpp
 )
 
@@ -74,6 +76,7 @@ set(CLIENT_HEADERS
     Headers/models/incoming_invitation_model.hpp
     Headers/models/outgoing_invitation_model.hpp
     Headers/widgets/login_widget.hpp
+    Headers/widgets/register_widget.hpp
     Headers/widgets/message_item_widget.hpp
     Headers/widgets/channel_row_widget.hpp
     Headers/widgets/channel_panel_widget.hpp
@@ -81,6 +84,7 @@ set(CLIENT_HEADERS
     Headers/widgets/user_home_widget.hpp
     Headers/widgets/incoming_invitation_item_widget.hpp
     Headers/widgets/outgoing_invitation_item_widget.hpp
+    Headers/widgets/create_channel_widget.hpp
     ../common/utils.hpp
 )
 
