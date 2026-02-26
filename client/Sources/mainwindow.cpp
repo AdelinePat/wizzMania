@@ -73,6 +73,41 @@ MainWindow::MainWindow(QWidget* parent)
   connect(channelService, &ChannelService::historyFailed, this,
           &MainWindow::onHistoryFailed);
 
+  connect(
+      channelService, &ChannelService::channelCreated, this,
+      [this](const ServerSend::CreateChannelResponse& response) {
+        if (response.already_existed) {
+          if (channelPanel) {
+            const ServerSend::ChannelInfo* existing =
+                channelPanel->getChannelInfo(response.id_channel);
+            if (existing) {
+              onChannelSelected(response.id_channel,
+                                QString::fromStdString(existing->title));
+            }
+          }
+          return;
+        }
+
+        if (outgoingInvitationModel) {
+          outgoingInvitationModel->addInvitation(response.channel);
+        }
+        if (userHomeWidget) {
+          userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+        }
+
+        channelTitles.insert(response.channel.id_channel,
+                             QString::fromStdString(response.channel.title));
+        for (const auto& participant : response.channel.participants) {
+          userNamesById.insert(participant.id_user,
+                               QString::fromStdString(participant.username));
+        }
+      });
+
+  connect(channelService, &ChannelService::createChannelFailed, this,
+          [this](const QString& message) {
+            QMessageBox::warning(this, tr("Create Channel"), message);
+          });
+
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
   // signal for update channel unread count
@@ -124,7 +159,10 @@ MainWindow::MainWindow(QWidget* parent)
                     [this](const QStringList& usernames, const QString& title) {
                       qInfo() << "[UI] CREATE_CHANNEL usernames=" << usernames
                               << " title=" << title;
-                      // TODO: Implement channel creation API call
+                      if (channelService) {
+                        channelService->createChannel(usernames, title,
+                                                      authToken);
+                      }
                     });
             dialog->exec();
             dialog->deleteLater();
@@ -132,7 +170,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   // Channel panel logout button (not functional yet)
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this, [this]() {
-    qInfo() << "[UI] Logout requested (not implemented yet)";
+    qInfo() << "[UI] Logout requested";
   });
 
   // Channel panel leave channel button
@@ -351,6 +389,10 @@ void MainWindow::onWsError(const QString& code, const QString& message) {
 
 void MainWindow::onWsDisconnected(const QString& reason) {
   setChatEnabled(false);
+  if (suppressDisconnectPopup) {
+    suppressDisconnectPopup = false;
+    return;
+  }
   QMessageBox::information(this, tr("WebSocket"), reason);
 }
 
@@ -689,6 +731,7 @@ void MainWindow::onUserLeftChannel(
 }
 
 void MainWindow::onLogoutRequested() {
+  suppressDisconnectPopup = true;
   authManager->logout(authToken);
   currentUserId = -1;
   // TODO finish to purge all data
@@ -706,10 +749,25 @@ void MainWindow::onLogoutSucceeded() {
   userNamesById.clear();
   channelTitles.clear();
 
-  // 3. Clear all models
-  channelPanel->clearChannels();
+  // 3. Clear all models / caches shown in UI
+  if (incomingInvitationModel) {
+    incomingInvitationModel->clear();
+  }
+  if (outgoingInvitationModel) {
+    outgoingInvitationModel->clear();
+  }
+  if (userHomeWidget) {
+    userHomeWidget->setUsernameCache(nullptr);
+    userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+    userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+  }
+  if (channelPanel) {
+    channelPanel->clearChannels();
+    channelPanel->setUserInfo("", "??");
+  }
   rightPanel->clearMessages();
   rightPanel->setChatTitle("Select a chat to start messaging");
+  setChatEnabled(false);
 
   // 4. Hide right panel, show login
   if (userHomeWidget) userHomeWidget->hide();

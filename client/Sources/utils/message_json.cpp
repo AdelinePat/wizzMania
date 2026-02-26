@@ -108,6 +108,19 @@ QJsonObject toJson(const ClientSend::SendMessageRequest& req) {
   return obj;
 }
 
+QJsonObject toJson(const ClientSend::CreateChannelRequest& req) {
+  QJsonObject obj;
+  obj["type"] = type_to_int(req.type);
+  obj["title"] = QString::fromStdString(req.title);
+
+  QJsonArray usernames;
+  for (const std::string& username : req.usernames) {
+    usernames.append(QString::fromStdString(username));
+  }
+  obj["usernames"] = usernames;
+  return obj;
+}
+
 QJsonObject toJson(const ClientSend::ChannelOpenRequest& req) {
   QJsonObject obj;
   obj["type"] = type_to_int(req.type);
@@ -368,15 +381,19 @@ bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit) {
 // };
 bool fromJson(const QJsonObject& obj,
               ServerSend::CreateChannelResponse& channel) {
-  if (!obj.contains("type") || !obj.contains("id_channel") ||
-      !obj.contains("channel") || !obj.contains("channel")) {
+  if (!obj.contains("type") || !obj.contains("id_channel")) {
     return false;
   }
 
   channel.id_channel = obj.value("id_channel").toVariant().toLongLong();
   channel.type = static_cast<WizzMania::MessageType>(obj.value("type").toInt());
-  return parse_channel(obj.value("channel").toObject(), channel.channel);
-  // return parse_invitation(obj, invit);
+  channel.already_existed = obj.value("already_existed").toBool(false);
+
+  if (obj.contains("channel") && obj.value("channel").isObject()) {
+    return parse_channel(obj.value("channel").toObject(), channel.channel);
+  }
+
+  return channel.already_existed;
 }
 
 // bool fromJson(const QJsonObject& obj,

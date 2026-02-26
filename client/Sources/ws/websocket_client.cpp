@@ -36,7 +36,13 @@ void WebSocketClient::connectWithToken(const QString& token) {
   socket.open(QUrl(ServerConfig::webSocketUrl()));
 }
 
-void WebSocketClient::disconnectFromServer() { socket.close(); }
+void WebSocketClient::disconnectFromServer() {
+  authToken.clear();
+  if (reconnectTimer && reconnectTimer->isActive()) {
+    reconnectTimer->stop();
+  }
+  socket.close();
+}
 
 bool WebSocketClient::isConnected() const {
   return socket.state() == QAbstractSocket::ConnectedState;
@@ -189,7 +195,6 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
-
   if (type == static_cast<int>(WizzMania::MessageType::INVITATION_REJECTED)) {
     qInfo().noquote()
         << "[WS][INVITATION_REJECTED] type=INVITATION_REJECTED channel_id="
@@ -208,18 +213,17 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
 
   if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_CREATED)) {
     qInfo().noquote()
-        << "[WS][INVITATION_REJECTED] type=INVITATION_REJECTED channel_id="
+        << "[WS][CHANNEL_CREATED] type=CHANNEL_CREATED channel_id="
         << obj.value("id_channel").toInt();
     ServerSend::CreateChannelResponse channel;
     if (MessageJson::fromJson(obj, channel)) {
-      qInfo() << "[WS][INVITATION_REJECTED] parsed ok, emitting signal";
+      qInfo() << "[WS][CHANNEL_CREATED] parsed ok, emitting signal";
       emit newChannelCreated(channel);
       return;
     } else {
-      qInfo() << "[WS][INVITATION_REJECTED] PARSE_FAILED";
+      qInfo() << "[WS][CHANNEL_CREATED] PARSE_FAILED";
     }
   }
-
 
   if (type == static_cast<int>(WizzMania::MessageType::USER_JOINED)) {
     qInfo().noquote()

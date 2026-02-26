@@ -6,7 +6,10 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
+#include <QSet>
 #include <QVBoxLayout>
+
+#include "utils.hpp"
 
 class CreateChannelWidget : public QDialog {
   Q_OBJECT
@@ -20,9 +23,11 @@ class CreateChannelWidget : public QDialog {
 
  private:
   void onCreateClicked();
+  void setErrorMessage(const QString& message);
 
   QLineEdit* participantsInput;
   QLineEdit* titleInput;
+  QLabel* errorLabel;
   QPushButton* createBtn;
   QPushButton* cancelBtn;
 };

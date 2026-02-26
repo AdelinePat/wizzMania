@@ -107,6 +107,7 @@ class MainWindow : public QMainWindow {
                       // (preview channel list), unread_count_count)
   QHash<int64_t, QString>
       userNamesById;  // TODO use std::vector<Contact> contacts;?
+    bool suppressDisconnectPopup = false;
   // initialDataResponse invitations (outgiong & incoming)
   // user_model --> last
 };
