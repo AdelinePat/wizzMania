@@ -359,6 +359,26 @@ bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit) {
   return parse_invitation(obj, invit);
 }
 
+// ServerSend::CreateChannelResponse
+// struct CreateChannelResponse {
+//   WizzMania::MessageType type;  // CHANNEL_CREATED
+//   int64_t id_channel;
+//   bool already_existed;
+//   ChannelInfo channel;
+// };
+bool fromJson(const QJsonObject& obj,
+              ServerSend::CreateChannelResponse& channel) {
+  if (!obj.contains("type") || !obj.contains("id_channel") ||
+      !obj.contains("channel") || !obj.contains("channel")) {
+    return false;
+  }
+
+  channel.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  channel.type = static_cast<WizzMania::MessageType>(obj.value("type").toInt());
+  return parse_channel(obj.value("channel").toObject(), channel.channel);
+  // return parse_invitation(obj, invit);
+}
+
 // bool fromJson(const QJsonObject& obj,
 //               ServerSend::AcceptInvitationResponse& invit) {
 //   if (!obj.contains("channel")) {

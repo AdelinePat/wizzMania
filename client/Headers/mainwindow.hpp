@@ -66,6 +66,8 @@ class MainWindow : public QMainWindow {
       const ServerSend::UserJoinedNotification& notification);
   void onUserLeftChannel(const ServerSend::UserLeftNotification& notification);
   void onNewInvitationRejected(ServerSend::RejectInvitationResponse& rejection);
+  void onNewChannelCreated(
+    ServerSend::CreateChannelResponse& channel);
 
  private:
   void setupChatView();

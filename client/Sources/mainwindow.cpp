@@ -99,6 +99,9 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(wsClient, &WebSocketClient::newInvitationRejected, this,
           &MainWindow::onNewInvitationRejected);
+
+  connect(wsClient, &WebSocketClient::newChannelCreated, this,
+          &MainWindow::onNewChannelCreated);
   // logout
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
           &MainWindow::onLogoutRequested);
@@ -715,7 +718,8 @@ void MainWindow::onLogoutSucceeded() {
   setWindowTitle("WizzMania");
 }
 
-void MainWindow::onNewInvitationRejected(ServerSend::RejectInvitationResponse& rejection) {
+void MainWindow::onNewInvitationRejected(
+    ServerSend::RejectInvitationResponse& rejection) {
   if (rejection.contact.id_user == this->currentUserId) {
     this->incomingInvitationModel->removeInvitation(rejection.id_channel);
     this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
@@ -724,4 +728,10 @@ void MainWindow::onNewInvitationRejected(ServerSend::RejectInvitationResponse& r
     this->outgoingInvitationModel->removeInvitation(rejection.id_channel);
     this->userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
   }
+}
+
+void MainWindow::onNewChannelCreated(
+    ServerSend::CreateChannelResponse& channel) {
+  this->outgoingInvitationModel->addInvitation(channel.channel);
+  this->userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
 }
