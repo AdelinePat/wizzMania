@@ -23,6 +23,10 @@ crow::response InvitationController::accept_invitation(int64_t id_user,
   // send new participant list to all current participant of channel
   broadcast_joined_notification(id_user, id_channel, resp.channel.participants);
 
+  // need to let all the device of the user that the invitation was accepted and
+  // remove it from "incoming invitation"
+  ws_manager.send_to_user(id_user, channel_info_str);
+
   std::string body = "User @" + std::to_string(id_user) + " joined the chat!";
   message_controller.send_message_internal(1, id_channel, body, responded_at);
 

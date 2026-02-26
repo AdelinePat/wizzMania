@@ -174,6 +174,32 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
+if (type == static_cast<int>(WizzMania::MessageType::INVITATION_ACCEPTED)) {
+    qInfo().noquote() << "[WS][INVITATION_ACCEPTED] type=INVITATION_ACCEPTED channel_id="
+                      << obj.value("id_channel").toInt();
+    ServerSend::AcceptInvitationResponse invit;
+    if (MessageJson::fromJson(obj, invit)) {
+      qInfo() << "[WS][INVITATION_ACCEPTED] parsed ok, emitting signal";
+      emit newInvitationAccepted(invit);
+      return;
+    } else {
+      qInfo() << "[WS][INVITATION_ACCEPTED] PARSE_FAILED";
+    }
+  }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   if (type == static_cast<int>(WizzMania::MessageType::ERROR)) {
     ServerSend::ErrorResponse err;
     if (MessageJson::fromJson(obj, err)) {

@@ -58,6 +58,7 @@ class MainWindow : public QMainWindow {
   void onUpdateChannelUnreadCount(int64_t id_channel, int count,
                                   int64_t last_id_message);
   void onNewInvitationReceived(ServerSend::ChannelInvitation& invit);
+  void onNewInvitationAccepted(ServerSend::AcceptInvitationResponse& invit);
 
  private:
   void setupChatView();

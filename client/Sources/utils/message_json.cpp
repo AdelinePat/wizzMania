@@ -80,6 +80,17 @@ bool parse_invitation(const QJsonObject& obj,
 
   return true;
 }
+
+// bool parse_accept_invitation_response(
+//     const QJsonObject& obj, ServerSend::AcceptInvitationResponse& invit) {
+//   // if (!obj.contains("id_channel") || !obj.contains("title") ||
+//   //     !obj.contains("id_inviter")) {
+//   //   return false;
+//   // }
+//   invit.channel = obj.value("channel");
+//   return parse_channel(invit->channel);
+// }
+
 }  // namespace
 
 QJsonObject toJson(const AuthMessages::WSAuthRequest& req) {
@@ -320,6 +331,15 @@ bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit) {
   }
   return parse_invitation(obj, invit);
 }
+
+// bool fromJson(const QJsonObject& obj,
+//               ServerSend::AcceptInvitationResponse& invit) {
+//   if (!obj.contains("channel")) {
+//     return false;
+//   }
+//   return parse_accept_invitation_response(obj, invit);
+// }
+
 }  // namespace MessageJson
 
 // struct ChannelInvitation {

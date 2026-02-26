@@ -84,9 +84,11 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onWsDisconnected);
 
   // newChannelInvitation
+  connect(wsClient, &WebSocketClient::newInvitationAccepted, this,
+          &MainWindow::onNewInvitationAccepted);
+
   connect(wsClient, &WebSocketClient::newChannelInvitation, this,
           &MainWindow::onNewInvitationReceived);
-
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
     if (userHomeWidget) {
@@ -543,4 +545,13 @@ void MainWindow::onNewInvitationReceived(ServerSend::ChannelInvitation& invit) {
 
   this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
   return;
+}
+
+void MainWindow::onNewInvitationAccepted(
+    ServerSend::AcceptInvitationResponse& invit) {
+  this->incomingInvitationModel->removeInvitation(invit.channel.id_channel);
+  // this->channelModel->addChannel(invit.channel);
+
+  this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+  this->channelPanel->addChannel(invit.channel);
 }
