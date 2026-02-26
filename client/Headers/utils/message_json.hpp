@@ -21,6 +21,13 @@ bool fromJson(const QJsonObject& obj, ServerSend::InitialDataResponse& out);
 bool fromJson(const QJsonObject& obj, ServerSend::ChannelHistoryResponse& out);
 bool fromJson(const QJsonObject& obj, ServerSend::ErrorResponse& out);
 bool fromJson(const QJsonObject& obj, ClientSend::MarkAsRead& mark);
+bool fromJson(const QJsonObject& obj,
+              ServerSend::AcceptInvitationResponse& out);
+bool fromJson(const QJsonObject& obj, ServerSend::UserJoinedNotification& out);
+bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit);
+bool fromJson(const QJsonObject& obj, ServerSend::UserLeftNotification& out);
+// bool fromJson(const QJsonObject& obj,
+//               ServerSend::AcceptInvitationResponse& invit);
 }  // namespace MessageJson
 
 #endif  // MESSAGE_JSON_H

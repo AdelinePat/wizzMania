@@ -1,12 +1,15 @@
 #ifndef INVITATIONSERVICE_H
 #define INVITATIONSERVICE_H
 
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QNetworkReply>
 #include <QNetworkRequest>
 #include <QObject>
 #include <QString>
 
 #include "services/api_client.hpp"
+#include "utils/message_json.hpp"
 
 class InvitationService : public QObject {
   Q_OBJECT
@@ -19,7 +22,8 @@ class InvitationService : public QObject {
   void leaveChannel(int64_t channelId, const QString& token);
 
  signals:
-  void invitationAccepted(int64_t channelId);
+  void invitationAccepted(int64_t channelId,
+                          const ServerSend::ChannelInfo& channel);
   void invitationRejected(int64_t channelId);
   void channelLeft(int64_t channelId);
   void invitationFailed(int64_t channelId, const QString& action,

@@ -160,6 +160,63 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
       qInfo() << "[WS][NEW_MESSAGE] PARSE_FAILED";
     }
   }
+  // user receive new incoming invitation
+  if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_INVITATION)) {
+    qInfo().noquote()
+        << "[WS][CHANNEL_INVITATION] type=CHANNEL_INVITATION channel_id="
+        << obj.value("id_channel").toInt();
+    ServerSend::ChannelInvitation invit;
+    if (MessageJson::fromJson(obj, invit)) {
+      qInfo() << "[WS][CHANNEL_INVITATION] parsed ok, emitting signal";
+      emit newChannelInvitation(invit);
+      return;
+    } else {
+      qInfo() << "[WS][CHANNEL_INVITATION] PARSE_FAILED";
+    }
+  }
+
+  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_ACCEPTED)) {
+    qInfo().noquote()
+        << "[WS][INVITATION_ACCEPTED] type=INVITATION_ACCEPTED channel_id="
+        << obj.value("id_channel").toInt();
+    ServerSend::AcceptInvitationResponse invit;
+    if (MessageJson::fromJson(obj, invit)) {
+      qInfo() << "[WS][INVITATION_ACCEPTED] parsed ok, emitting signal";
+      emit newInvitationAccepted(invit);
+      return;
+    } else {
+      qInfo() << "[WS][INVITATION_ACCEPTED] PARSE_FAILED";
+    }
+  }
+
+  if (type == static_cast<int>(WizzMania::MessageType::USER_JOINED)) {
+    qInfo().noquote()
+        << "[WS][USER_JOINED] channel_id=" << obj.value("id_channel").toInt()
+        << " user_id="
+        << obj.value("contact").toObject().value("id_user").toInt();
+    ServerSend::UserJoinedNotification notification;
+    if (MessageJson::fromJson(obj, notification)) {
+      qInfo() << "[WS][USER_JOINED] parsed ok, emitting signal";
+      emit userJoinedChannel(notification);
+      return;
+    } else {
+      qInfo() << "[WS][USER_JOINED] PARSE_FAILED";
+    }
+  }
+
+  if (type == static_cast<int>(WizzMania::MessageType::USER_LEFT)) {
+    qInfo().noquote() << "[WS][USER_LEFT] channel_id="
+                      << obj.value("id_channel").toInt()
+                      << " user_id=" << obj.value("id_user").toInt();
+    ServerSend::UserLeftNotification notification;
+    if (MessageJson::fromJson(obj, notification)) {
+      qInfo() << "[WS][USER_LEFT] parsed ok, emitting signal";
+      emit userLeftChannel(notification);
+      return;
+    } else {
+      qInfo() << "[WS][USER_LEFT] PARSE_FAILED";
+    }
+  }
 
   if (type == static_cast<int>(WizzMania::MessageType::ERROR)) {
     ServerSend::ErrorResponse err;

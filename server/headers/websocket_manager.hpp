@@ -40,6 +40,12 @@ class WebSocketManager {
   bool is_user_online(int64_t id_user);  // might not use this one
   std::optional<int64_t> get_user_id(WSConn conn);
   void send_to_user(int64_t id_user, const std::string& message);
+  void send_to_user_except(int64_t id_user, const std::string& message,
+                           const std::string& exclude_token);
+  void send_to_user_except_(int64_t id_user, const std::string& message,
+                            const std::string& exclude_token);
+
+  std::string get_token_for_connection(WSConn conn);
 };
 
 #endif

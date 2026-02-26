@@ -11,18 +11,6 @@ void WebSocketManager::add_user(int64_t id_user, WSConn conn,
 }
 
 void WebSocketManager::remove_connection(WSConn conn) {
-  // std::lock_guard<std::mutex> lock(this->ws_mutex);
-
-  // auto it = this->socket_to_user.find(conn);
-  // if (it != this->socket_to_user.end()) {
-  //   int64_t id_user = it->second;
-  //   this->user_sockets[id_user].erase(conn);
-  //   if (this->user_sockets[id_user].empty()) {
-  //     this->user_sockets.erase(id_user);
-  //   }
-  //   this->socket_to_user.erase(conn);
-  // }
-
   std::lock_guard<std::mutex> lock(this->ws_mutex);
   auto it_user = this->socket_to_user.find(conn);
   if (it_user != this->socket_to_user.end()) {
@@ -93,6 +81,20 @@ void WebSocketManager::send_to_user_(int64_t id_user,
   }
 }
 
+void WebSocketManager::send_to_user_except_(int64_t id_user,
+                                     const std::string& message, const std::string& exclude_token) {
+  // get all connections for this user, send to each
+   auto it = user_sockets.find(id_user);
+  if (it == user_sockets.end()) return;
+
+  for (WSConn conn : it->second) {
+    auto token_it = socket_to_token.find(conn);
+    if (token_it != socket_to_token.end() && token_it->second != exclude_token) {
+      conn->send_text(message);
+    }
+  }
+}
+
 // Public method that sends message to all user's connection, guard lock !
 void WebSocketManager::send_to_user(int64_t id_user,
                                     const std::string& message) {
@@ -104,6 +106,24 @@ void WebSocketManager::send_to_user(int64_t id_user,
     }
   }
 }
+
+
+void WebSocketManager::send_to_user_except(int64_t id_user,
+                                           const std::string& message,
+                                           const std::string& exclude_token) {
+  std::lock_guard<std::mutex> lock(ws_mutex);
+  send_to_user_except_(id_user, message, exclude_token);
+  // auto it = user_sockets.find(id_user);
+  // if (it == user_sockets.end()) return;
+
+  // for (WSConn conn : it->second) {
+  //   auto token_it = socket_to_token.find(conn);
+  //   if (token_it != socket_to_token.end() && token_it->second != exclude_token) {
+  //     conn->send_text(message);
+  //   }
+  // }
+}
+
 
 bool WebSocketManager::is_user_online(int64_t id_user) {
   std::lock_guard<std::mutex> lock(ws_mutex);
@@ -119,16 +139,24 @@ std::optional<int64_t> WebSocketManager::get_user_id(WSConn conn) {
   }
 }
 
-
 std::vector<WSConn> WebSocketManager::get_user_connections(int64_t id_user) {
   std::lock_guard<std::mutex> lock(ws_mutex);
   std::vector<WSConn> connections;
-  std::unordered_map<int64_t, std::unordered_set<WSConn>>::iterator it = user_sockets.find(id_user);
+  std::unordered_map<int64_t, std::unordered_set<WSConn>>::iterator it =
+      user_sockets.find(id_user);
   if (it != user_sockets.end()) {
     for (WSConn conn : it->second) {
       connections.push_back(conn);
     }
   }
   return connections;
+}
 
+std::string WebSocketManager::get_token_for_connection(WSConn conn) {
+  std::lock_guard<std::mutex> lock(ws_mutex);
+  auto it = socket_to_token.find(conn);
+  if (it != socket_to_token.end()) {
+    return it->second;
+  }
+  return "";
 }

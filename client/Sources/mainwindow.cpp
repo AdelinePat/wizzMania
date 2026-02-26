@@ -46,6 +46,8 @@ MainWindow::MainWindow(QWidget* parent)
   userHomeWidget->setModels(incomingInvitationModel, outgoingInvitationModel);
   userHomeWidget->hide();
 
+  // incomingInvitationItemWidget = new IncomingInvitationItemWidget()
+
   // Connect login signal
   connect(loginWidget, &LoginWidget::loginSuccessful, this,
           &MainWindow::onLoginSuccessful);
@@ -82,6 +84,18 @@ MainWindow::MainWindow(QWidget* parent)
   connect(wsClient, &WebSocketClient::disconnected, this,
           &MainWindow::onWsDisconnected);
 
+  // newChannelInvitation
+  connect(wsClient, &WebSocketClient::newInvitationAccepted, this,
+          &MainWindow::onNewInvitationAccepted);
+
+  connect(wsClient, &WebSocketClient::newChannelInvitation, this,
+          &MainWindow::onNewInvitationReceived);
+
+  connect(wsClient, &WebSocketClient::userJoinedChannel, this,
+          &MainWindow::onUserJoinedChannel);
+
+  connect(wsClient, &WebSocketClient::userLeftChannel, this,
+          &MainWindow::onUserLeftChannel);
   // logout
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
           &MainWindow::onLogoutRequested);
@@ -133,6 +147,7 @@ MainWindow::MainWindow(QWidget* parent)
             if (invitationService)
               invitationService->leaveChannel(id, authToken);
           });
+
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
             qInfo() << "[HTTP] DELETE_ACCOUNT requested (not implemented yet)";
@@ -140,10 +155,8 @@ MainWindow::MainWindow(QWidget* parent)
           });
 
   connect(invitationService, &InvitationService::invitationAccepted, this,
-          [this](int64_t id) {
-            if (incomingInvitationModel) {
-              incomingInvitationModel->removeInvitation(id);
-            }
+          [this](int64_t id, const ServerSend::ChannelInfo& channel) {
+            applyInvitationAccepted(id, channel);
           });
   connect(invitationService, &InvitationService::invitationRejected, this,
           [this](int64_t id) {
@@ -152,9 +165,26 @@ MainWindow::MainWindow(QWidget* parent)
             }
           });
   connect(invitationService, &InvitationService::channelLeft, this,
-          [this](int64_t id) {
+          [this](int64_t channelId) {
+            qInfo() << "[HTTP][LEAVE_SUCCESS] Removing channel" << channelId;
+
+            // If currently viewing this channel, switch to home
+            if (currentChannelId == channelId) {
+              rightPanel->hide();
+              if (userHomeWidget) {
+                userHomeWidget->show();
+              }
+              currentChannelId = -1;
+            }
+
+            // Remove from channel panel immediately (HTTP success)
+            if (channelPanel) {
+              channelPanel->removeChannel(channelId);
+            }
+
+            // Also remove from outgoing invitations if it was there
             if (outgoingInvitationModel) {
-              outgoingInvitationModel->removeInvitation(id);
+              outgoingInvitationModel->removeInvitation(channelId);
             }
           });
   connect(invitationService, &InvitationService::invitationFailed, this,
@@ -522,6 +552,132 @@ QString MainWindow::getUserInitials(const QString& username) const {
   }
 
   return initials;
+}
+
+void MainWindow::onNewInvitationReceived(ServerSend::ChannelInvitation& invit) {
+  // incomingModel // update incomingModel avec nouveau widget d'invitation item
+  this->incomingInvitationModel->addInvitation(invit);
+
+  this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+  return;
+}
+
+void MainWindow::applyInvitationAccepted(
+    int64_t invitationChannelId, const ServerSend::ChannelInfo& channel) {
+  if (channelPanel) {
+    channelPanel->addChannel(channel);
+  }
+
+  channelTitles.insert(channel.id_channel,
+                       QString::fromStdString(channel.title));
+  for (const auto& participant : channel.participants) {
+    userNamesById.insert(participant.id_user,
+                         QString::fromStdString(participant.username));
+  }
+
+  if (incomingInvitationModel) {
+    incomingInvitationModel->removeInvitation(invitationChannelId);
+  }
+}
+
+void MainWindow::onNewInvitationAccepted(
+    ServerSend::AcceptInvitationResponse& invit) {
+  applyInvitationAccepted(invit.channel.id_channel, invit.channel);
+  this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+}
+
+void MainWindow::onUserJoinedChannel(
+    const ServerSend::UserJoinedNotification& notification) {
+  qInfo().noquote() << "[WS][USER_JOINED_HANDLER] channel_id="
+                    << notification.id_channel
+                    << " user_id=" << notification.contact.id_user;
+
+  userNamesById.insert(notification.contact.id_user,
+                       QString::fromStdString(notification.contact.username));
+
+  if (!channelPanel) {
+    return;
+  }
+
+  const ServerSend::ChannelInfo* existingChannel =
+      channelPanel->getChannelInfo(notification.id_channel);
+  if (existingChannel) {
+    return;
+  }
+
+  if (!outgoingInvitationModel) {
+    return;
+  }
+
+  const ServerSend::ChannelInfo* outgoing =
+      outgoingInvitationModel->getInvitationById(notification.id_channel);
+  if (!outgoing) {
+    return;
+  }
+
+  ServerSend::ChannelInfo activatedChannel = *outgoing;
+  const bool participantAlreadyPresent =
+      std::any_of(activatedChannel.participants.begin(),
+                  activatedChannel.participants.end(),
+                  [&notification](const ServerSend::Contact& contact) {
+                    return contact.id_user == notification.contact.id_user;
+                  });
+
+  if (!participantAlreadyPresent) {
+    activatedChannel.participants.push_back(notification.contact);
+  }
+  activatedChannel.is_group = activatedChannel.participants.size() > 2;
+
+  channelPanel->addChannel(activatedChannel);
+  outgoingInvitationModel->removeInvitation(notification.id_channel);
+
+  qInfo() << "[UI][USER_JOINED] Activated channel" << notification.id_channel
+          << "for current user";
+}
+
+void MainWindow::onUserLeftChannel(
+    const ServerSend::UserLeftNotification& notification) {
+  qInfo().noquote() << "[WS][USER_LEFT_HANDLER] channel_id="
+                    << notification.id_channel
+                    << " user_id=" << notification.id_user
+                    << " current_user=" << currentUserId;
+
+  auto removeChannelFromUi = [this](int64_t channelId) {
+    if (currentChannelId == channelId) {
+      rightPanel->hide();
+      if (userHomeWidget) {
+        userHomeWidget->show();
+      }
+      currentChannelId = -1;
+    }
+    if (channelPanel) {
+      channelPanel->removeChannel(channelId);
+    }
+  };
+
+  // If the current user left the channel, remove it from the UI
+  if (notification.id_user == currentUserId) {
+    removeChannelFromUi(notification.id_channel);
+
+    qInfo() << "[UI][USER_LEFT_SELF] Channel" << notification.id_channel
+            << "removed from list";
+    return;
+  }
+
+  if (!channelPanel) {
+    return;
+  }
+
+  const ServerSend::ChannelInfo* channel =
+      channelPanel->getChannelInfo(notification.id_channel);
+  if (!channel) {
+    return;
+  }
+
+  if (!channel->is_group) {
+    removeChannelFromUi(notification.id_channel);
+    qInfo() << "[UI][USER_LEFT_DM] Removing channel" << notification.id_channel;
+  }
 }
 
 void MainWindow::onLogoutRequested() { authManager->logout(authToken); }

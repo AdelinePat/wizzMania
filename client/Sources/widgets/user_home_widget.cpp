@@ -69,6 +69,38 @@ void UserHomeWidget::setModels(IncomingInvitationModel* incomingModel,
   this->incomingModel = incomingModel;
   this->outgoingModel = outgoingModel;
 
+  this->setIncomingInvitationModels(incomingModel);
+  this->setOutgoingInvitationModels(outgoingModel);
+  // if (incomingModel) {
+  //   connect(incomingModel, &QAbstractListModel::rowsInserted, this,
+  //           &UserHomeWidget::rebuildIncomingInvitations);
+  //   connect(incomingModel, &QAbstractListModel::rowsRemoved, this,
+  //           &UserHomeWidget::rebuildIncomingInvitations);
+  //   connect(incomingModel, &QAbstractListModel::modelReset, this,
+  //           &UserHomeWidget::rebuildIncomingInvitations);
+  // }
+
+  // rebuildIncomingInvitations();
+}
+
+void UserHomeWidget::setOutgoingInvitationModels(
+    OutgoingInvitationModel* outgoingModel) {
+  if (outgoingModel) {
+    connect(outgoingModel, &QAbstractListModel::rowsInserted, this,
+            &UserHomeWidget::rebuildOutgoingInvitations);
+    connect(outgoingModel, &QAbstractListModel::rowsRemoved, this,
+            &UserHomeWidget::rebuildOutgoingInvitations);
+    connect(outgoingModel, &QAbstractListModel::modelReset, this,
+            &UserHomeWidget::rebuildOutgoingInvitations);
+  }
+  rebuildOutgoingInvitations();
+}
+
+void UserHomeWidget::setIncomingInvitationModels(
+    IncomingInvitationModel* incomingModel) {
+  this->incomingModel = incomingModel;
+  // this->outgoingModel = outgoingModel;
+
   if (incomingModel) {
     connect(incomingModel, &QAbstractListModel::rowsInserted, this,
             &UserHomeWidget::rebuildIncomingInvitations);
@@ -78,17 +110,17 @@ void UserHomeWidget::setModels(IncomingInvitationModel* incomingModel,
             &UserHomeWidget::rebuildIncomingInvitations);
   }
 
-  if (outgoingModel) {
-    connect(outgoingModel, &QAbstractListModel::rowsInserted, this,
-            &UserHomeWidget::rebuildOutgoingInvitations);
-    connect(outgoingModel, &QAbstractListModel::rowsRemoved, this,
-            &UserHomeWidget::rebuildOutgoingInvitations);
-    connect(outgoingModel, &QAbstractListModel::modelReset, this,
-            &UserHomeWidget::rebuildOutgoingInvitations);
-  }
+  // if (outgoingModel) {
+  //   connect(outgoingModel, &QAbstractListModel::rowsInserted, this,
+  //           &UserHomeWidget::rebuildOutgoingInvitations);
+  //   connect(outgoingModel, &QAbstractListModel::rowsRemoved, this,
+  //           &UserHomeWidget::rebuildOutgoingInvitations);
+  //   connect(outgoingModel, &QAbstractListModel::modelReset, this,
+  //           &UserHomeWidget::rebuildOutgoingInvitations);
+  // }
 
   rebuildIncomingInvitations();
-  rebuildOutgoingInvitations();
+  // rebuildOutgoingInvitations();
 }
 
 void UserHomeWidget::rebuildIncomingInvitations() {

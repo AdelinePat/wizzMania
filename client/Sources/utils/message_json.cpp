@@ -80,6 +80,17 @@ bool parse_invitation(const QJsonObject& obj,
 
   return true;
 }
+
+// bool parse_accept_invitation_response(
+//     const QJsonObject& obj, ServerSend::AcceptInvitationResponse& invit) {
+//   // if (!obj.contains("id_channel") || !obj.contains("title") ||
+//   //     !obj.contains("id_inviter")) {
+//   //   return false;
+//   // }
+//   invit.channel = obj.value("channel");
+//   return parse_channel(invit->channel);
+// }
+
 }  // namespace
 
 QJsonObject toJson(const AuthMessages::WSAuthRequest& req) {
@@ -304,4 +315,57 @@ bool fromJson(const QJsonObject& obj, ClientSend::MarkAsRead& mark) {
 
   return true;
 }
+
+bool fromJson(const QJsonObject& obj,
+              ServerSend::AcceptInvitationResponse& out) {
+  if (!obj.contains("channel") || !obj.value("channel").isObject()) {
+    return false;
+  }
+  return parse_channel(obj.value("channel").toObject(), out.channel);
+}
+
+bool fromJson(const QJsonObject& obj, ServerSend::UserJoinedNotification& out) {
+  if (!obj.contains("id_channel") || !obj.contains("contact") ||
+      !obj.value("contact").isObject()) {
+    return false;
+  }
+  out.type = WizzMania::MessageType::USER_JOINED;
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  return parse_contact(obj.value("contact").toObject(), out.contact);
+}
+
+bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit) {
+  if (!obj.contains("id_channel") || !obj.contains("id_inviter") ||
+      !obj.contains("other_participant_ids") || !obj.contains("title")) {
+    return false;
+  }
+  return parse_invitation(obj, invit);
+}
+
+// bool fromJson(const QJsonObject& obj,
+//               ServerSend::AcceptInvitationResponse& invit) {
+//   if (!obj.contains("channel")) {
+//     return false;
+//   }
+//   return parse_accept_invitation_response(obj, invit);
+// }
+
+bool fromJson(const QJsonObject& obj, ServerSend::UserLeftNotification& out) {
+  if (!obj.contains("id_channel") || !obj.contains("id_user")) {
+    return false;
+  }
+  out.type = WizzMania::MessageType::USER_LEFT;
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  out.id_user = obj.value("id_user").toVariant().toLongLong();
+  return true;
+}
+
 }  // namespace MessageJson
+
+// struct ChannelInvitation {
+//   WizzMania::MessageType type;  // CHANNEL_INVITATION
+//   int64_t id_channel;
+//   int64_t id_inviter;
+//   std::vector<Contact> other_participant_ids;
+//   std::string title;
+// };n

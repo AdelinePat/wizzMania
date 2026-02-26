@@ -57,7 +57,14 @@ void InvitationService::sendInvitationAction(const QString& action,
         }
 
         if (action == "accept") {
-          emit invitationAccepted(channelId);
+          ServerSend::AcceptInvitationResponse response;
+          QJsonDocument doc = QJsonDocument::fromJson(body);
+          if (doc.isObject() && MessageJson::fromJson(doc.object(), response)) {
+            emit invitationAccepted(channelId, response.channel);
+          } else {
+            emit invitationFailed(channelId, action,
+                                  "Failed to parse channel data");
+          }
         } else if (action == "reject") {
           emit invitationRejected(channelId);
         }

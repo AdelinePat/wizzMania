@@ -60,8 +60,8 @@ void IncomingInvitationModel::addInvitation(
   // if already exists, ignore
   if (idToIndex.count(invitation.id_channel)) return;
 
-  beginInsertRows(QModelIndex(), invitations.size(), invitations.size());
-  idToIndex[invitation.id_channel] = static_cast<int>(invitations.size());
+  beginInsertRows(QModelIndex(), invitations.size(), invitations.size()); // TODO KESAKO beginInsertRows ??
+  idToIndex[invitation.id_channel] = static_cast<int>(invitations.size()); // TODO : need to rebuild entire map or not????
   invitations.push_back(invitation);
   endInsertRows();
 }
