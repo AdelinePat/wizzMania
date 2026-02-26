@@ -156,6 +156,13 @@ void ChannelPanelWidget::setChannels(
 }
 
 void ChannelPanelWidget::addChannel(const ServerSend::ChannelInfo& channel) {
+  // Check if channel already exists in the display
+  if (itemByChannelId.contains(channel.id_channel)) {
+    qWarning() << "[UI][CHANNEL_ADD_DUP] id=" << channel.id_channel
+               << " already exists, skipping duplicate";
+    return;
+  }
+
   // Add to internal model
   channelModel->addChannel(channel);
 
@@ -184,6 +191,32 @@ void ChannelPanelWidget::addChannel(const ServerSend::ChannelInfo& channel) {
 
   qInfo() << "[UI][CHANNEL_ADDED] id=" << channel.id_channel
           << " title=" << title;
+}
+
+void ChannelPanelWidget::removeChannel(int64_t channelId) {
+  auto it = itemByChannelId.find(channelId);
+  if (it == itemByChannelId.end()) {
+    qWarning() << "[UI][CHANNEL_REMOVE] id=" << channelId
+               << "not found in panel";
+    return;
+  }
+
+  // Remove from model
+  channelModel->removeChannel(channelId);
+
+  QListWidgetItem* item = it.value();
+  itemByChannelId.erase(it);
+  delete channelsList->takeItem(channelsList->row(item));
+
+  qInfo() << "[UI][CHANNEL_REMOVED] id=" << channelId;
+}
+
+const ServerSend::ChannelInfo* ChannelPanelWidget::getChannelInfo(
+    int64_t channelId) const {
+  if (!channelModel) {
+    return nullptr;
+  }
+  return channelModel->getChannelById(channelId);
 }
 
 void ChannelPanelWidget::updateChannelOnNewMessage(int64_t channelId,

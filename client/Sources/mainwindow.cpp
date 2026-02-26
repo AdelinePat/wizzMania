@@ -89,6 +89,9 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(wsClient, &WebSocketClient::newChannelInvitation, this,
           &MainWindow::onNewInvitationReceived);
+
+  connect(wsClient, &WebSocketClient::userLeftChannel, this,
+          &MainWindow::onUserLeftChannel);
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
     if (userHomeWidget) {
@@ -167,9 +170,26 @@ MainWindow::MainWindow(QWidget* parent)
             }
           });
   connect(invitationService, &InvitationService::channelLeft, this,
-          [this](int64_t id) {
+          [this](int64_t channelId) {
+            qInfo() << "[HTTP][LEAVE_SUCCESS] Removing channel" << channelId;
+
+            // If currently viewing this channel, switch to home
+            if (currentChannelId == channelId) {
+              rightPanel->hide();
+              if (userHomeWidget) {
+                userHomeWidget->show();
+              }
+              currentChannelId = -1;
+            }
+
+            // Remove from channel panel immediately (HTTP success)
+            if (channelPanel) {
+              channelPanel->removeChannel(channelId);
+            }
+
+            // Also remove from outgoing invitations if it was there
             if (outgoingInvitationModel) {
-              outgoingInvitationModel->removeInvitation(id);
+              outgoingInvitationModel->removeInvitation(channelId);
             }
           });
   connect(invitationService, &InvitationService::invitationFailed, this,
@@ -554,4 +574,49 @@ void MainWindow::onNewInvitationAccepted(
 
   this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
   this->channelPanel->addChannel(invit.channel);
+}
+
+void MainWindow::onUserLeftChannel(
+    const ServerSend::UserLeftNotification& notification) {
+  qInfo().noquote() << "[WS][USER_LEFT_HANDLER] channel_id="
+                    << notification.id_channel
+                    << " user_id=" << notification.id_user
+                    << " current_user=" << currentUserId;
+
+  auto removeChannelFromUi = [this](int64_t channelId) {
+    if (currentChannelId == channelId) {
+      rightPanel->hide();
+      if (userHomeWidget) {
+        userHomeWidget->show();
+      }
+      currentChannelId = -1;
+    }
+    if (channelPanel) {
+      channelPanel->removeChannel(channelId);
+    }
+  };
+
+  // If the current user left the channel, remove it from the UI
+  if (notification.id_user == currentUserId) {
+    removeChannelFromUi(notification.id_channel);
+
+    qInfo() << "[UI][USER_LEFT_SELF] Channel" << notification.id_channel
+            << "removed from list";
+    return;
+  }
+
+  if (!channelPanel) {
+    return;
+  }
+
+  const ServerSend::ChannelInfo* channel =
+      channelPanel->getChannelInfo(notification.id_channel);
+  if (!channel) {
+    return;
+  }
+
+  if (!channel->is_group) {
+    removeChannelFromUi(notification.id_channel);
+    qInfo() << "[UI][USER_LEFT_DM] Removing channel" << notification.id_channel;
+  }
 }

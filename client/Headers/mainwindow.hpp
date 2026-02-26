@@ -59,6 +59,7 @@ class MainWindow : public QMainWindow {
                                   int64_t last_id_message);
   void onNewInvitationReceived(ServerSend::ChannelInvitation& invit);
   void onNewInvitationAccepted(ServerSend::AcceptInvitationResponse& invit);
+  void onUserLeftChannel(const ServerSend::UserLeftNotification& notification);
 
  private:
   void setupChatView();

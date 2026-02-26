@@ -55,10 +55,39 @@ QHash<int, QByteArray> ChannelModel::roleNames() const {
 //   endInsertRows();
 // }
 void ChannelModel::addChannel(const ServerSend::ChannelInfo& channel) {
+  // Check if channel already exists
+  auto it = idToIndex.find(channel.id_channel);
+  if (it != idToIndex.end()) {
+    // Channel already exists, don't add duplicate
+    return;
+  }
+
   beginInsertRows(QModelIndex(), channels.size(), channels.size());
   idToIndex[channel.id_channel] = static_cast<int>(channels.size());
   channels.push_back(channel);
   endInsertRows();
+}
+
+void ChannelModel::removeChannel(int64_t channelId) {
+  auto it = idToIndex.find(channelId);
+  if (it == idToIndex.end()) {
+    // Channel not found
+    return;
+  }
+
+  int row = it->second;
+  beginRemoveRows(QModelIndex(), row, row);
+
+  // Remove from vector
+  channels.erase(channels.begin() + row);
+
+  // Rebuild idToIndex map since indices shifted
+  idToIndex.clear();
+  for (int i = 0; i < static_cast<int>(channels.size()); ++i) {
+    idToIndex[channels[i].id_channel] = i;
+  }
+
+  endRemoveRows();
 }
 
 // void ChannelModel::setChannels(
@@ -139,9 +168,10 @@ void ChannelModel::updateLastMessage(int64_t channelId,
   if (it == idToIndex.end()) return;
 
   int idx = it->second;
-  channels[idx].last_message.body = preview.toStdString();;
+  channels[idx].last_message.body = preview.toStdString();
+  ;
 
   QModelIndex modelIdx = index(idx);
-  emit dataChanged(modelIdx, modelIdx, {LastMessageBodyRole, LastMessageTimestampRole});
+  emit dataChanged(modelIdx, modelIdx,
+                   {LastMessageBodyRole, LastMessageTimestampRole});
 }
-

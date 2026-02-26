@@ -43,6 +43,7 @@ class WebSocketClient : public QObject {
   void errorReceived(const QString& code, const QString& message);
   void newChannelInvitation(ServerSend::ChannelInvitation& invit);
   void newInvitationAccepted(ServerSend::AcceptInvitationResponse& invit);
+  void userLeftChannel(const ServerSend::UserLeftNotification& notification);
 
  private slots:
   void onConnected();

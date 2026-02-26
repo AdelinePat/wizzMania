@@ -162,8 +162,9 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
   }
   // user receive new incoming invitation
   if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_INVITATION)) {
-    qInfo().noquote() << "[WS][CHANNEL_INVITATION] type=CHANNEL_INVITATION channel_id="
-                      << obj.value("id_channel").toInt();
+    qInfo().noquote()
+        << "[WS][CHANNEL_INVITATION] type=CHANNEL_INVITATION channel_id="
+        << obj.value("id_channel").toInt();
     ServerSend::ChannelInvitation invit;
     if (MessageJson::fromJson(obj, invit)) {
       qInfo() << "[WS][CHANNEL_INVITATION] parsed ok, emitting signal";
@@ -174,9 +175,10 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
-if (type == static_cast<int>(WizzMania::MessageType::INVITATION_ACCEPTED)) {
-    qInfo().noquote() << "[WS][INVITATION_ACCEPTED] type=INVITATION_ACCEPTED channel_id="
-                      << obj.value("id_channel").toInt();
+  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_ACCEPTED)) {
+    qInfo().noquote()
+        << "[WS][INVITATION_ACCEPTED] type=INVITATION_ACCEPTED channel_id="
+        << obj.value("id_channel").toInt();
     ServerSend::AcceptInvitationResponse invit;
     if (MessageJson::fromJson(obj, invit)) {
       qInfo() << "[WS][INVITATION_ACCEPTED] parsed ok, emitting signal";
@@ -187,18 +189,19 @@ if (type == static_cast<int>(WizzMania::MessageType::INVITATION_ACCEPTED)) {
     }
   }
 
-
-
-
-
-
-
-
-
-
-
-
-
+  if (type == static_cast<int>(WizzMania::MessageType::USER_LEFT)) {
+    qInfo().noquote() << "[WS][USER_LEFT] channel_id="
+                      << obj.value("id_channel").toInt()
+                      << " user_id=" << obj.value("id_user").toInt();
+    ServerSend::UserLeftNotification notification;
+    if (MessageJson::fromJson(obj, notification)) {
+      qInfo() << "[WS][USER_LEFT] parsed ok, emitting signal";
+      emit userLeftChannel(notification);
+      return;
+    } else {
+      qInfo() << "[WS][USER_LEFT] PARSE_FAILED";
+    }
+  }
 
   if (type == static_cast<int>(WizzMania::MessageType::ERROR)) {
     ServerSend::ErrorResponse err;
@@ -273,4 +276,3 @@ void WebSocketClient::sendAuth() {
                     << " payload=" << payload;
   socket.sendTextMessage(payload);
 }
-

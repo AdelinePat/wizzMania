@@ -24,6 +24,7 @@ bool fromJson(const QJsonObject& obj, ClientSend::MarkAsRead& mark);
 bool fromJson(const QJsonObject& obj,
               ServerSend::AcceptInvitationResponse& out);
 bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit);
+bool fromJson(const QJsonObject& obj, ServerSend::UserLeftNotification& out);
 // bool fromJson(const QJsonObject& obj,
 //               ServerSend::AcceptInvitationResponse& invit);
 }  // namespace MessageJson
