@@ -2,10 +2,33 @@
 
 set -e  # Exit on error
 
-echo "========================================"
-echo "  WizzMania Client Build Script (Linux)"
-echo "========================================"
-echo ""
+# ==================== COLORS ====================
+BLUE='\033[0;34m'
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+RESET='\033[0m'
+
+title() {
+  echo -e "${BLUE}===============================================${RESET}"
+  echo -e "${BLUE}  $1${RESET}"
+  echo -e "${BLUE}===============================================${RESET}"
+  echo -e ""
+}
+
+success() {
+  echo -e "${GREEN}$1${RESET}"
+}
+
+failure() {
+  echo -e "${RED}$1${RESET}"
+}
+
+title "  WizzMania Client Build Script (Linux)"
+
+# echo "========================================"
+# echo "  WizzMania Client Build Script (Linux)"
+# echo "========================================"
+
 
 # Navigate to script's directory (client/)
 cd "$(dirname "$0")"
@@ -15,7 +38,7 @@ echo "Checking dependencies..."
 echo ""
 
 if ! command -v cmake &> /dev/null; then
-    echo "[ERROR] CMake not found!"
+    failure "[ERROR] CMake not found!"
     echo ""
     echo "Install with:"
     echo "  sudo apt install cmake"
@@ -23,26 +46,26 @@ if ! command -v cmake &> /dev/null; then
 fi
 
 if ! command -v qmake6 &> /dev/null && ! command -v qmake &> /dev/null; then
-    echo "[ERROR] Qt6 not found!"
+    failure "[ERROR] Qt6 not found!"
     echo ""
     echo "Install with:"
     echo "  sudo apt install qt6-base-dev qt6-tools-dev"
     exit 1
 fi
 
-echo "[OK] CMake found: $(cmake --version | head -n1)"
+success "[OK] CMake found: $(cmake --version | head -n1)"
 
 if command -v qmake6 &> /dev/null; then
-    echo "[OK] Qt6 found: $(qmake6 --version | grep 'Qt version')"
+    success "[OK] Qt6 found: $(qmake6 --version | grep 'Qt version')"
 elif command -v qmake &> /dev/null; then
-    echo "[OK] Qt found: $(qmake --version | grep 'Qt version')"
+    success "[OK] Qt found: $(qmake --version | grep 'Qt version')"
 fi
 
 echo ""
 
 # Verify CMakeLists.txt exists
 if [ ! -f "CMakeLists.txt" ]; then
-    echo "[ERROR] CMakeLists.txt not found!"
+    failure "[ERROR] CMakeLists.txt not found!"
     echo "This script must be in the client/ directory."
     exit 1
 fi
@@ -60,10 +83,7 @@ fi
 mkdir build
 cd build
 
-echo "========================================"
-echo "Step 1: Configuring with CMake"
-echo "========================================"
-echo ""
+title "  Step 1: Configuring with CMake"
 
 # Configure with CMake
 # Let CMake auto-detect everything on Linux
@@ -71,7 +91,7 @@ cmake .. -DCMAKE_BUILD_TYPE=Release
 
 if [ $? -ne 0 ]; then
     echo ""
-    echo "[ERROR] CMake configuration failed!"
+    failure "[ERROR] CMake configuration failed!"
     echo ""
     echo "Troubleshooting:"
     echo "1. Make sure Qt6 is installed: sudo apt install qt6-base-dev"
@@ -81,29 +101,24 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "[OK] Configuration successful"
+success "[OK] Configuration successful"
 echo ""
 
-echo "========================================"
-echo "Step 2: Building Client"
-echo "========================================"
-echo ""
+title "  Step 2: Building Client"
 
 # Build with all CPU cores
 cmake --build . --config Release -j$(nproc)
 
 if [ $? -ne 0 ]; then
     echo ""
-    echo "[FAILED] Build failed!"
+    failure "[FAILED] Build failed!"
     echo "Check the errors above"
     exit 1
 fi
 
+
 echo ""
-echo "========================================"
-echo "  Build Successful!"
-echo "========================================"
-echo ""
+title "  Build Successful!"
 
 # Find the executable
 if [ -f "wizzmania-client" ]; then
