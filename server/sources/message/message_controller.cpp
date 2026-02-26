@@ -193,3 +193,36 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
     WizzManiaError::send_ws_error(conn, e);
   }
 }
+
+void MessageController::wizz(crow::websocket::connection& conn, int64_t id_user,
+                              const crow::json::rvalue& json_msg) {
+  try {
+    std::optional<ClientSend::WizzRequest> req =
+        JsonHelpers::ClientSendHelpers::parse_wizz(json_msg);
+    if (!req.has_value()) {
+      throw BadRequestError("Invalid WIZZ format");
+    }
+
+    std::cout << "[WIZZ] User " << id_user << " in channel " << req->id_channel << "\n";
+
+    if (!user_service.has_access(id_user, req->id_channel)) {
+      throw ForbiddenError("No access to this channel");
+    }
+
+    // Build notification
+    ServerSend::WizzNotification notif;
+    notif.type = WizzMania::MessageType::WIZZ;
+    notif.id_channel = req->id_channel;
+    notif.id_user = id_user;
+
+    std::string json = JsonHelpers::ServerSendHelpers::to_json(notif).dump();
+
+    // Broadcast to all participants in the channel
+    std::unordered_set<int64_t> participants =
+        user_service.get_users_by_channel(req->id_channel);
+    ws_manager.broadcast_to_users(participants, json);
+
+  } catch (const WizzManiaError& e) {
+    WizzManiaError::send_ws_error(conn, e);
+  }
+}
