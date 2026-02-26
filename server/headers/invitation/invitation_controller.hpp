@@ -56,7 +56,7 @@ class InvitationController {
   //   id_user,
   //                          const crow::json::rvalue& json_msg);
 
-  crow::response reject_invitation(int64_t id_user, int64_t id_channel);
+  crow::response reject_invitation(int64_t id_user, int64_t id_channel, std::string& token);
   void broadcast_invitation_notification(
       std::unordered_set<int64_t> participants,
       ServerSend::ChannelInvitation& invitation);

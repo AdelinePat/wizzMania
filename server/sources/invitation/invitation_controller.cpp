@@ -22,8 +22,7 @@ crow::response InvitationController::accept_invitation(int64_t id_user,
       JsonHelpers::ServerSendHelpers::to_json(resp).dump();
 
   // send new participant list to all current participant of channel
-  broadcast_joined_notification(id_user, id_channel,
-                                resp.channel.participants);
+  broadcast_joined_notification(id_user, id_channel, resp.channel.participants);
 
   // need to let all the device of the user that the invitation was accepted and
   // remove it from "incoming invitation"
@@ -36,7 +35,8 @@ crow::response InvitationController::accept_invitation(int64_t id_user,
 }
 
 crow::response InvitationController::reject_invitation(int64_t id_user,
-                                                       int64_t id_channel) {
+                                                       int64_t id_channel,
+                                                       std::string& token) {
   if (!user_service.has_pending_invitation(id_user, id_channel)) {
     throw ForbiddenError("No pending invitation for this channel");
   }
@@ -67,6 +67,7 @@ crow::response InvitationController::reject_invitation(int64_t id_user,
     std::string resp_json =
         JsonHelpers::ServerSendHelpers::to_json(resp).dump();
     ws_manager.send_to_user(id_creator, resp_json);
+    ws_manager.send_to_user_except(id_user, resp_json, token);
 
     if (channel_exists) {
       std::string body =
