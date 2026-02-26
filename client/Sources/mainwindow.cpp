@@ -96,6 +96,9 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(wsClient, &WebSocketClient::userLeftChannel, this,
           &MainWindow::onUserLeftChannel);
+
+  connect(wsClient, &WebSocketClient::newInvitationRejected, this,
+          &MainWindow::onNewInvitationRejected);
   // logout
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
           &MainWindow::onLogoutRequested);
@@ -680,7 +683,11 @@ void MainWindow::onUserLeftChannel(
   }
 }
 
-void MainWindow::onLogoutRequested() { authManager->logout(authToken); }
+void MainWindow::onLogoutRequested() {
+  authManager->logout(authToken);
+  currentUserId = -1;
+  // TODO finish to purge all data
+}
 
 void MainWindow::onLogoutSucceeded() {
   // 1. Disconnect WebSocket
@@ -706,4 +713,15 @@ void MainWindow::onLogoutSucceeded() {
   // 5. Back to login page
   ui->stackedWidget->setCurrentIndex(0);
   setWindowTitle("WizzMania");
+}
+
+void MainWindow::onNewInvitationRejected(ServerSend::RejectInvitationResponse& rejection) {
+  if (rejection.contact.id_user == this->currentUserId) {
+    this->incomingInvitationModel->removeInvitation(rejection.id_channel);
+    this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+  } else {
+    // in case the creator receive the signal
+    this->outgoingInvitationModel->removeInvitation(rejection.id_channel);
+    this->userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+  }
 }

@@ -189,6 +189,22 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
+
+  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_REJECTED)) {
+    qInfo().noquote()
+        << "[WS][INVITATION_REJECTED] type=INVITATION_REJECTED channel_id="
+        << obj.value("id_channel").toInt();
+    ServerSend::RejectInvitationResponse rejection;
+    if (MessageJson::fromJson(obj, rejection)) {
+      qInfo() << "[WS][INVITATION_REJECTED] parsed ok, emitting signal";
+      emit newInvitationRejected(rejection);
+      return;
+    } else {
+      qInfo() << "[WS][INVITATION_REJECTED] PARSE_FAILED";
+    }
+  }
+
+
   if (type == static_cast<int>(WizzMania::MessageType::USER_JOINED)) {
     qInfo().noquote()
         << "[WS][USER_JOINED] channel_id=" << obj.value("id_channel").toInt()
