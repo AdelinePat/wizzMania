@@ -59,6 +59,8 @@ class MainWindow : public QMainWindow {
                                   int64_t last_id_message);
   void onNewInvitationReceived(ServerSend::ChannelInvitation& invit);
   void onNewInvitationAccepted(ServerSend::AcceptInvitationResponse& invit);
+  void onUserJoinedChannel(
+      const ServerSend::UserJoinedNotification& notification);
   void onUserLeftChannel(const ServerSend::UserLeftNotification& notification);
 
  private:
@@ -70,6 +72,8 @@ class MainWindow : public QMainWindow {
   QWidget* createMessageWidget(const ServerSend::Message& msg) const;
   void appendMessageToView(int64_t channelId, const ServerSend::Message& msg);
   void setChatEnabled(bool enabled);
+  void applyInvitationAccepted(int64_t invitationChannelId,
+                               const ServerSend::ChannelInfo& channel);
   void acceptInvitation(int64_t id_channel);
   void rejectInvitation(int64_t id_channel);
   QString getUserInitials(const QString& username) const;

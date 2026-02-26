@@ -324,6 +324,16 @@ bool fromJson(const QJsonObject& obj,
   return parse_channel(obj.value("channel").toObject(), out.channel);
 }
 
+bool fromJson(const QJsonObject& obj, ServerSend::UserJoinedNotification& out) {
+  if (!obj.contains("id_channel") || !obj.contains("contact") ||
+      !obj.value("contact").isObject()) {
+    return false;
+  }
+  out.type = WizzMania::MessageType::USER_JOINED;
+  out.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  return parse_contact(obj.value("contact").toObject(), out.contact);
+}
+
 bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit) {
   if (!obj.contains("id_channel") || !obj.contains("id_inviter") ||
       !obj.contains("other_participant_ids") || !obj.contains("title")) {

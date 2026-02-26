@@ -189,6 +189,21 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
+  if (type == static_cast<int>(WizzMania::MessageType::USER_JOINED)) {
+    qInfo().noquote()
+        << "[WS][USER_JOINED] channel_id=" << obj.value("id_channel").toInt()
+        << " user_id="
+        << obj.value("contact").toObject().value("id_user").toInt();
+    ServerSend::UserJoinedNotification notification;
+    if (MessageJson::fromJson(obj, notification)) {
+      qInfo() << "[WS][USER_JOINED] parsed ok, emitting signal";
+      emit userJoinedChannel(notification);
+      return;
+    } else {
+      qInfo() << "[WS][USER_JOINED] PARSE_FAILED";
+    }
+  }
+
   if (type == static_cast<int>(WizzMania::MessageType::USER_LEFT)) {
     qInfo().noquote() << "[WS][USER_LEFT] channel_id="
                       << obj.value("id_channel").toInt()

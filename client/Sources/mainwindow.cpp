@@ -90,6 +90,9 @@ MainWindow::MainWindow(QWidget* parent)
   connect(wsClient, &WebSocketClient::newChannelInvitation, this,
           &MainWindow::onNewInvitationReceived);
 
+  connect(wsClient, &WebSocketClient::userJoinedChannel, this,
+          &MainWindow::onUserJoinedChannel);
+
   connect(wsClient, &WebSocketClient::userLeftChannel, this,
           &MainWindow::onUserLeftChannel);
   // Channel panel portrait click -> show user home
@@ -146,22 +149,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(invitationService, &InvitationService::invitationAccepted, this,
           [this](int64_t id, const ServerSend::ChannelInfo& channel) {
-            // Add channel to the display panel
-            if (channelPanel) {
-              channelPanel->addChannel(channel);
-            }
-            // Update local tracking maps
-            channelTitles.insert(channel.id_channel,
-                                 QString::fromStdString(channel.title));
-            for (const auto& participant : channel.participants) {
-              userNamesById.insert(
-                  participant.id_user,
-                  QString::fromStdString(participant.username));
-            }
-            // Remove from incoming invitations
-            if (incomingInvitationModel) {
-              incomingInvitationModel->removeInvitation(id);
-            }
+            applyInvitationAccepted(id, channel);
           });
   connect(invitationService, &InvitationService::invitationRejected, this,
           [this](int64_t id) {
@@ -567,13 +555,77 @@ void MainWindow::onNewInvitationReceived(ServerSend::ChannelInvitation& invit) {
   return;
 }
 
+void MainWindow::applyInvitationAccepted(
+    int64_t invitationChannelId, const ServerSend::ChannelInfo& channel) {
+  if (channelPanel) {
+    channelPanel->addChannel(channel);
+  }
+
+  channelTitles.insert(channel.id_channel,
+                       QString::fromStdString(channel.title));
+  for (const auto& participant : channel.participants) {
+    userNamesById.insert(participant.id_user,
+                         QString::fromStdString(participant.username));
+  }
+
+  if (incomingInvitationModel) {
+    incomingInvitationModel->removeInvitation(invitationChannelId);
+  }
+}
+
 void MainWindow::onNewInvitationAccepted(
     ServerSend::AcceptInvitationResponse& invit) {
-  this->incomingInvitationModel->removeInvitation(invit.channel.id_channel);
-  // this->channelModel->addChannel(invit.channel);
-
+  applyInvitationAccepted(invit.channel.id_channel, invit.channel);
   this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
-  this->channelPanel->addChannel(invit.channel);
+}
+
+void MainWindow::onUserJoinedChannel(
+    const ServerSend::UserJoinedNotification& notification) {
+  qInfo().noquote() << "[WS][USER_JOINED_HANDLER] channel_id="
+                    << notification.id_channel
+                    << " user_id=" << notification.contact.id_user;
+
+  userNamesById.insert(notification.contact.id_user,
+                       QString::fromStdString(notification.contact.username));
+
+  if (!channelPanel) {
+    return;
+  }
+
+  const ServerSend::ChannelInfo* existingChannel =
+      channelPanel->getChannelInfo(notification.id_channel);
+  if (existingChannel) {
+    return;
+  }
+
+  if (!outgoingInvitationModel) {
+    return;
+  }
+
+  const ServerSend::ChannelInfo* outgoing =
+      outgoingInvitationModel->getInvitationById(notification.id_channel);
+  if (!outgoing) {
+    return;
+  }
+
+  ServerSend::ChannelInfo activatedChannel = *outgoing;
+  const bool participantAlreadyPresent =
+      std::any_of(activatedChannel.participants.begin(),
+                  activatedChannel.participants.end(),
+                  [&notification](const ServerSend::Contact& contact) {
+                    return contact.id_user == notification.contact.id_user;
+                  });
+
+  if (!participantAlreadyPresent) {
+    activatedChannel.participants.push_back(notification.contact);
+  }
+  activatedChannel.is_group = activatedChannel.participants.size() > 2;
+
+  channelPanel->addChannel(activatedChannel);
+  outgoingInvitationModel->removeInvitation(notification.id_channel);
+
+  qInfo() << "[UI][USER_JOINED] Activated channel" << notification.id_channel
+          << "for current user";
 }
 
 void MainWindow::onUserLeftChannel(
