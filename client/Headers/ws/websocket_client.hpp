@@ -47,6 +47,8 @@ class WebSocketClient : public QObject {
       const ServerSend::UserJoinedNotification& notification);
   void userLeftChannel(const ServerSend::UserLeftNotification& notification);
 
+  void newInvitationRejected(ServerSend::RejectInvitationResponse& rejection);
+
  private slots:
   void onConnected();
   void onDisconnected();

@@ -324,6 +324,23 @@ bool fromJson(const QJsonObject& obj,
   return parse_channel(obj.value("channel").toObject(), out.channel);
 }
 
+// struct RejectInvitationResponse {
+//   WizzMania::MessageType type;  // INVITATION_REJECTED
+//   int64_t id_channel;
+//   Contact contact;
+// };
+
+bool fromJson(const QJsonObject& obj,
+              ServerSend::RejectInvitationResponse& reject) {
+  if (!obj.contains("type") || !obj.contains("id_channel") ||
+      !obj.contains("contact") || !obj.value("contact").isObject()) {
+    return false;
+  }
+  reject.id_channel = obj.value("id_channel").toVariant().toLongLong();
+  reject.type = static_cast<WizzMania::MessageType>(obj.value("type").toInt());
+  return parse_contact(obj.value("contact").toObject(), reject.contact);
+}
+
 bool fromJson(const QJsonObject& obj, ServerSend::UserJoinedNotification& out) {
   if (!obj.contains("id_channel") || !obj.contains("contact") ||
       !obj.value("contact").isObject()) {
