@@ -45,6 +45,8 @@ MainWindow::MainWindow(QWidget* parent)
   userHomeWidget->setModels(incomingInvitationModel, outgoingInvitationModel);
   userHomeWidget->hide();
 
+  // incomingInvitationItemWidget = new IncomingInvitationItemWidget()
+
   // Connect login signal
   connect(loginWidget, &LoginWidget::loginSuccessful, this,
           &MainWindow::onLoginSuccessful);
@@ -80,6 +82,10 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onWsError);
   connect(wsClient, &WebSocketClient::disconnected, this,
           &MainWindow::onWsDisconnected);
+
+  // newChannelInvitation
+  connect(wsClient, &WebSocketClient::newChannelInvitation, this,
+          &MainWindow::onNewInvitationReceived);
 
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
@@ -126,6 +132,7 @@ MainWindow::MainWindow(QWidget* parent)
             if (invitationService)
               invitationService->leaveChannel(id, authToken);
           });
+
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
             qInfo() << "[HTTP] DELETE_ACCOUNT requested (not implemented yet)";
@@ -528,4 +535,12 @@ QString MainWindow::getUserInitials(const QString& username) const {
   }
 
   return initials;
+}
+
+void MainWindow::onNewInvitationReceived(ServerSend::ChannelInvitation& invit) {
+  // incomingModel // update incomingModel avec nouveau widget d'invitation item
+  this->incomingInvitationModel->addInvitation(invit);
+
+  this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+  return;
 }

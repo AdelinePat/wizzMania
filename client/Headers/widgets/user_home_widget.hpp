@@ -22,6 +22,8 @@ class UserHomeWidget : public QWidget {
   void setUsernameCache(const QHash<int64_t, QString>* cache);
   void setModels(IncomingInvitationModel* incomingModel,
                  OutgoingInvitationModel* outgoingModel);
+  void setIncomingInvitationModels(IncomingInvitationModel* incomingModel);
+  void setOutgoingInvitationModels(OutgoingInvitationModel* outgoingModel);
 
  signals:
   void acceptInvitationRequested(int64_t id_channel);

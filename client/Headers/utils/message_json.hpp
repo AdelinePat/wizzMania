@@ -23,6 +23,7 @@ bool fromJson(const QJsonObject& obj, ServerSend::ErrorResponse& out);
 bool fromJson(const QJsonObject& obj, ClientSend::MarkAsRead& mark);
 bool fromJson(const QJsonObject& obj,
               ServerSend::AcceptInvitationResponse& out);
+bool fromJson(const QJsonObject& obj, ServerSend::ChannelInvitation& invit);
 }  // namespace MessageJson
 
 #endif  // MESSAGE_JSON_H

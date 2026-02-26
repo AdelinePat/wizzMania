@@ -160,6 +160,19 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
       qInfo() << "[WS][NEW_MESSAGE] PARSE_FAILED";
     }
   }
+  // user receive new incoming invitation
+  if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_INVITATION)) {
+    qInfo().noquote() << "[WS][CHANNEL_INVITATION] type=CHANNEL_INVITATION channel_id="
+                      << obj.value("id_channel").toInt();
+    ServerSend::ChannelInvitation invit;
+    if (MessageJson::fromJson(obj, invit)) {
+      qInfo() << "[WS][CHANNEL_INVITATION] parsed ok, emitting signal";
+      emit newChannelInvitation(invit);
+      return;
+    } else {
+      qInfo() << "[WS][CHANNEL_INVITATION] PARSE_FAILED";
+    }
+  }
 
   if (type == static_cast<int>(WizzMania::MessageType::ERROR)) {
     ServerSend::ErrorResponse err;
@@ -234,3 +247,4 @@ void WebSocketClient::sendAuth() {
                     << " payload=" << payload;
   socket.sendTextMessage(payload);
 }
+

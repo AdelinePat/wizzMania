@@ -57,6 +57,7 @@ class MainWindow : public QMainWindow {
   void onSendMessageRequested(const QString& message);
   void onUpdateChannelUnreadCount(int64_t id_channel, int count,
                                   int64_t last_id_message);
+  void onNewInvitationReceived(ServerSend::ChannelInvitation& invit);
 
  private:
   void setupChatView();
@@ -82,6 +83,7 @@ class MainWindow : public QMainWindow {
   UserHomeWidget* userHomeWidget;
   IncomingInvitationModel* incomingInvitationModel;
   OutgoingInvitationModel* outgoingInvitationModel;
+
   QString currentUser;
   QString authToken;
   int64_t currentUserId = -1;

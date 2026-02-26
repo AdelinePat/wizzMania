@@ -41,6 +41,7 @@ class WebSocketClient : public QObject {
                                 int64_t last_id_message);
 
   void errorReceived(const QString& code, const QString& message);
+  void newChannelInvitation(ServerSend::ChannelInvitation& invit);
 
  private slots:
   void onConnected();
