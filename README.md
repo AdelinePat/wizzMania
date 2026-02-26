@@ -249,3 +249,19 @@ http://localhost:8880/tests/draft/index.html
 ```bash
 dos2unix server/build-server.sh
 ```
+
+## Pour BUILD le client sur Linux ou alors sur wsl (Windows 11)
+
+`sudo apt install qt6-base-dev qt6-base-dev-tools`
+
+`qmake6 --version`
+
+`sudo apt install cmake
+cmake --version`
+
+se déplacer dans le dossier du projet puis : 
+```chmod +x ./client/build-client.sh ./client/run-client.sh```
+
+
+Ou alors : installer qt avec un compte via le site officiel 
+Utiliser le .bat pour build le projet
