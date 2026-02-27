@@ -21,6 +21,7 @@ class AuthManager : public QObject {
                     const QString& password);
 
   void logout(const QString& token);
+  void deleteAccount(const QString& token);
 
  signals:
   void loginSucceeded(const QString& username, const QString& token);
@@ -31,6 +32,9 @@ class AuthManager : public QObject {
 
   void logoutSucceeded();
   void logoutFailed(const QString& message);
+
+  void deleteAccountSucceeded(const QString& message);
+  void deleteAccountFailed(const QString& message);
 
  private:
   ApiClient api;

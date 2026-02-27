@@ -154,6 +154,18 @@ MainWindow::MainWindow(QWidget* parent)
               registerWidget->showErrorMessage(message);
             }
           });
+  connect(authManager, &AuthManager::deleteAccountSucceeded, this,
+          [this](const QString& message) {
+            suppressDisconnectPopup = true;
+            onLogoutSucceeded();
+            if (loginWidget) {
+              loginWidget->setSuccessText(message);
+            }
+          });
+  connect(authManager, &AuthManager::deleteAccountFailed, this,
+          [this](const QString& message) {
+            QMessageBox::warning(this, tr("Delete Account"), message);
+          });
 
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
@@ -208,8 +220,10 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
-            qInfo() << "[HTTP] DELETE_ACCOUNT requested (not implemented yet)";
-            // TODO: Implement account deletion endpoint
+            qInfo() << "[HTTP] DELETE_ACCOUNT requested";
+            if (authManager) {
+              authManager->deleteAccount(authToken);
+            }
           });
 
   connect(invitationService, &InvitationService::invitationAccepted, this,
