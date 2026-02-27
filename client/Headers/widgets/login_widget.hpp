@@ -17,6 +17,9 @@ class LoginWidget : public QWidget {
   explicit LoginWidget(QWidget* parent = nullptr);
   ~LoginWidget();
 
+  void setErrorText(const QString& text);
+  void setSuccessText(const QString& text);
+
  signals:
   void loginSuccessful(const QString& username, const QString& token);
   void registerRequested();
@@ -26,7 +29,7 @@ class LoginWidget : public QWidget {
 
  private:
   void sendLoginRequest(const QString& username, const QString& password);
-  void setErrorText(const QString& text);
+  void setStatusText(const QString& text, bool isError);
 
   Ui::LoginWidget* ui;
   AuthManager* authManager;

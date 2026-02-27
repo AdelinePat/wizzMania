@@ -17,12 +17,17 @@ class AuthManager : public QObject {
   explicit AuthManager(QObject* parent = nullptr);
 
   void login(const QString& username, const QString& password);
+  void registerUser(const QString& username, const QString& email,
+                    const QString& password);
 
   void logout(const QString& token);
 
  signals:
   void loginSucceeded(const QString& username, const QString& token);
   void loginFailed(const QString& message);
+
+  void registerSucceeded(const QString& message);
+  void registerFailed(const QString& message);
 
   void logoutSucceeded();
   void logoutFailed(const QString& message);

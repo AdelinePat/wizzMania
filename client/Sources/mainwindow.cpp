@@ -142,6 +142,18 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onLogoutRequested);
   connect(authManager, &AuthManager::logoutSucceeded, this,
           &MainWindow::onLogoutSucceeded);
+  connect(authManager, &AuthManager::registerSucceeded, this,
+          [this](const QString& message) {
+            registerWidget->hide();
+            loginWidget->show();
+            loginWidget->setSuccessText(message);
+          });
+  connect(authManager, &AuthManager::registerFailed, this,
+          [this](const QString& message) {
+            if (registerWidget) {
+              registerWidget->showErrorMessage(message);
+            }
+          });
 
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
@@ -169,9 +181,8 @@ MainWindow::MainWindow(QWidget* parent)
           });
 
   // Channel panel logout button (not functional yet)
-  connect(channelPanel, &ChannelPanelWidget::logoutRequested, this, [this]() {
-    qInfo() << "[UI] Logout requested";
-  });
+  connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
+          [this]() { qInfo() << "[UI] Logout requested"; });
 
   // Channel panel leave channel button
   connect(channelPanel, &ChannelPanelWidget::leaveChannelRequested, this,
@@ -186,13 +197,13 @@ MainWindow::MainWindow(QWidget* parent)
           [this](int64_t id) { acceptInvitation(id); });
   connect(userHomeWidget, &UserHomeWidget::rejectInvitationRequested, this,
           [this](int64_t id) { rejectInvitation(id); });
-  connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
-          [this](int64_t id) {
-            // TODO IMPLEMENT CANCEL INVITATION ONLY AND ONLY IF SERVER MANAGES
-            // IT !!!!!!!!!!!!!!
-            //  if (invitationService)
-            //   invitationService->leaveChannel(id, authToken);
-          });
+  // connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
+  //         [this](int64_t id) {
+  // TODO IMPLEMENT CANCEL INVITATION ONLY AND ONLY IF SERVER MANAGES
+  // IT !!!!!!!!!!!!!!
+  //  if (invitationService)
+  //   invitationService->leaveChannel(id, authToken);
+  // });
 
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
@@ -538,6 +549,7 @@ void MainWindow::setChatEnabled(bool enabled) {
 
 void MainWindow::onRegisterRequested() {
   qInfo() << "[UI] REGISTER_REQUESTED";
+  loginWidget->setErrorText(QString());
   loginWidget->hide();
   registerWidget->show();
 }
@@ -545,13 +557,11 @@ void MainWindow::onRegisterRequested() {
 void MainWindow::onRegisterConfirmed(const QString& username,
                                      const QString& email,
                                      const QString& password) {
-  Q_UNUSED(password);
   qInfo() << "[UI] REGISTER_CONFIRMED username=" << username
           << "email=" << email;
-  // TODO: Send registration request to server via HTTP
-  // For now, just log and show success message
-  registerWidget->hide();
-  loginWidget->show();
+  if (authManager) {
+    authManager->registerUser(username, email, password);
+  }
 }
 
 void MainWindow::onRegisterCancelled() {

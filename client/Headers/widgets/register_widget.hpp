@@ -14,6 +14,8 @@ class RegisterWidget : public QWidget {
   explicit RegisterWidget(QWidget* parent = nullptr);
   ~RegisterWidget();
 
+  void showErrorMessage(const QString& text);
+
  signals:
   void registerRequested(const QString& username, const QString& email,
                          const QString& password);

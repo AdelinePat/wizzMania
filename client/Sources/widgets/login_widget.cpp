@@ -67,9 +67,26 @@ void LoginWidget::sendLoginRequest(const QString& username,
 }
 
 void LoginWidget::setErrorText(const QString& text) {
+  setStatusText(text, true);
+}
+
+void LoginWidget::setSuccessText(const QString& text) {
+  setStatusText(text, false);
+}
+
+void LoginWidget::setStatusText(const QString& text, bool isError) {
   if (!ui || !ui->errorLabel) {
     return;
   }
+
+  if (text.isEmpty()) {
+    ui->errorLabel->setStyleSheet(QString());
+  } else if (isError) {
+    ui->errorLabel->setStyleSheet("color: rgb(220,120,120);");
+  } else {
+    ui->errorLabel->setStyleSheet("color: rgb(82,134,77);");
+  }
+
   ui->errorLabel->setText(text);
   ui->errorLabel->setVisible(!text.isEmpty());
 }
