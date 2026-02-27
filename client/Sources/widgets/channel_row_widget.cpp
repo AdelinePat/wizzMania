@@ -44,7 +44,7 @@ ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
   }
 
   // Leave button (dangerous action)
-  QPushButton* leaveBtn = new QPushButton("Leave", this);
+  QPushButton* leaveBtn = new QPushButton("X", this);
   leaveBtn->setObjectName("channelLeaveBtn");
   connect(leaveBtn, &QPushButton::clicked, this,
           [this, channelId = this->channelId]() {
