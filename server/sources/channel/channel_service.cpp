@@ -17,6 +17,10 @@ ServerSend::ChannelInfo ChannelService::get_channel(
   return channel;
 }
 
+int64_t ChannelService::get_number_accepted_users_in_channel(int64_t id_channel) {
+  return db.get_number_invited_users_in_channel(id_channel, ChannelStatus::ACCEPTED, ChannelStatus::ACCEPTED);
+}
+
 int64_t ChannelService::get_inviter_id(int64_t id_user, int64_t id_channel) {
   // std::optional<int64_t> id_creator_opt = db.get_channel_creator(id_channel);
   int64_t id_creator = this->get_creator_id(id_channel);

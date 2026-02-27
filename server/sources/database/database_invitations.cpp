@@ -146,3 +146,40 @@ void Database::reject_invitation(int64_t id_user, int64_t id_channel,
     throw InternalError(std::string("DB error: ") + e.what());
   }
 }
+
+void Database::cancel_invitation(int64_t id_user, int64_t id_channel, std::string& responded_at) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+  try {
+    this->ensure_connection();
+    this->conn->setAutoCommit(false);
+
+    this->update_invitation(id_user, id_channel, responded_at,
+                            ChannelStatus::CANCELED);
+
+    int64_t accepted_count = get_number_invited_users_in_channel(
+        id_channel, ChannelStatus::ACCEPTED, ChannelStatus::ACCEPTED);
+
+    if (accepted_count > 0) {
+      throw ConflictError(
+          "Cannot cancel: unexpected accepted members remain in channel");
+    }
+
+    std::unique_ptr<sql::PreparedStatement> del(this->conn->prepareStatement(
+        "DELETE FROM channels WHERE id_channel = ?;"));
+    del->setInt64(1, id_channel);
+    del->executeUpdate();
+    // }
+
+    this->conn->commit();
+    this->conn->setAutoCommit(true);
+
+  } catch (const WizzManiaError&) {
+    this->conn->rollback();
+    this->conn->setAutoCommit(true);
+    throw;  // rethrow as-is
+  } catch (const std::exception& e) {
+    this->conn->rollback();
+    this->conn->setAutoCommit(true);
+    throw InternalError(std::string("DB error: ") + e.what());
+  } 
+}

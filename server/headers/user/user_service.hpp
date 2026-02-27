@@ -33,6 +33,8 @@ class UserService {
 
   bool has_access(int64_t id_user, int64_t id_channel);
   std::unordered_set<int64_t> get_users_by_channel(int64_t id_channel);
+  std::unordered_set<int64_t> get_pending_users_by_channel(
+      int64_t id_channel);
   std::optional<ServerSend::Contact> get_contact(int64_t id_user);
   int64_t get_id_user(const std::string& username);
   std::vector<ServerSend::Contact> get_contacts_from_channel(

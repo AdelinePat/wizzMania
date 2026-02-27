@@ -27,6 +27,11 @@ std::unordered_set<int64_t> UserService::get_users_by_channel(
   return db.get_channel_participants(id_channel);
 }
 
+std::unordered_set<int64_t> UserService::get_pending_users_by_channel(
+    int64_t id_channel) {
+  return db.get_channel_participants(id_channel, ChannelStatus::PENDING);
+}
+
 std::optional<ServerSend::Contact> UserService::get_contact(int64_t id_user) {
   return db.get_contact(id_user);
 }

@@ -108,6 +108,21 @@ int main() {
           return crow::response(e.get_code(), e.get_message());
         }
       });
+
+  // ===== PATCH / /invitations/id_channel/cancel endpoint =====
+  CROW_ROUTE(app, "/invitations/<int>/cancel")
+      .methods("PATCH"_method)([&invitation_controller, &auth_controller](
+                                   const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          std::string token = req.get_header_value("Authorization");
+          return invitation_controller.cancel_invitation(
+              id_user, static_cast<int64_t>(id_channel), token);
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
+      });
+
   //  ===== PATCH Create a channel (send new invitation)  =====
   CROW_ROUTE(app, "/channels")
       .methods("POST"_method)(
@@ -193,12 +208,6 @@ int main() {
         WizzMania::MessageType msg_type =
             static_cast<WizzMania::MessageType>(type_int);
 
-        // int type_int = json_msg["type"].i();
-        // if (type_int < 0 || type_int > 255) {
-        //   conn.send_text(...);  // send error
-        //   return;
-        // }
-
         // ===== AUTHENTICATION =====
         if (msg_type == WizzMania::MessageType::WS_AUTH) {
           try {
@@ -228,10 +237,7 @@ int main() {
             break;
           }
 
-            // case WizzMania::MessageType::REQUEST_CHANNEL_HISTORY: {
-            //   message_controller.send_history(conn, id_user, json_msg);
-            //   break;
-            // }
+      
 
           case WizzMania::MessageType::MARK_AS_READ: {
             message_controller.mark_as_read(conn, id_user, json_msg);

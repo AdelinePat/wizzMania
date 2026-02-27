@@ -8,7 +8,8 @@ enum class ChannelStatus : uint8_t {
     PENDING,
     ACCEPTED,
     REJECTED,
-    LEFT
+    LEFT,
+    CANCELED
 };
 
 namespace WizzMania {
@@ -32,6 +33,7 @@ enum class MessageType : uint8_t {
     REQUEST_CHANNEL_HISTORY = 19,// User requests old messages
     CHANNEL_OPEN = 20,          // Ask for a specific channel messages
     WIZZ = 21,  //User sends a Wizz to a channel
+    CANCEL_INVITATION = 22,
     
     // ===== Server -> Client =====
     WS_AUTH_SUCCESS = 100,      // Response: Authentication successful
