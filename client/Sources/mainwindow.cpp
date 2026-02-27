@@ -160,6 +160,7 @@ MainWindow::MainWindow(QWidget* parent)
     if (userHomeWidget) {
       rightPanel->hide();
       userHomeWidget->show();
+      currentChannelId = -1;
     }
   });
 
@@ -390,6 +391,13 @@ void MainWindow::onNewMessageReceived(
 
   // If the message is for the currently open channel, append to view
   if (msg.id_channel == currentChannelId) {
+    if (wsClient) {
+      wsClient->markAsRead(msg.id_channel, msg.message.id_message);
+      if (channelPanel) {
+        channelPanel->updateChannelUnreadCount(msg.id_channel, 0,
+                                               msg.message.id_message);
+      }
+    }
     appendMessageToView(msg.id_channel, msg.message);
   }
 }
@@ -734,9 +742,37 @@ void MainWindow::onUserLeftChannel(
     return;
   }
 
-  if (!channel->is_group) {
+  ServerSend::ChannelInfo updatedChannel = *channel;
+  if (channelPanel) {
+    updatedChannel.unread_count =
+        channelPanel->unreadCountForChannel(notification.id_channel);
+  }
+  updatedChannel.participants.erase(
+      std::remove_if(updatedChannel.participants.begin(),
+                     updatedChannel.participants.end(),
+                     [&notification](const ServerSend::Contact& contact) {
+                       return contact.id_user == notification.id_user;
+                     }),
+      updatedChannel.participants.end());
+
+  const std::size_t remainingParticipants = updatedChannel.participants.size();
+  updatedChannel.is_group = remainingParticipants > 2;
+
+  if (remainingParticipants <= 1) {
     removeChannelFromUi(notification.id_channel);
-    qInfo() << "[UI][USER_LEFT_DM] Removing channel" << notification.id_channel;
+    qInfo() << "[UI][USER_LEFT_REMOVE] Removing channel"
+            << notification.id_channel
+            << "remaining=" << static_cast<int>(remainingParticipants);
+    return;
+  }
+
+  if (!channelPanel->updateChannel(updatedChannel)) {
+    qWarning() << "[UI][USER_LEFT_UPDATE_FAILED] channel_id="
+               << notification.id_channel;
+  } else {
+    qInfo() << "[UI][USER_LEFT_UPDATE] channel_id=" << notification.id_channel
+            << "remaining=" << static_cast<int>(remainingParticipants)
+            << "is_group=" << updatedChannel.is_group;
   }
 }
 

@@ -107,6 +107,23 @@ void ChannelModel::setChannels(
   endResetModel();
 }
 
+bool ChannelModel::updateChannelInfo(const ServerSend::ChannelInfo& channel) {
+  auto it = idToIndex.find(channel.id_channel);
+  if (it == idToIndex.end()) {
+    return false;
+  }
+
+  const int row = it->second;
+  channels[row] = channel;
+
+  QModelIndex modelIndex = index(row);
+  emit dataChanged(
+      modelIndex, modelIndex,
+      {IdChannelRole, TitleRole, IsGroupRole, UnreadCountRole,
+       LastMessageBodyRole, LastMessageTimestampRole, LastReadMessageIdRole});
+  return true;
+}
+
 // void ChannelModel::updateChannelUnreadCount(int64_t channelId, int64_t
 // newCount,
 //                                             int64_t last_id_message) {
