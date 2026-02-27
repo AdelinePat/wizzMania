@@ -50,6 +50,7 @@ std::string Utils::get_timestamp() {
 // Get rid of white space at the begining and end of string, if input empty
 // throws BadInput error
 std::string Utils::trim(const std::string& input) {
+ 
   size_t start = input.find_first_not_of(" \t\n\r");
   if (start == std::string::npos) {
     throw BadInput("Field can't be empty");
@@ -61,17 +62,17 @@ std::string Utils::trim(const std::string& input) {
 // Checks only alphanumeric character and underscore + lowercase the string, if
 // something goes wrong throw BadInput error
 std::string Utils::clean_username(const std::string& username) {
-  for (char character : username) {
+   std::string clean_username = Utils::trim(username);
+  for (char character : clean_username) {
     if (!std::isalnum(character) && character != '_') {
       throw BadInput(std::string("Invalid character '") + character +
                      "' in username. "
                      "Only letters, numbers and underscores are allowed.");
     }
   }
-  std::string result = username;
-  std::transform(result.begin(), result.end(), result.begin(), ::tolower);
+  std::transform(clean_username.begin(), clean_username.end(), clean_username.begin(), ::tolower);
 
-  return result;
+  return clean_username;
 }
 
 // Only printable ASCII allowed

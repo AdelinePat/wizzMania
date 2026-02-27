@@ -68,7 +68,7 @@ int64_t UserService::register_user(const std::string& username,
       Utils::clean_username(username);  // throws badInput if invalid char
   // clean username already calls trim() inside
 
-  // validate email fomai
+  // validate email format
   if (!Utils::is_valid_email(email)) {
     throw BadRequestError("Invalid email format");
   }
@@ -78,9 +78,6 @@ int64_t UserService::register_user(const std::string& username,
     throw BadRequestError(
         "Password must be at least 8 characters with uppercase, lowercase and "
         "special character");
-  }
-  if (!Utils::is_valid_password_chars(password)) {
-    throw BadRequestError("Password contains invalid character");
   }
 
   // check if username already taken (reuse existing get_id_user)

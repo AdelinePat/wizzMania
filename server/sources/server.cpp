@@ -75,7 +75,7 @@ int main() {
           [&user_controller, &auth_controller](const crow::request& req) {
             try {
               int64_t id_user = auth_controller.authenticate_http(req);
-              return user_controller.delete_user(req, id_user);
+              return user_controller.delete_user(id_user);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
             }

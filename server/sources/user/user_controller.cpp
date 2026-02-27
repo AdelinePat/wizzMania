@@ -114,7 +114,7 @@ crow::response UserController::register_user(const crow::request&req) {
 }
 
 // delete user
-crow::response UserController::delete_user(const crow::request& req, int64_t id_user) {
+crow::response UserController::delete_user(int64_t id_user) {
   std::cout << "[DELETE ACCOUNT] User" << id_user << "requested account deletion\n";
   try
   {
@@ -122,9 +122,11 @@ crow::response UserController::delete_user(const crow::request& req, int64_t id_
 
     //Disconnect all webSocket sessions for this user
     std::vector<WSConn> connections = ws.get_user_connections(id_user);
-    for(WSConn conn : connections) {
-      conn->close("Account deleted");
-    }
+    // DANGEROUS, no guard lock, raw manipulation , need to use ws_manager instead
+    // for(WSConn conn : connections) {
+    //   conn->close("Account deleted");
+    // }
+    ws.disconnect_user(id_user, "Account deleted");
 
     crow::json::wvalue response;
     response["success"] = true;
