@@ -60,13 +60,21 @@ int main() {
   // ===== POST /login endpoint =====
   CROW_ROUTE(app, "/login")
       .methods("POST"_method)([&user_controller](const crow::request& req) {
-        return user_controller.login(req);
+        try {
+          return user_controller.login(req);
+        } catch (WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
       });
 
   // ===== POST /register endpoint =====
   CROW_ROUTE(app, "/register")
       .methods("POST"_method)([&user_controller](const crow::request& req) {
-        return user_controller.register_user(req);
+        try {
+          return user_controller.register_user(req);
+        } catch (WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        }
       });
 
   //====DELETE / account endpoint ====
@@ -150,7 +158,7 @@ int main() {
         }
       });
 
-  // ===== GET / /channels/id_channel/leave endpoint =====
+  // ===== GET / /channels/id_channel/history endpoint =====
   CROW_ROUTE(app, "/channels/<int>/history")
       .methods("GET"_method)([&message_controller, &auth_controller](
                                  const crow::request& req, int id_channel) {
@@ -163,14 +171,16 @@ int main() {
         }
       });
 
-  // ===== PATCH / /channels/id_channel/leave endpoint =====
+  // ===== POST / /logout endpoint =====
   CROW_ROUTE(app, "/logout")
       .methods("POST"_method)(
           [&user_controller, &auth_controller](const crow::request& req) {
             try {
               // int64_t id_user = auth_controller.authenticate_http(req);
-              auth_controller.authenticate_http(req);
-              return user_controller.logout(req);
+              int64_t id_user = auth_controller.authenticate_http(req);
+            std::string token = req.get_header_value("X-Auth-Token");
+              // auth_controller.authenticate_http(req);
+              return user_controller.logout(id_user, token);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
             }
@@ -237,8 +247,6 @@ int main() {
             break;
           }
 
-      
-
           case WizzMania::MessageType::MARK_AS_READ: {
             message_controller.mark_as_read(conn, id_user, json_msg);
             break;
@@ -271,17 +279,17 @@ int main() {
             //   break;
             // }
 
-          case WizzMania::MessageType::LOGOUT: {
-            auto req = JsonHelpers::Auth::parse_logout_request(json_msg);
-            std::cout << "[LOGOUT] User " << id_user;
-            if (req.has_value() && !req->reason.empty()) {
-              std::cout << " (" << req->reason << ")";
-            }
-            std::cout << "\n";
+            // case WizzMania::MessageType::LOGOUT: {
+            //   auto req = JsonHelpers::Auth::parse_logout_request(json_msg);
+            //   std::cout << "[LOGOUT] User " << id_user;
+            //   if (req.has_value() && !req->reason.empty()) {
+            //     std::cout << " (" << req->reason << ")";
+            //   }
+            //   std::cout << "\n";
 
-            conn.close("User logout");
-            break;
-          }
+            //   conn.close("User logout");
+            //   break;
+            // }
 
           default:
             std::cout << "[WS] Unhandled type: " << type_int << "\n";
@@ -294,7 +302,6 @@ int main() {
         }
       });
 
-  // uint16_t port = 8888;
   std::cout << "[INFO] Server listening on port " << port << "\n";
   std::cout << "========================================\n";
 
