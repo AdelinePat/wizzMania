@@ -29,7 +29,7 @@ class UserController {
       : db(db), ws(ws), user_service(db), auth_controller(ws) {}
 
   crow::response login(const crow::request& req);
-  crow::response logout(int64_t id_user, const std::string& token);
+  crow::response logout(const std::string& token);
   crow::response send_login_error(const WizzManiaError& e);
 
   crow::response send_login_response(const int64_t id_user,

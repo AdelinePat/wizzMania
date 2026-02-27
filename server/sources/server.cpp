@@ -178,9 +178,9 @@ int main() {
             try {
               // int64_t id_user = auth_controller.authenticate_http(req);
               int64_t id_user = auth_controller.authenticate_http(req);
-            std::string token = req.get_header_value("X-Auth-Token");
+              std::string token = req.get_header_value("X-Auth-Token");
               // auth_controller.authenticate_http(req);
-              return user_controller.logout(id_user, token);
+              return user_controller.logout(token);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
             }
