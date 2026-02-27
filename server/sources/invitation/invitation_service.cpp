@@ -23,6 +23,11 @@ void InvitationService::reject_invitation(int64_t id_user, int64_t id_channel,
   // }
 }
 
+void InvitationService::cancel_invitation(int64_t id_user, int64_t id_channel,
+                                          std::string& responded_at) {
+  return db.cancel_invitation(id_user, id_channel, responded_at);
+}
+
 std::vector<ServerSend::ChannelInvitation>
 InvitationService::get_all_user_incoming_invitations(int64_t id_user) {
   // return db.get_incoming_invitations(id_user);
