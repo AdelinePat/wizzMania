@@ -210,13 +210,12 @@ MainWindow::MainWindow(QWidget* parent)
           [this](int64_t id) { acceptInvitation(id); });
   connect(userHomeWidget, &UserHomeWidget::rejectInvitationRequested, this,
           [this](int64_t id) { rejectInvitation(id); });
-  // connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
-  //         [this](int64_t id) {
-  // TODO IMPLEMENT CANCEL INVITATION ONLY AND ONLY IF SERVER MANAGES
-  // IT !!!!!!!!!!!!!!
-  //  if (invitationService)
-  //   invitationService->leaveChannel(id, authToken);
-  // });
+  connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
+          [this](int64_t id) {
+            if (invitationService) {
+              invitationService->cancelInvitation(id, authToken);
+            }
+          });
 
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
@@ -236,6 +235,15 @@ MainWindow::MainWindow(QWidget* parent)
               incomingInvitationModel->removeInvitation(id);
             }
           });
+  connect(
+      invitationService, &InvitationService::invitationCanceled, this,
+      [this](int64_t id) {
+        if (outgoingInvitationModel) {
+          outgoingInvitationModel->removeInvitation(id);
+          userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+        }
+        statusBar()->showMessage(tr("Invitation canceled."), 2500);
+      });
   connect(invitationService, &InvitationService::channelLeft, this,
           [this](int64_t channelId) {
             qInfo() << "[HTTP][LEAVE_SUCCESS] Removing channel" << channelId;
@@ -840,6 +848,22 @@ void MainWindow::onLogoutSucceeded() {
 
 void MainWindow::onNewInvitationRejected(
     ServerSend::RejectInvitationResponse& rejection) {
+  if (rejection.type == WizzMania::MessageType::CANCEL_INVITATION) {
+    if (rejection.contact.id_user == this->currentUserId) {
+      if (outgoingInvitationModel) {
+        outgoingInvitationModel->removeInvitation(rejection.id_channel);
+        userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+      }
+    } else {
+      if (incomingInvitationModel) {
+        incomingInvitationModel->removeInvitation(rejection.id_channel);
+        userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+      }
+      statusBar()->showMessage(tr("Invitation canceled by creator."), 2500);
+    }
+    return;
+  }
+
   if (rejection.contact.id_user == this->currentUserId) {
     this->incomingInvitationModel->removeInvitation(rejection.id_channel);
     this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);

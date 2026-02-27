@@ -12,6 +12,11 @@ void InvitationService::rejectInvitation(int64_t channelId,
   sendInvitationAction("reject", channelId, token);
 }
 
+void InvitationService::cancelInvitation(int64_t channelId,
+                                         const QString& token) {
+  sendInvitationAction("cancel", channelId, token);
+}
+
 void InvitationService::leaveChannel(int64_t channelId, const QString& token) {
   const QString path = QString("channels/%1/leave").arg(channelId);
   QNetworkReply* reply = api.patchAuth(path, token);
@@ -67,6 +72,8 @@ void InvitationService::sendInvitationAction(const QString& action,
           }
         } else if (action == "reject") {
           emit invitationRejected(channelId);
+        } else if (action == "cancel") {
+          emit invitationCanceled(channelId);
         }
 
         reply->deleteLater();

@@ -6,6 +6,7 @@
 #include <QMainWindow>
 #include <QMessageBox>
 #include <QRegularExpression>
+#include <QStatusBar>
 #include <QString>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -66,8 +67,7 @@ class MainWindow : public QMainWindow {
       const ServerSend::UserJoinedNotification& notification);
   void onUserLeftChannel(const ServerSend::UserLeftNotification& notification);
   void onNewInvitationRejected(ServerSend::RejectInvitationResponse& rejection);
-  void onNewChannelCreated(
-    ServerSend::CreateChannelResponse& channel);
+  void onNewChannelCreated(ServerSend::CreateChannelResponse& channel);
 
  private:
   void setupChatView();
@@ -107,7 +107,7 @@ class MainWindow : public QMainWindow {
                       // (preview channel list), unread_count_count)
   QHash<int64_t, QString>
       userNamesById;  // TODO use std::vector<Contact> contacts;?
-    bool suppressDisconnectPopup = false;
+  bool suppressDisconnectPopup = false;
   // initialDataResponse invitations (outgiong & incoming)
   // user_model --> last
 };

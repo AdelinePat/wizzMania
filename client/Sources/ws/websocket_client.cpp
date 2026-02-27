@@ -195,17 +195,17 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
-  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_REJECTED)) {
-    qInfo().noquote()
-        << "[WS][INVITATION_REJECTED] type=INVITATION_REJECTED channel_id="
-        << obj.value("id_channel").toInt();
+  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_REJECTED) ||
+      type == static_cast<int>(WizzMania::MessageType::CANCEL_INVITATION)) {
+    qInfo().noquote() << "[WS][INVITATION_UPDATE] type=" << type
+                      << " channel_id=" << obj.value("id_channel").toInt();
     ServerSend::RejectInvitationResponse rejection;
     if (MessageJson::fromJson(obj, rejection)) {
-      qInfo() << "[WS][INVITATION_REJECTED] parsed ok, emitting signal";
+      qInfo() << "[WS][INVITATION_UPDATE] parsed ok, emitting signal";
       emit newInvitationRejected(rejection);
       return;
     } else {
-      qInfo() << "[WS][INVITATION_REJECTED] PARSE_FAILED";
+      qInfo() << "[WS][INVITATION_UPDATE] PARSE_FAILED";
     }
   }
 

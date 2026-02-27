@@ -37,7 +37,7 @@ crow::response InvitationController::accept_invitation(int64_t id_user,
 crow::response InvitationController::cancel_invitation(int64_t id_user,
                                                        int64_t id_channel,
                                                        std::string& token) {
-  if (channel_service.get_inviter_id(id_user, id_channel) != id_user) {
+  if (channel_service.get_creator_id(id_channel) != id_user) {
     throw ForbiddenError("Can't cancel an invitation you didn't create");
   }
   if (!user_service.has_access(id_user, id_channel)) {
@@ -55,7 +55,7 @@ crow::response InvitationController::cancel_invitation(int64_t id_user,
   // need to get all pending user before channel deletion
   std::unordered_set<int64_t> pending_users =
       user_service.get_pending_users_by_channel(id_channel);
-std::string responded_at = Utils::get_timestamp();
+  std::string responded_at = Utils::get_timestamp();
   invitation_service.cancel_invitation(id_user, id_channel, responded_at);
 
   if (channel_service.does_channel_exist(id_channel)) {
