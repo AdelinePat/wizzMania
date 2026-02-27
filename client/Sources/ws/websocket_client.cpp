@@ -66,6 +66,23 @@ void WebSocketClient::sendMessage(int64_t channelId, const QString& body) {
   socket.sendTextMessage(payload);
 }
 
+void WebSocketClient::sendWizz(int64_t channelId) {
+  if (!isConnected()) {
+    emit errorReceived("NOT_CONNECTED", "WebSocket is not connected.");
+    return;
+  }
+
+  ClientSend::WizzRequest req;
+  req.type = WizzMania::MessageType::WIZZ;
+  req.id_channel = channelId;
+
+  const QJsonDocument doc(MessageJson::toJson(req));
+  const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+  qInfo().noquote() << "[WS][SEND] type=WIZZ channel_id=" << channelId
+                    << " payload=" << payload;
+  socket.sendTextMessage(payload);
+}
+
 void WebSocketClient::openChannel(int64_t channelId) {
   if (!isConnected()) {
     emit errorReceived("NOT_CONNECTED", "WebSocket is not connected.");
@@ -164,6 +181,17 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
       return;
     } else {
       qInfo() << "[WS][NEW_MESSAGE] PARSE_FAILED";
+    }
+  }
+
+  if (type == static_cast<int>(WizzMania::MessageType::WIZZ)) {
+    qInfo().noquote() << "[WS][WIZZ] channel_id="
+                      << obj.value("id_channel").toInt()
+                      << " sender_id=" << obj.value("id_user").toInt();
+    ServerSend::WizzNotification notification;
+    if (MessageJson::fromJson(obj, notification)) {
+      emit wizzReceived(notification);
+      return;
     }
   }
   // user receive new incoming invitation

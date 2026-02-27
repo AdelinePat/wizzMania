@@ -110,6 +110,8 @@ MainWindow::MainWindow(QWidget* parent)
 
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
+  connect(wsClient, &WebSocketClient::wizzReceived, this,
+          &MainWindow::onWizzReceived);
   // signal for update channel unread count
   connect(wsClient, &WebSocketClient::updateChannelUnreadCount, this,
           &MainWindow::onUpdateChannelUnreadCount);
@@ -290,6 +292,8 @@ void MainWindow::setupChatView() {
           &MainWindow::onChannelSelected);
   connect(rightPanel, &RightPanelWidget::sendRequested, this,
           &MainWindow::onSendMessageRequested);
+  connect(rightPanel, &RightPanelWidget::wizzRequested, this,
+          &MainWindow::onWizzRequested);
 
   // Set initial splitter sizes (250px for left panel, rest for right)
   ui->chatSplitter->setSizes({250, 650});
@@ -424,6 +428,39 @@ void MainWindow::onNewMessageReceived(
   }
 }
 
+void MainWindow::onWizzReceived(
+    const ServerSend::WizzNotification& notification) {
+  if (notification.id_user == currentUserId) {
+    return;
+  }
+
+  const QString sender = usernameForUserId(notification.id_user);
+  statusBar()->showMessage(tr("⚡ WIZZ from %1").arg(sender), 3000);
+  playWizzAnimation();
+}
+
+void MainWindow::playWizzAnimation() {
+  if (wizzAnimating) {
+    return;
+  }
+
+  wizzAnimating = true;
+  const QPoint originalPos = pos();
+
+  for (int i = 0; i < 20; ++i) {
+    QTimer::singleShot(i * 30, this, [this, originalPos, i]() {
+      if (i < 19) {
+        const int offsetX = QRandomGenerator::global()->bounded(-15, 16);
+        const int offsetY = QRandomGenerator::global()->bounded(-15, 16);
+        move(originalPos.x() + offsetX, originalPos.y() + offsetY);
+      } else {
+        move(originalPos);
+        wizzAnimating = false;
+      }
+    });
+  }
+}
+
 void MainWindow::onWsError(const QString& code, const QString& message) {
   QMessageBox::warning(this, tr("WebSocket"), tr("%1: %2").arg(code, message));
 }
@@ -502,6 +539,17 @@ void MainWindow::onSendMessageRequested(const QString& message) {
   //     wsClient->openChannel(currentChannelId);
   //   }
   // });
+}
+
+void MainWindow::onWizzRequested() {
+  if (currentChannelId <= 0) {
+    QMessageBox::warning(this, tr("Wizz"), tr("Select a channel first."));
+    return;
+  }
+
+  qInfo().noquote() << "[UI][WIZZ] channel_id=" << currentChannelId;
+  wsClient->sendWizz(currentChannelId);
+  rightPanel->focusInput();
 }
 
 void MainWindow::cacheKnownUsers(const ServerSend::InitialDataResponse& data) {

@@ -25,6 +25,7 @@ class WebSocketClient : public QObject {
   bool isConnected() const;
 
   void sendMessage(int64_t channelId, const QString& body);
+  void sendWizz(int64_t channelId);
   void openChannel(int64_t channelId);
   void markAsRead(int64_t channelId, int64_t lastMessageId);
 
@@ -39,6 +40,7 @@ class WebSocketClient : public QObject {
   // signal to update unread count from server ???
   void updateChannelUnreadCount(int64_t id_channel, int unread_count,
                                 int64_t last_id_message);
+  void wizzReceived(const ServerSend::WizzNotification& notification);
 
   void errorReceived(const QString& code, const QString& message);
   void newChannelInvitation(ServerSend::ChannelInvitation& invit);
