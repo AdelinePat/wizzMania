@@ -229,8 +229,6 @@ erDiagram
 
 ## 📖 Documentation
 
-## 📖 Documentation
-
 - **[Backend & Frontend API](docs/backendFrontEnd_api.md)** — Full documentation of endpoints and WebSocket messages
 - **[Client Architecture](client/_documentation/architecture.md)** — Qt client structure
 - **[Client Data Flow](client/_documentation/data_flow.md)** — Client-side data flow
