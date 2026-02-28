@@ -23,8 +23,10 @@ class ChannelPanelWidget : public QWidget {
 
   void setChannels(const std::vector<ServerSend::ChannelInfo>& channels);
   void addChannel(const ServerSend::ChannelInfo& channel);
+  bool updateChannel(const ServerSend::ChannelInfo& channel);
   void removeChannel(int64_t channelId);
   const ServerSend::ChannelInfo* getChannelInfo(int64_t channelId) const;
+  int unreadCountForChannel(int64_t channelId) const;
   // Set displayed user (username + initials for avatar)
   void setUserInfo(const QString& username, const QString& initials);
   // Update UI for a channel when a new message arrives: replace preview and
@@ -53,6 +55,10 @@ class ChannelPanelWidget : public QWidget {
   void leaveChannelRequested(int64_t channelId);
 
  private:
+  void applyChannelDataToItem(QListWidgetItem* item,
+                              const ServerSend::ChannelInfo& channel);
+  void rebuildChannelRowWidget(QListWidgetItem* item);
+
   QListWidget* channelsList;
   QPushButton* userPortraitBtn;
   QLabel* userPortraitName;
@@ -60,6 +66,8 @@ class ChannelPanelWidget : public QWidget {
   QPushButton* logoutBtn;
   ChannelModel* channelModel;
   QMap<int64_t, QListWidgetItem*> itemByChannelId;
+  QMap<int64_t, int> pendingUnreadByChannelId;
+  QMap<int64_t, QString> pendingPreviewByChannelId;
 };
 
 #endif  // CHANNELPANELWIDGET_HPP

@@ -163,7 +163,7 @@ QPushButton#logoutBtn:pressed { background-color: rgb(56,116,147); }
 /* Button-specific sizes and padding */
 QPushButton#loginButton, QPushButton#sendButton { font-weight: bold; }
 QPushButton#createChannelBtn { font-weight: 700; font-size: 14px; }
-QPushButton#channelLeaveBtn { padding: 4px 6px; font-size: 11px; min-width: 40px; max-width: 55px; }
+QPushButton#channelLeaveBtn { padding: 4px 8px; font-size: 11px;}
 QPushButton#deleteAccountBtn { padding: 6px 12px; font-size: 11px; }
 QPushButton#logoutBtn { padding: 6px 12px; font-size: 11px; }
 QPushButton#invitationAcceptBtn, QPushButton#invitationRejectBtn, QPushButton#invitationCancelBtn { padding: 4px 10px; font-size: 11px; }
@@ -199,6 +199,11 @@ QLabel#titleLabel, QLabel#registerTitleLabel {
 QLabel#createChannelDescLabel {
   color: rgb(155,170,185);
   font-size: 12px;
+}
+QLabel#createChannelErrorLabel {
+  color: rgb(220,100,100);
+  font-size: 11px;
+  font-weight: 600;
 }
 QLabel#invitationSubLabel,
 QLabel#createChannelHintLabel {

@@ -46,6 +46,7 @@ class WebSocketManager {
                             const std::string& exclude_token);
 
   std::string get_token_for_connection(WSConn conn);
+  void disconnect_user(int64_t id_user, const std::string& reason);
 };
 
 #endif

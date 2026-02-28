@@ -25,11 +25,16 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
   messageInput->setPlaceholderText("Type a message...");
   messageInput->setObjectName("messageInput");
 
+  wizzButton = new QPushButton("⚡", inputRow);
+  wizzButton->setMinimumSize(80, 40);
+  wizzButton->setObjectName("wizzButton");
+
   sendButton = new QPushButton("Send", inputRow);
   sendButton->setMinimumSize(80, 40);
   sendButton->setObjectName("sendButton");
 
   inputLayout->addWidget(messageInput, 1);
+  inputLayout->addWidget(wizzButton);
   inputLayout->addWidget(sendButton);
 
   rootLayout->addWidget(titleLabel);
@@ -53,6 +58,9 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
     emit sendRequested(text);
     messageInput->clear();
   });
+
+  connect(wizzButton, &QPushButton::clicked, this,
+          [this]() { emit wizzRequested(); });
 }
 
 void RightPanelWidget::setChatTitle(const QString& title) {
@@ -84,6 +92,7 @@ void RightPanelWidget::addMessageWidget(QWidget* widget) {
 
 void RightPanelWidget::setInputEnabled(bool enabled) {
   sendButton->setEnabled(enabled);
+  wizzButton->setEnabled(enabled);
   messageInput->setEnabled(enabled);
 }
 

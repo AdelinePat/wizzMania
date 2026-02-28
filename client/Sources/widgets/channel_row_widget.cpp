@@ -3,7 +3,7 @@
 ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
                                    const QString& preview, int unreadCount,
                                    bool isGroup, QWidget* parent)
-    : QWidget(parent), channelId(channelId) {
+    : QWidget(parent), channelId(channelId), previewText(preview) {
   QHBoxLayout* rootLayout = new QHBoxLayout(this);
   rootLayout->setContentsMargins(4, 4, 4, 4);
   rootLayout->setSpacing(6);
@@ -14,6 +14,7 @@ ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
   iconLabel->setObjectName("channelIconLabel");
 
   QWidget* textBlock = new QWidget(this);
+  textBlock->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
   QVBoxLayout* textLayout = new QVBoxLayout(textBlock);
   textLayout->setContentsMargins(0, 0, 0, 0);
   textLayout->setSpacing(2);
@@ -21,9 +22,12 @@ ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
   QLabel* titleLabel = new QLabel(title, textBlock);
   titleLabel->setObjectName("channelTitleLabel");
 
-  QLabel* previewLabel = new QLabel(preview, textBlock);
+  previewLabel = new QLabel(previewText, textBlock);
   previewLabel->setObjectName("channelPreviewLabel");
   previewLabel->setWordWrap(false);
+  previewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  previewLabel->setMinimumWidth(0);
+  previewLabel->setToolTip(previewText);
 
   textLayout->addWidget(titleLabel);
   textLayout->addWidget(previewLabel);
@@ -40,7 +44,7 @@ ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
   }
 
   // Leave button (dangerous action)
-  QPushButton* leaveBtn = new QPushButton("Leave", this);
+  QPushButton* leaveBtn = new QPushButton("X", this);
   leaveBtn->setObjectName("channelLeaveBtn");
   connect(leaveBtn, &QPushButton::clicked, this,
           [this, channelId = this->channelId]() {
@@ -56,4 +60,28 @@ ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
             }
           });
   rootLayout->addWidget(leaveBtn, 0, Qt::AlignRight | Qt::AlignVCenter);
+
+  updatePreviewElision();
+}
+
+void ChannelRowWidget::resizeEvent(QResizeEvent* event) {
+  QWidget::resizeEvent(event);
+  updatePreviewElision();
+}
+
+void ChannelRowWidget::updatePreviewElision() {
+  if (!previewLabel) {
+    return;
+  }
+
+  const int availableWidth = previewLabel->width();
+  if (availableWidth <= 0) {
+    previewLabel->setText(previewText);
+    return;
+  }
+
+  const QFontMetrics metrics(previewLabel->font());
+  const QString elided =
+      metrics.elidedText(previewText, Qt::ElideRight, availableWidth);
+  previewLabel->setText(elided);
 }

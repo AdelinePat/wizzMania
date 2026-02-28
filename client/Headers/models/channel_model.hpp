@@ -35,6 +35,7 @@ class ChannelModel : public QAbstractListModel {
   void addChannel(const ServerSend::ChannelInfo& channel);
   void removeChannel(int64_t channelId);
   void setChannels(const std::vector<ServerSend::ChannelInfo>& channels);
+  bool updateChannelInfo(const ServerSend::ChannelInfo& channel);
   void updateChannelUnreadCount(int64_t channelId, int64_t newCountn,
                                 int64_t last_id_message);
 

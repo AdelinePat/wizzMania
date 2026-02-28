@@ -29,6 +29,18 @@ void WebSocketManager::remove_connection(WSConn conn) {
   // lock guard will be released when going out of method
 }
 
+
+void WebSocketManager::disconnect_user(int64_t id_user, const std::string& reason) {
+  std::lock_guard<std::mutex> lock(ws_mutex);
+  auto it = user_sockets.find(id_user);
+  if (it == user_sockets.end()) return;
+  for (WSConn conn : it->second) {
+    conn->close(reason);
+    // cleanup handled by onclose -> remove_connection
+  }
+}
+
+
 void WebSocketManager::disconnect_token(const std::string& token) {
   std::lock_guard<std::mutex> lock(this->ws_mutex);
   auto it = this->token_to_socket.find(token);

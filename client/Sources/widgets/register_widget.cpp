@@ -96,6 +96,10 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
 
 RegisterWidget::~RegisterWidget() {}
 
+void RegisterWidget::showErrorMessage(const QString& text) {
+  setErrorText(text);
+}
+
 void RegisterWidget::onCreateClicked() {
   QString username = usernameInput->text().trimmed();
   QString email = emailInput->text().trimmed();

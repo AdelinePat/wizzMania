@@ -39,6 +39,11 @@ CreateChannelWidget::CreateChannelWidget(QWidget* parent) : QDialog(parent) {
   titleInput->setObjectName("createChannelInput");
   titleInput->setPlaceholderText("Enter channel title");
 
+  errorLabel = new QLabel(this);
+  errorLabel->setObjectName("createChannelErrorLabel");
+  errorLabel->setWordWrap(true);
+  errorLabel->hide();
+
   // Action buttons
   QWidget* actionRow = new QWidget(this);
   QHBoxLayout* actionLayout = new QHBoxLayout(actionRow);
@@ -66,31 +71,71 @@ CreateChannelWidget::CreateChannelWidget(QWidget* parent) : QDialog(parent) {
   root->addWidget(participantsInput);
   root->addWidget(titleSectionLabel);
   root->addWidget(titleInput);
+  root->addWidget(errorLabel);
   root->addWidget(actionRow);
+
+  connect(participantsInput, &QLineEdit::textChanged, this,
+          [this]() { setErrorMessage(QString()); });
+  connect(titleInput, &QLineEdit::textChanged, this,
+          [this]() { setErrorMessage(QString()); });
 }
 
 void CreateChannelWidget::onCreateClicked() {
   QString participantsText = participantsInput->text().trimmed();
   if (participantsText.isEmpty()) {
-    // Could show an error message here
+    setErrorMessage("Please enter at least one username.");
     return;
   }
 
-  // Split by comma and trim each username
+  // Split by comma and sanitize each username with shared utilities.
   QStringList usernames;
+  QSet<QString> seen;
   QStringList rawList = participantsText.split(',', Qt::SkipEmptyParts);
   for (const QString& username : rawList) {
-    QString trimmed = username.trimmed();
-    if (!trimmed.isEmpty() && !usernames.contains(trimmed)) {
-      usernames.append(trimmed);
+    try {
+      std::string trimmed = Utils::trim(username.toStdString());
+      std::string cleaned = Utils::clean_username(trimmed);
+      QString normalized = QString::fromStdString(cleaned);
+      if (!normalized.isEmpty() && !seen.contains(normalized)) {
+        usernames.append(normalized);
+        seen.insert(normalized);
+      }
+    } catch (const std::exception& e) {
+      setErrorMessage(
+          QString("Invalid username: %1").arg(QString::fromUtf8(e.what())));
+      return;
     }
   }
 
   if (usernames.isEmpty()) {
+    setErrorMessage("Please enter at least one valid username.");
     return;
   }
 
-  QString title = titleInput->text().trimmed();
+  QString title;
+  try {
+    std::string rawTitle = titleInput->text().toStdString();
+    if (!rawTitle.empty()) {
+      title = QString::fromStdString(Utils::trim(rawTitle));
+    }
+  } catch (const std::exception&) {
+    title.clear();
+  }
+
+  setErrorMessage(QString());
   emit createChannelRequested(usernames, title);
   accept();  // Close dialog on success
+}
+
+void CreateChannelWidget::setErrorMessage(const QString& message) {
+  if (!errorLabel) {
+    return;
+  }
+  if (message.isEmpty()) {
+    errorLabel->clear();
+    errorLabel->hide();
+    return;
+  }
+  errorLabel->setText(message);
+  errorLabel->show();
 }

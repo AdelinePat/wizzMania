@@ -19,12 +19,14 @@ class InvitationService : public QObject {
 
   void acceptInvitation(int64_t channelId, const QString& token);
   void rejectInvitation(int64_t channelId, const QString& token);
+  void cancelInvitation(int64_t channelId, const QString& token);
   void leaveChannel(int64_t channelId, const QString& token);
 
  signals:
   void invitationAccepted(int64_t channelId,
                           const ServerSend::ChannelInfo& channel);
   void invitationRejected(int64_t channelId);
+  void invitationCanceled(int64_t channelId);
   void channelLeft(int64_t channelId);
   void invitationFailed(int64_t channelId, const QString& action,
                         const QString& message);

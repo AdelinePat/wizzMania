@@ -73,8 +73,45 @@ MainWindow::MainWindow(QWidget* parent)
   connect(channelService, &ChannelService::historyFailed, this,
           &MainWindow::onHistoryFailed);
 
+  connect(
+      channelService, &ChannelService::channelCreated, this,
+      [this](const ServerSend::CreateChannelResponse& response) {
+        if (response.already_existed) {
+          if (channelPanel) {
+            const ServerSend::ChannelInfo* existing =
+                channelPanel->getChannelInfo(response.id_channel);
+            if (existing) {
+              onChannelSelected(response.id_channel,
+                                QString::fromStdString(existing->title));
+            }
+          }
+          return;
+        }
+
+        if (outgoingInvitationModel) {
+          outgoingInvitationModel->addInvitation(response.channel);
+        }
+        if (userHomeWidget) {
+          userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+        }
+
+        channelTitles.insert(response.channel.id_channel,
+                             QString::fromStdString(response.channel.title));
+        for (const auto& participant : response.channel.participants) {
+          userNamesById.insert(participant.id_user,
+                               QString::fromStdString(participant.username));
+        }
+      });
+
+  connect(channelService, &ChannelService::createChannelFailed, this,
+          [this](const QString& message) {
+            QMessageBox::warning(this, tr("Create Channel"), message);
+          });
+
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
+  connect(wsClient, &WebSocketClient::wizzReceived, this,
+          &MainWindow::onWizzReceived);
   // signal for update channel unread count
   connect(wsClient, &WebSocketClient::updateChannelUnreadCount, this,
           &MainWindow::onUpdateChannelUnreadCount);
@@ -107,12 +144,37 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onLogoutRequested);
   connect(authManager, &AuthManager::logoutSucceeded, this,
           &MainWindow::onLogoutSucceeded);
+  connect(authManager, &AuthManager::registerSucceeded, this,
+          [this](const QString& message) {
+            registerWidget->hide();
+            loginWidget->show();
+            loginWidget->setSuccessText(message);
+          });
+  connect(authManager, &AuthManager::registerFailed, this,
+          [this](const QString& message) {
+            if (registerWidget) {
+              registerWidget->showErrorMessage(message);
+            }
+          });
+  connect(authManager, &AuthManager::deleteAccountSucceeded, this,
+          [this](const QString& message) {
+            suppressDisconnectPopup = true;
+            onLogoutSucceeded();
+            if (loginWidget) {
+              loginWidget->setSuccessText(message);
+            }
+          });
+  connect(authManager, &AuthManager::deleteAccountFailed, this,
+          [this](const QString& message) {
+            QMessageBox::warning(this, tr("Delete Account"), message);
+          });
 
   // Channel panel portrait click -> show user home
   connect(channelPanel, &ChannelPanelWidget::userHomeRequested, this, [this]() {
     if (userHomeWidget) {
       rightPanel->hide();
       userHomeWidget->show();
+      currentChannelId = -1;
     }
   });
 
@@ -124,16 +186,18 @@ MainWindow::MainWindow(QWidget* parent)
                     [this](const QStringList& usernames, const QString& title) {
                       qInfo() << "[UI] CREATE_CHANNEL usernames=" << usernames
                               << " title=" << title;
-                      // TODO: Implement channel creation API call
+                      if (channelService) {
+                        channelService->createChannel(usernames, title,
+                                                      authToken);
+                      }
                     });
             dialog->exec();
             dialog->deleteLater();
           });
 
   // Channel panel logout button (not functional yet)
-  connect(channelPanel, &ChannelPanelWidget::logoutRequested, this, [this]() {
-    qInfo() << "[UI] Logout requested (not implemented yet)";
-  });
+  connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
+          [this]() { qInfo() << "[UI] Logout requested"; });
 
   // Channel panel leave channel button
   connect(channelPanel, &ChannelPanelWidget::leaveChannelRequested, this,
@@ -150,16 +214,17 @@ MainWindow::MainWindow(QWidget* parent)
           [this](int64_t id) { rejectInvitation(id); });
   connect(userHomeWidget, &UserHomeWidget::cancelInvitationRequested, this,
           [this](int64_t id) {
-            // TODO IMPLEMENT CANCEL INVITATION ONLY AND ONLY IF SERVER MANAGES
-            // IT !!!!!!!!!!!!!!
-            //  if (invitationService)
-            //   invitationService->leaveChannel(id, authToken);
+            if (invitationService) {
+              invitationService->cancelInvitation(id, authToken);
+            }
           });
 
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
-            qInfo() << "[HTTP] DELETE_ACCOUNT requested (not implemented yet)";
-            // TODO: Implement account deletion endpoint
+            qInfo() << "[HTTP] DELETE_ACCOUNT requested";
+            if (authManager) {
+              authManager->deleteAccount(authToken);
+            }
           });
 
   connect(invitationService, &InvitationService::invitationAccepted, this,
@@ -172,6 +237,15 @@ MainWindow::MainWindow(QWidget* parent)
               incomingInvitationModel->removeInvitation(id);
             }
           });
+  connect(
+      invitationService, &InvitationService::invitationCanceled, this,
+      [this](int64_t id) {
+        if (outgoingInvitationModel) {
+          outgoingInvitationModel->removeInvitation(id);
+          userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+        }
+        statusBar()->showMessage(tr("Invitation canceled."), 2500);
+      });
   connect(invitationService, &InvitationService::channelLeft, this,
           [this](int64_t channelId) {
             qInfo() << "[HTTP][LEAVE_SUCCESS] Removing channel" << channelId;
@@ -218,6 +292,8 @@ void MainWindow::setupChatView() {
           &MainWindow::onChannelSelected);
   connect(rightPanel, &RightPanelWidget::sendRequested, this,
           &MainWindow::onSendMessageRequested);
+  connect(rightPanel, &RightPanelWidget::wizzRequested, this,
+          &MainWindow::onWizzRequested);
 
   // Set initial splitter sizes (250px for left panel, rest for right)
   ui->chatSplitter->setSizes({250, 650});
@@ -341,7 +417,47 @@ void MainWindow::onNewMessageReceived(
 
   // If the message is for the currently open channel, append to view
   if (msg.id_channel == currentChannelId) {
+    if (wsClient) {
+      wsClient->markAsRead(msg.id_channel, msg.message.id_message);
+      if (channelPanel) {
+        channelPanel->updateChannelUnreadCount(msg.id_channel, 0,
+                                               msg.message.id_message);
+      }
+    }
     appendMessageToView(msg.id_channel, msg.message);
+  }
+}
+
+void MainWindow::onWizzReceived(
+    const ServerSend::WizzNotification& notification) {
+  if (notification.id_user == currentUserId) {
+    return;
+  }
+
+  const QString sender = usernameForUserId(notification.id_user);
+  statusBar()->showMessage(tr("⚡ WIZZ from %1").arg(sender), 3000);
+  playWizzAnimation();
+}
+
+void MainWindow::playWizzAnimation() {
+  if (wizzAnimating) {
+    return;
+  }
+
+  wizzAnimating = true;
+  const QPoint originalPos = pos();
+
+  for (int i = 0; i < 20; ++i) {
+    QTimer::singleShot(i * 30, this, [this, originalPos, i]() {
+      if (i < 19) {
+        const int offsetX = QRandomGenerator::global()->bounded(-15, 16);
+        const int offsetY = QRandomGenerator::global()->bounded(-15, 16);
+        move(originalPos.x() + offsetX, originalPos.y() + offsetY);
+      } else {
+        move(originalPos);
+        wizzAnimating = false;
+      }
+    });
   }
 }
 
@@ -351,6 +467,10 @@ void MainWindow::onWsError(const QString& code, const QString& message) {
 
 void MainWindow::onWsDisconnected(const QString& reason) {
   setChatEnabled(false);
+  if (suppressDisconnectPopup) {
+    suppressDisconnectPopup = false;
+    return;
+  }
   QMessageBox::information(this, tr("WebSocket"), reason);
 }
 
@@ -419,6 +539,17 @@ void MainWindow::onSendMessageRequested(const QString& message) {
   //     wsClient->openChannel(currentChannelId);
   //   }
   // });
+}
+
+void MainWindow::onWizzRequested() {
+  if (currentChannelId <= 0) {
+    QMessageBox::warning(this, tr("Wizz"), tr("Select a channel first."));
+    return;
+  }
+
+  qInfo().noquote() << "[UI][WIZZ] channel_id=" << currentChannelId;
+  wsClient->sendWizz(currentChannelId);
+  rightPanel->focusInput();
 }
 
 void MainWindow::cacheKnownUsers(const ServerSend::InitialDataResponse& data) {
@@ -496,6 +627,7 @@ void MainWindow::setChatEnabled(bool enabled) {
 
 void MainWindow::onRegisterRequested() {
   qInfo() << "[UI] REGISTER_REQUESTED";
+  loginWidget->setErrorText(QString());
   loginWidget->hide();
   registerWidget->show();
 }
@@ -503,13 +635,11 @@ void MainWindow::onRegisterRequested() {
 void MainWindow::onRegisterConfirmed(const QString& username,
                                      const QString& email,
                                      const QString& password) {
-  Q_UNUSED(password);
   qInfo() << "[UI] REGISTER_CONFIRMED username=" << username
           << "email=" << email;
-  // TODO: Send registration request to server via HTTP
-  // For now, just log and show success message
-  registerWidget->hide();
-  loginWidget->show();
+  if (authManager) {
+    authManager->registerUser(username, email, password);
+  }
 }
 
 void MainWindow::onRegisterCancelled() {
@@ -682,13 +812,42 @@ void MainWindow::onUserLeftChannel(
     return;
   }
 
-  if (!channel->is_group) {
+  ServerSend::ChannelInfo updatedChannel = *channel;
+  if (channelPanel) {
+    updatedChannel.unread_count =
+        channelPanel->unreadCountForChannel(notification.id_channel);
+  }
+  updatedChannel.participants.erase(
+      std::remove_if(updatedChannel.participants.begin(),
+                     updatedChannel.participants.end(),
+                     [&notification](const ServerSend::Contact& contact) {
+                       return contact.id_user == notification.id_user;
+                     }),
+      updatedChannel.participants.end());
+
+  const std::size_t remainingParticipants = updatedChannel.participants.size();
+  updatedChannel.is_group = remainingParticipants > 2;
+
+  if (remainingParticipants <= 1) {
     removeChannelFromUi(notification.id_channel);
-    qInfo() << "[UI][USER_LEFT_DM] Removing channel" << notification.id_channel;
+    qInfo() << "[UI][USER_LEFT_REMOVE] Removing channel"
+            << notification.id_channel
+            << "remaining=" << static_cast<int>(remainingParticipants);
+    return;
+  }
+
+  if (!channelPanel->updateChannel(updatedChannel)) {
+    qWarning() << "[UI][USER_LEFT_UPDATE_FAILED] channel_id="
+               << notification.id_channel;
+  } else {
+    qInfo() << "[UI][USER_LEFT_UPDATE] channel_id=" << notification.id_channel
+            << "remaining=" << static_cast<int>(remainingParticipants)
+            << "is_group=" << updatedChannel.is_group;
   }
 }
 
 void MainWindow::onLogoutRequested() {
+  suppressDisconnectPopup = true;
   authManager->logout(authToken);
   currentUserId = -1;
   // TODO finish to purge all data
@@ -706,10 +865,25 @@ void MainWindow::onLogoutSucceeded() {
   userNamesById.clear();
   channelTitles.clear();
 
-  // 3. Clear all models
-  channelPanel->clearChannels();
+  // 3. Clear all models / caches shown in UI
+  if (incomingInvitationModel) {
+    incomingInvitationModel->clear();
+  }
+  if (outgoingInvitationModel) {
+    outgoingInvitationModel->clear();
+  }
+  if (userHomeWidget) {
+    userHomeWidget->setUsernameCache(nullptr);
+    userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+    userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+  }
+  if (channelPanel) {
+    channelPanel->clearChannels();
+    channelPanel->setUserInfo("", "??");
+  }
   rightPanel->clearMessages();
   rightPanel->setChatTitle("Select a chat to start messaging");
+  setChatEnabled(false);
 
   // 4. Hide right panel, show login
   if (userHomeWidget) userHomeWidget->hide();
@@ -722,6 +896,22 @@ void MainWindow::onLogoutSucceeded() {
 
 void MainWindow::onNewInvitationRejected(
     ServerSend::RejectInvitationResponse& rejection) {
+  if (rejection.type == WizzMania::MessageType::CANCEL_INVITATION) {
+    if (rejection.contact.id_user == this->currentUserId) {
+      if (outgoingInvitationModel) {
+        outgoingInvitationModel->removeInvitation(rejection.id_channel);
+        userHomeWidget->setOutgoingInvitationModels(outgoingInvitationModel);
+      }
+    } else {
+      if (incomingInvitationModel) {
+        incomingInvitationModel->removeInvitation(rejection.id_channel);
+        userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);
+      }
+      statusBar()->showMessage(tr("Invitation canceled by creator."), 2500);
+    }
+    return;
+  }
+
   if (rejection.contact.id_user == this->currentUserId) {
     this->incomingInvitationModel->removeInvitation(rejection.id_channel);
     this->userHomeWidget->setIncomingInvitationModels(incomingInvitationModel);

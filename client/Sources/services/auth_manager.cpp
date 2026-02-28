@@ -68,3 +68,70 @@ void AuthManager::logout(const QString& token) {
     reply->deleteLater();
   });
 }
+
+void AuthManager::registerUser(const QString& username, const QString& email,
+                               const QString& password) {
+  QJsonObject payload;
+  payload["username"] = username;
+  payload["email"] = email;
+  payload["password"] = password;
+
+  QNetworkReply* reply = api.postJson("register", payload);
+  connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    const int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray body = reply->readAll();
+    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    const QJsonObject obj = doc.object();
+
+    if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+      QString serverMessage = obj.value("message").toString();
+      if (serverMessage.isEmpty()) {
+        serverMessage = obj.value("error").toString();
+      }
+      const QString fallback = reply->errorString();
+      emit registerFailed(serverMessage.isEmpty() ? fallback : serverMessage);
+      reply->deleteLater();
+      return;
+    }
+
+    if (obj.contains("success") && !obj.value("success").toBool()) {
+      const QString message = obj.value("message").toString();
+      emit registerFailed(message.isEmpty() ? tr("Registration failed.")
+                                            : message);
+      reply->deleteLater();
+      return;
+    }
+
+    emit registerSucceeded(tr("You have been registered"));
+    reply->deleteLater();
+  });
+}
+
+void AuthManager::deleteAccount(const QString& token) {
+  QNetworkReply* reply = api.deleteAuth("account", token);
+  connect(reply, &QNetworkReply::finished, this, [this, reply]() {
+    const int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray body = reply->readAll();
+    const QJsonDocument doc = QJsonDocument::fromJson(body);
+    const QJsonObject obj = doc.object();
+
+    if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+      QString serverMessage = obj.value("message").toString();
+      if (serverMessage.isEmpty()) {
+        serverMessage = obj.value("error").toString();
+      }
+      const QString fallback = reply->errorString();
+      emit deleteAccountFailed(serverMessage.isEmpty() ? fallback
+                                                       : serverMessage);
+      reply->deleteLater();
+      return;
+    }
+
+    const QString successMessage =
+        obj.value("message").toString(tr("Account deleted successfully."));
+    emit deleteAccountSucceeded(successMessage);
+    reply->deleteLater();
+  });
+}

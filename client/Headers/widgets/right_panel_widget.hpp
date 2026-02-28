@@ -25,11 +25,13 @@ class RightPanelWidget : public QWidget {
 
  signals:
   void sendRequested(const QString& text);
+  void wizzRequested();
 
  private:
   QLabel* titleLabel;
   QListWidget* messagesList;
   QLineEdit* messageInput;
+  QPushButton* wizzButton;
   QPushButton* sendButton;
 };
 

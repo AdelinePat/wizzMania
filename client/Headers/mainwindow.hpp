@@ -5,7 +5,9 @@
 #include <QHash>
 #include <QMainWindow>
 #include <QMessageBox>
+#include <QRandomGenerator>
 #include <QRegularExpression>
+#include <QStatusBar>
 #include <QString>
 #include <QTimer>
 #include <QVBoxLayout>
@@ -56,6 +58,8 @@ class MainWindow : public QMainWindow {
   void onWsDisconnected(const QString& reason);
   void onChannelSelected(int64_t channelId, const QString& title);
   void onSendMessageRequested(const QString& message);
+  void onWizzRequested();
+  void onWizzReceived(const ServerSend::WizzNotification& notification);
   void onUpdateChannelUnreadCount(int64_t id_channel, int count,
                                   int64_t last_id_message);
   void onLogoutSucceeded();
@@ -66,8 +70,7 @@ class MainWindow : public QMainWindow {
       const ServerSend::UserJoinedNotification& notification);
   void onUserLeftChannel(const ServerSend::UserLeftNotification& notification);
   void onNewInvitationRejected(ServerSend::RejectInvitationResponse& rejection);
-  void onNewChannelCreated(
-    ServerSend::CreateChannelResponse& channel);
+  void onNewChannelCreated(ServerSend::CreateChannelResponse& channel);
 
  private:
   void setupChatView();
@@ -77,6 +80,7 @@ class MainWindow : public QMainWindow {
   QString resolveAtMentions(const QString& text) const;
   QWidget* createMessageWidget(const ServerSend::Message& msg) const;
   void appendMessageToView(int64_t channelId, const ServerSend::Message& msg);
+  void playWizzAnimation();
   void setChatEnabled(bool enabled);
   void applyInvitationAccepted(int64_t invitationChannelId,
                                const ServerSend::ChannelInfo& channel);
@@ -107,6 +111,8 @@ class MainWindow : public QMainWindow {
                       // (preview channel list), unread_count_count)
   QHash<int64_t, QString>
       userNamesById;  // TODO use std::vector<Contact> contacts;?
+  bool suppressDisconnectPopup = false;
+  bool wizzAnimating = false;
   // initialDataResponse invitations (outgiong & incoming)
   // user_model --> last
 };

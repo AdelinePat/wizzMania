@@ -36,7 +36,13 @@ void WebSocketClient::connectWithToken(const QString& token) {
   socket.open(QUrl(ServerConfig::webSocketUrl()));
 }
 
-void WebSocketClient::disconnectFromServer() { socket.close(); }
+void WebSocketClient::disconnectFromServer() {
+  authToken.clear();
+  if (reconnectTimer && reconnectTimer->isActive()) {
+    reconnectTimer->stop();
+  }
+  socket.close();
+}
 
 bool WebSocketClient::isConnected() const {
   return socket.state() == QAbstractSocket::ConnectedState;
@@ -57,6 +63,23 @@ void WebSocketClient::sendMessage(int64_t channelId, const QString& body) {
   const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
   qInfo().noquote() << "[WS][SEND] type=SEND_MESSAGE channel_id=" << channelId
                     << " body_len=" << body.size() << " payload=" << payload;
+  socket.sendTextMessage(payload);
+}
+
+void WebSocketClient::sendWizz(int64_t channelId) {
+  if (!isConnected()) {
+    emit errorReceived("NOT_CONNECTED", "WebSocket is not connected.");
+    return;
+  }
+
+  ClientSend::WizzRequest req;
+  req.type = WizzMania::MessageType::WIZZ;
+  req.id_channel = channelId;
+
+  const QJsonDocument doc(MessageJson::toJson(req));
+  const QString payload = QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
+  qInfo().noquote() << "[WS][SEND] type=WIZZ channel_id=" << channelId
+                    << " payload=" << payload;
   socket.sendTextMessage(payload);
 }
 
@@ -160,6 +183,17 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
       qInfo() << "[WS][NEW_MESSAGE] PARSE_FAILED";
     }
   }
+
+  if (type == static_cast<int>(WizzMania::MessageType::WIZZ)) {
+    qInfo().noquote() << "[WS][WIZZ] channel_id="
+                      << obj.value("id_channel").toInt()
+                      << " sender_id=" << obj.value("id_user").toInt();
+    ServerSend::WizzNotification notification;
+    if (MessageJson::fromJson(obj, notification)) {
+      emit wizzReceived(notification);
+      return;
+    }
+  }
   // user receive new incoming invitation
   if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_INVITATION)) {
     qInfo().noquote()
@@ -189,18 +223,17 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
     }
   }
 
-
-  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_REJECTED)) {
-    qInfo().noquote()
-        << "[WS][INVITATION_REJECTED] type=INVITATION_REJECTED channel_id="
-        << obj.value("id_channel").toInt();
+  if (type == static_cast<int>(WizzMania::MessageType::INVITATION_REJECTED) ||
+      type == static_cast<int>(WizzMania::MessageType::CANCEL_INVITATION)) {
+    qInfo().noquote() << "[WS][INVITATION_UPDATE] type=" << type
+                      << " channel_id=" << obj.value("id_channel").toInt();
     ServerSend::RejectInvitationResponse rejection;
     if (MessageJson::fromJson(obj, rejection)) {
-      qInfo() << "[WS][INVITATION_REJECTED] parsed ok, emitting signal";
+      qInfo() << "[WS][INVITATION_UPDATE] parsed ok, emitting signal";
       emit newInvitationRejected(rejection);
       return;
     } else {
-      qInfo() << "[WS][INVITATION_REJECTED] PARSE_FAILED";
+      qInfo() << "[WS][INVITATION_UPDATE] PARSE_FAILED";
     }
   }
 
@@ -208,18 +241,17 @@ void WebSocketClient::onTextMessageReceived(const QString& message) {
 
   if (type == static_cast<int>(WizzMania::MessageType::CHANNEL_CREATED)) {
     qInfo().noquote()
-        << "[WS][INVITATION_REJECTED] type=INVITATION_REJECTED channel_id="
+        << "[WS][CHANNEL_CREATED] type=CHANNEL_CREATED channel_id="
         << obj.value("id_channel").toInt();
     ServerSend::CreateChannelResponse channel;
     if (MessageJson::fromJson(obj, channel)) {
-      qInfo() << "[WS][INVITATION_REJECTED] parsed ok, emitting signal";
+      qInfo() << "[WS][CHANNEL_CREATED] parsed ok, emitting signal";
       emit newChannelCreated(channel);
       return;
     } else {
-      qInfo() << "[WS][INVITATION_REJECTED] PARSE_FAILED";
+      qInfo() << "[WS][CHANNEL_CREATED] PARSE_FAILED";
     }
   }
-
 
   if (type == static_cast<int>(WizzMania::MessageType::USER_JOINED)) {
     qInfo().noquote()
