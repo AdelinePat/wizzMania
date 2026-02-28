@@ -71,7 +71,7 @@ docker compose up --build
 
 > The server listens on `http://localhost:8888`
 
-> For all Docker commands (logs, rebuild, database reset, troubleshooting), see the [technical documentation](docs/backend-api.md#docker-commands).
+> For all Docker commands (logs, rebuild, database reset, troubleshooting), see the [technical documentation](docs/backendFrontEnd_api.md#docker-commands).
 
 ---
 
@@ -155,16 +155,16 @@ Then open `http://localhost:8880/tests/draft/index.html`
 
 ## 🎨 Design
 
-| Role | Color |
-|------|-------|
-| Background | ![#00111a](https://placehold.co/15x15/00111a/00111a.png) `#00111a` |
-| Background Light | ![#001824](https://placehold.co/15x15/001824/001824.png) `#001824` |
+| Role               | Color                                                              |
+| ------------------ | ------------------------------------------------------------------ |
+| Background         | ![#00111a](https://placehold.co/15x15/00111a/00111a.png) `#00111a` |
+| Background Light   | ![#001824](https://placehold.co/15x15/001824/001824.png) `#001824` |
 | Input / Message BG | ![#001b29](https://placehold.co/15x15/001b29/001b29.png) `#001b29` |
-| Separator | ![#003047](https://placehold.co/15x15/003047/003047.png) `#003047` |
-| Button / Hint | ![#003d5c](https://placehold.co/15x15/003d5c/003d5c.png) `#003d5c` |
-| Text | ![#427E9D](https://placehold.co/15x15/427E9D/427E9D.png) `#427E9D` |
-| Green | ![#52864d](https://placehold.co/15x15/52864d/52864d.png) `#52864d` |
-| Pink | ![#c0899d](https://placehold.co/15x15/c0899d/c0899d.png) `#c0899d` |
+| Separator          | ![#003047](https://placehold.co/15x15/003047/003047.png) `#003047` |
+| Button / Hint      | ![#003d5c](https://placehold.co/15x15/003d5c/003d5c.png) `#003d5c` |
+| Text               | ![#427E9D](https://placehold.co/15x15/427E9D/427E9D.png) `#427E9D` |
+| Green              | ![#52864d](https://placehold.co/15x15/52864d/52864d.png) `#52864d` |
+| Pink               | ![#c0899d](https://placehold.co/15x15/c0899d/c0899d.png) `#c0899d` |
 
 ---
 
@@ -229,7 +229,9 @@ erDiagram
 
 ## 📖 Documentation
 
-- **[Backend API](docs/backend-api.md)** — Full documentation of endpoints and WebSocket messages
+## 📖 Documentation
+
+- **[Backend & Frontend API](docs/backendFrontEnd_api.md)** — Full documentation of endpoints and WebSocket messages
 - **[Client Architecture](client/_documentation/architecture.md)** — Qt client structure
 - **[Client Data Flow](client/_documentation/data_flow.md)** — Client-side data flow
 
@@ -237,13 +239,13 @@ erDiagram
 
 ## 🔧 Dependencies
 
-| Library | Version | Usage |
-|---------|---------|-------|
-| [Crow](https://github.com/CrowCpp/Crow) | v1.3.0 | HTTP + WebSocket server framework |
-| [Asio](https://github.com/chriskohlhoff/asio) | 1.28.0 | Asynchronous I/O (Crow dependency) |
-| [Qt 6](https://www.qt.io/) | 6.4+ | Client framework (Widgets + WebSocket) |
-| MySQL | 9.6 | Database |
-| JWT | — | Token-based authentication |
+| Library                                       | Version | Usage                                  |
+| --------------------------------------------- | ------- | -------------------------------------- |
+| [Crow](https://github.com/CrowCpp/Crow)       | v1.3.0  | HTTP + WebSocket server framework      |
+| [Asio](https://github.com/chriskohlhoff/asio) | 1.28.0  | Asynchronous I/O (Crow dependency)     |
+| [Qt 6](https://www.qt.io/)                    | 6.4+    | Client framework (Widgets + WebSocket) |
+| MySQL                                         | 9.6     | Database                               |
+| JWT                                           | —       | Token-based authentication             |
 
 Server dependencies are managed as **git submodules**:
 
