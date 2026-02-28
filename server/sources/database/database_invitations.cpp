@@ -96,12 +96,8 @@ void Database::update_invitation(int64_t id_user, int64_t id_channel,
     if (affected_rows == 0) {
       throw NotFoundError("Invitation not found for this user/channel");
     }
-    // return affected_rows > 0;
-    // return true;
   } catch (sql::SQLException& e) {
-    // std::cerr << "[DB] update_invitation error: " << e.what() << std::endl;
     throw InternalError(std::string("DB error: ") + e.what());
-    // return false;
   }
 };
 

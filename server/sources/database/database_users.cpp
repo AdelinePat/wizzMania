@@ -27,7 +27,9 @@ int64_t Database::verify_user(const std::string& username,
   }
 }
 
-bool Database::has_channel_access(int64_t id_user, int64_t id_channel, ChannelStatus membership) {
+bool Database::has_channel_access(int64_t id_user, int64_t id_channel,
+                                  ChannelStatus membership) {
+  std::lock_guard<std::mutex> lock(db_mutex);
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
@@ -38,19 +40,16 @@ bool Database::has_channel_access(int64_t id_user, int64_t id_channel, ChannelSt
 
     prep_statement->setInt64(1, id_user);
     prep_statement->setInt64(2, id_channel);
-     prep_statement->setInt(3, static_cast<int32_t>(membership));
+    prep_statement->setInt(3, static_cast<int32_t>(membership));
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
     if (res->next()) {
       return true;
     }
     return false;
-    // return res->next();
-
   } catch (sql::SQLException& e) {
     std::cerr << "[DB] has_channel_access error: " << e.what() << std::endl;
     throw InternalError(std::string("DB error: ") + e.what());
-    // return false;
   }
 }
 
@@ -299,10 +298,11 @@ std::vector<ServerSend::Contact> Database::get_channel_contacts(
 bool Database::email_exists(const std::string& email) {
   std::lock_guard<std::mutex> lock(db_mutex);
   try {
-    this->ensure_connection(); //Ensure if connection SQL is active
+    this->ensure_connection();  // Ensure if connection SQL is active
     std::unique_ptr<sql::PreparedStatement> prep_statement(
         this->conn->prepareStatement(
-            "SELECT 1 FROM users WHERE email = ? LIMIT 1;"));// prepare the requeste SQL
+            "SELECT 1 FROM users WHERE email = ? LIMIT 1;"));  // prepare the
+                                                               // requeste SQL
     prep_statement->setString(1, email);
     std::unique_ptr<sql::ResultSet> result(prep_statement->executeQuery());
     return result->next();
@@ -313,18 +313,18 @@ bool Database::email_exists(const std::string& email) {
 }
 
 std::optional<int64_t> Database::create_user(const std::string& username,
-                                              const std::string& email,
-                                              const std::string& password) {
+                                             const std::string& email,
+                                             const std::string& password) {
   std::lock_guard<std::mutex> lock(db_mutex);
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
         this->conn->prepareStatement(
             "INSERT INTO users (username, email, password) VALUES (?, ?, ?);"));
-    prep_statement->setString(1, username); // fill in the ? with the values
+    prep_statement->setString(1, username);  // fill in the ? with the values
     prep_statement->setString(2, email);
     prep_statement->setString(3, password);
-    prep_statement->executeUpdate(); // execute the query
+    prep_statement->executeUpdate();  // execute the query
 
     // get the auto-generated id
     std::unique_ptr<sql::Statement> stmt(this->conn->createStatement());
@@ -350,29 +350,28 @@ bool Database::delete_user(int64_t id_user) {
     std::unique_ptr<sql::PreparedStatement> prep_statement1(
         this->conn->prepareStatement(
             "UPDATE messages SET id_user = NULL WHERE id_user = ?;"));
-   prep_statement1->setInt64(1, id_user);
-  prep_statement1->executeUpdate();
+    prep_statement1->setInt64(1, id_user);
+    prep_statement1->executeUpdate();
 
     // 2. Delete userChannel entries
-    std::unique_ptr<sql::PreparedStatement>  prep_statement2(
+    std::unique_ptr<sql::PreparedStatement> prep_statement2(
         this->conn->prepareStatement(
             "DELETE FROM userChannel WHERE id_user = ?;"));
-     prep_statement2->setInt64(1, id_user);
-     prep_statement2->executeUpdate();
+    prep_statement2->setInt64(1, id_user);
+    prep_statement2->executeUpdate();
 
     // 3. Transfer channel ownership to System user (id=1)
-    std::unique_ptr<sql::PreparedStatement>  prep_statement3(
+    std::unique_ptr<sql::PreparedStatement> prep_statement3(
         this->conn->prepareStatement(
             "UPDATE channels SET created_by = 1 WHERE created_by = ?;"));
-     prep_statement3->setInt64(1, id_user);
-     prep_statement3->executeUpdate();
+    prep_statement3->setInt64(1, id_user);
+    prep_statement3->executeUpdate();
 
     // 4. Delete user
-    std::unique_ptr<sql::PreparedStatement>  prep_statement4(
-        this->conn->prepareStatement(
-            "DELETE FROM users WHERE id_user = ?;"));
-     prep_statement4->setInt64(1, id_user);
-    int affected_rows =  prep_statement4->executeUpdate();
+    std::unique_ptr<sql::PreparedStatement> prep_statement4(
+        this->conn->prepareStatement("DELETE FROM users WHERE id_user = ?;"));
+    prep_statement4->setInt64(1, id_user);
+    int affected_rows = prep_statement4->executeUpdate();
     return affected_rows > 0;
 
   } catch (sql::SQLException& e) {
