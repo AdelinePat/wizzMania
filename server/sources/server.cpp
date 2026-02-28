@@ -95,7 +95,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return invitation_controller.accept_invitation(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
@@ -109,7 +109,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return invitation_controller.reject_invitation(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
@@ -123,7 +123,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return invitation_controller.cancel_invitation(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
@@ -137,7 +137,7 @@ int main() {
           [&channel_controller, &auth_controller](const crow::request& req) {
             try {
               int64_t id_user = auth_controller.authenticate_http(req);
-              std::string token = req.get_header_value("Authorization");
+              std::string token = req.get_header_value("X-Auth-Token");
               return channel_controller.create_channel(id_user, req, token);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
@@ -150,7 +150,7 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return channel_controller.leave_channel(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {

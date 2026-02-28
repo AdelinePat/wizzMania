@@ -126,7 +126,7 @@ bool Database::create_user_channels(
     std::string placeholder =
         "(?, ?, " + std::to_string(static_cast<int>(ChannelStatus::PENDING)) +
         "), ";
-        
+
     for (size_t i = 0; i < participants.size(); i++) {
       query += placeholder;
     }
@@ -243,19 +243,21 @@ void Database::leave_channel(int64_t id_user, int64_t id_channel) {
     this->ensure_connection();
     this->conn->setAutoCommit(false);
 
-    this->leave_channel(id_user, id_channel, ChannelStatus::LEFT);
-
     int64_t remaining = get_number_invited_users_in_channel(
         id_channel, ChannelStatus::PENDING, ChannelStatus::ACCEPTED);
 
+    this->leave_channel(id_user, id_channel, ChannelStatus::LEFT);
+
     // bool creator_left = (id_user == id_creator);
-    if (remaining <= 0) {
+    if (remaining <= 1) {
       std::unique_ptr<sql::PreparedStatement> del(this->conn->prepareStatement(
           "DELETE FROM channels WHERE id_channel = ?;"));
       del->setInt64(1, id_channel);
       del->executeUpdate();
       // CASCADE handles userChannel and messages automatically
     }
+    conn->commit(); 
+    conn->setAutoCommit(true);
 
   } catch (sql::SQLException& e) {
     this->conn->rollback();

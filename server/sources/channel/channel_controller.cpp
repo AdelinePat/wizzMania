@@ -93,6 +93,10 @@ crow::response ChannelController::leave_channel(int64_t id_user,
   }
 
   try {
+    std::unordered_set<int64_t> remaining_participants =
+        user_service.get_users_by_channel(id_channel);
+    remaining_participants.erase(id_user);
+
     channel_service.leave_channel(id_user, id_channel);
 
     // notify remaining participants via WS
@@ -101,12 +105,10 @@ crow::response ChannelController::leave_channel(int64_t id_user,
     notif.id_channel = id_channel;
     notif.id_user = id_user;
 
-    std::string notif_str = JsonHelpers::ServerSendHelpers::to_json(notif).dump();
+    std::string notif_str =
+        JsonHelpers::ServerSendHelpers::to_json(notif).dump();
 
-    std::unordered_set<int64_t> remaining =
-        user_service.get_users_by_channel(id_channel);
-    ws_manager.broadcast_to_users(
-        remaining, notif_str);
+    ws_manager.broadcast_to_users(remaining_participants, notif_str);
 
     // send UserLeftNotification to every other device for the one that left the
     // chat
