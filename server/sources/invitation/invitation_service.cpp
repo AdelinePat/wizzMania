@@ -3,24 +3,11 @@
 void InvitationService::accept_invitation(int64_t id_user, int64_t id_channel,
                                           std::string& responded_at) {
   db.accept_invitation(id_user, id_channel, responded_at);
-  // if (!accepted) {
-  //   // throw WsError("[INVITATION ERROR] Couldn't accept the invitation");
-  //   throw InternalError("Couldn't accept the invitation");
-  // }
-  // return;
 }
 
-// Should return a boolean
 void InvitationService::reject_invitation(int64_t id_user, int64_t id_channel,
                                           std::string& responded_at) {
   return db.reject_invitation(id_user, id_channel, responded_at);
-  // if (!rejected) {
-  //   // this->send_error(conn, "[INVITATION ERROR]",
-  //   //                  "Couldn't reject the invitation");
-  //   // return;
-  //   // throw WsError("[INVITATION ERROR] Couldn't reject the invitation");
-  //   throw InternalError("Couldn't reject the invitation");
-  // }
 }
 
 void InvitationService::cancel_invitation(int64_t id_user, int64_t id_channel,
@@ -30,7 +17,6 @@ void InvitationService::cancel_invitation(int64_t id_user, int64_t id_channel,
 
 std::vector<ServerSend::ChannelInvitation>
 InvitationService::get_all_user_incoming_invitations(int64_t id_user) {
-  // return db.get_incoming_invitations(id_user);
   std::lock_guard<std::mutex> lock(db.db_mutex);
 
   std::vector<ServerSend::ChannelInvitation> channels_invitations =
@@ -54,7 +40,6 @@ InvitationService::get_all_user_incoming_invitations(int64_t id_user) {
 
 std::vector<ServerSend::ChannelInfo>
 InvitationService::get_all_outgoing_invitations(int64_t id_user) {
-  // return db.get_outgoing_invitations(id_user);
   std::lock_guard<std::mutex> lock(db.db_mutex);
 
   std::vector<ServerSend::ChannelInfo> channels_info =

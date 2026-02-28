@@ -64,6 +64,9 @@ int main() {
           return user_controller.login(req);
         } catch (WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[LOGIN] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -74,6 +77,9 @@ int main() {
           return user_controller.register_user(req);
         } catch (WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[REGISTER] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -86,6 +92,10 @@ int main() {
               return user_controller.delete_user(id_user);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
+            } catch (const std::exception& e) {
+              std::cerr << "[DELETE ACCOUNT] Unexpected error: " << e.what()
+                        << "\n";
+              return crow::response(500, e.what());
             }
           });
 
@@ -95,11 +105,14 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return invitation_controller.accept_invitation(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[INVITATION] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -109,11 +122,15 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return invitation_controller.reject_invitation(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[REJECT INVITATION] Unexpected error: " << e.what()
+                    << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -123,11 +140,15 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return invitation_controller.cancel_invitation(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[CANCEL INVITATION] Unexpected error: " << e.what()
+                    << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -137,10 +158,14 @@ int main() {
           [&channel_controller, &auth_controller](const crow::request& req) {
             try {
               int64_t id_user = auth_controller.authenticate_http(req);
-              std::string token = req.get_header_value("Authorization");
+              std::string token = req.get_header_value("X-Auth-Token");
               return channel_controller.create_channel(id_user, req, token);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
+            } catch (const std::exception& e) {
+              std::cerr << "[CREATE CHANNEL] Unexpected error: " << e.what()
+                        << "\n";
+              return crow::response(500, e.what());
             }
           });
 
@@ -150,11 +175,14 @@ int main() {
                                    const crow::request& req, int id_channel) {
         try {
           int64_t id_user = auth_controller.authenticate_http(req);
-          std::string token = req.get_header_value("Authorization");
+          std::string token = req.get_header_value("X-Auth-Token");
           return channel_controller.leave_channel(
               id_user, static_cast<int64_t>(id_channel), token);
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[LEAVE CHANNEL] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -168,6 +196,9 @@ int main() {
               req, id_user, static_cast<int64_t>(id_channel));
         } catch (const WizzManiaError& e) {
           return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[GET HISTORY] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
         }
       });
 
@@ -183,6 +214,9 @@ int main() {
               return user_controller.logout(token);
             } catch (const WizzManiaError& e) {
               return crow::response(e.get_code(), e.get_message());
+            } catch (const std::exception& e) {
+              std::cerr << "[LOGOUT] Unexpected error: " << e.what() << "\n";
+              return crow::response(500, e.what());
             }
           });
 

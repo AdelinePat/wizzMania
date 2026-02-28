@@ -309,6 +309,13 @@ void WebSocketClient::onError(QAbstractSocket::SocketError error) {
   Q_UNUSED(error);
   qInfo().noquote() << "[WS][ERROR]" << socket.errorString();
   emit errorReceived("WS_ERROR", socket.errorString());
+  // if (error == QAbstractSocket::RemoteHostClosedError) {
+  //   qInfo().noquote() << "[WS][INFO] Remote host closed connection (not an
+  //   error)"; return;
+  // }
+
+  // qInfo().noquote() << "[WS][ERROR]" << socket.errorString();
+  // emit errorReceived("WS_ERROR", socket.errorString());
 }
 
 void WebSocketClient::onReconnectTimer() {

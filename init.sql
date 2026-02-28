@@ -30,7 +30,7 @@ CREATE TABLE userChannel (
     last_read_id_message BIGINT,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
-        ON DELETE NO ACTION
+        ON DELETE NO ACTION -- confirm if it will clean up everything ??? Or should it be the business code to do a transaction and allow rollback?
         ON UPDATE CASCADE,
     CONSTRAINT fk_userChannel_channel FOREIGN KEY (id_channel)
         REFERENCES channels(id_channel)
