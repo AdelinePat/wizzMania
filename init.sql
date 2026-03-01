@@ -16,8 +16,8 @@ CREATE TABLE channels (
     id_channel BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(60) NOT NULL,
     created_at VARCHAR(24) NOT NULL DEFAULT '1970-01-01T00:00:00Z',
-    created_by BIGINT NOT NULL,
-    CONSTRAINT kf_channel_creator FOREIGN KEY (created_by) REFERENCES users(id_user) ON DELETE NO ACTION ON UPDATE CASCADE
+    created_by BIGINT NULL,
+    CONSTRAINT kf_channel_creator FOREIGN KEY (created_by) REFERENCES users(id_user) ON DELETE SET NULL ON UPDATE CASCADE
 );
 
 -- User-Channel link table
@@ -30,7 +30,7 @@ CREATE TABLE userChannel (
     last_read_id_message BIGINT,
     CONSTRAINT fk_userChannel_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
-        ON DELETE NO ACTION -- confirm if it will clean up everything ??? Or should it be the business code to do a transaction and allow rollback?
+        ON DELETE CASCADE
         ON UPDATE CASCADE,
     CONSTRAINT fk_userChannel_channel FOREIGN KEY (id_channel)
         REFERENCES channels(id_channel)
@@ -47,7 +47,7 @@ CREATE TABLE messages (
     timestamp VARCHAR(24) NOT NULL DEFAULT '1970-01-01T00:00:00Z',
     CONSTRAINT fk_messages_user FOREIGN KEY (id_user)
         REFERENCES users(id_user)
-        ON DELETE NO ACTION
+        ON DELETE SET NULL
         ON UPDATE CASCADE,
     CONSTRAINT fk_messages_channel FOREIGN KEY (id_channel)
         REFERENCES channels(id_channel)

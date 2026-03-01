@@ -17,14 +17,20 @@ ServerSend::ChannelInfo ChannelService::get_channel(
   return channel;
 }
 
-int64_t ChannelService::get_number_accepted_users_in_channel(int64_t id_channel) {
-  return db.get_number_invited_users_in_channel(id_channel, ChannelStatus::ACCEPTED, ChannelStatus::ACCEPTED);
+int64_t ChannelService::get_number_accepted_users_in_channel(
+    int64_t id_channel) {
+  return db.get_number_invited_users_in_channel(
+      id_channel, ChannelStatus::ACCEPTED, ChannelStatus::ACCEPTED);
 }
 
 int64_t ChannelService::get_inviter_id(int64_t id_user, int64_t id_channel) {
   // std::optional<int64_t> id_creator_opt = db.get_channel_creator(id_channel);
   int64_t id_creator = this->get_creator_id(id_channel);
-  if (!id_creator || id_creator == id_user) {
+  // if (!id_creator || id_creator == id_user) {
+  //   throw NotFoundError("Couldn't find inviter for this channel");
+  // }
+
+  if (id_creator == id_user) {
     throw NotFoundError("Couldn't find inviter for this channel");
   }
   return id_creator;
@@ -46,7 +52,8 @@ void ChannelService::generate_title(std::string& title,
     title += db.get_contact(id_creator).value().username;
 
     for (const std::string& username : usernames) {
-      title += title.empty() ? username : ", " + username;
+      // title += title.empty() ? username : ", " + username;
+      title += ", " + username;
     }
   }
   if (title.size() >= 60) {
@@ -129,7 +136,7 @@ std::optional<int64_t> ChannelService::find_existing_channel(
 }
 
 bool ChannelService::does_channel_exist(int64_t id_channel) {
-    std::optional<bool> result = db.does_channel_exist(id_channel);
+  std::optional<bool> result = db.does_channel_exist(id_channel);
   if (!result.has_value()) {
     throw InternalError("Could not check channel existence");
   }

@@ -15,6 +15,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -52,6 +53,7 @@ class Database {
   std::mutex db_mutex;  // controllers need to access this!!
 
   int64_t verify_user(const std::string& username, const std::string& password);
+  void user_exists(const int64_t id_user);
   std::vector<ServerSend::Contact> get_user_contacts(
       const int64_t id_user,
       ChannelStatus membership = ChannelStatus::ACCEPTED);
@@ -133,7 +135,13 @@ class Database {
                                      const std::string& email,
                                      const std::string& password);
 
-  bool delete_user(int64_t id_user);  // true if user is delete
+  void delete_user(int64_t id_user,
+                   std::unordered_map<int64_t, std::unordered_set<int64_t>>&
+                       deleted_channels,
+                   std::unordered_map<int64_t, std::unordered_set<int64_t>>&
+                       canceled_invitations,
+                   ChannelStatus membership =
+                       ChannelStatus::ACCEPTED);  // true if user is delete
   void cancel_invitation(int64_t id_user, int64_t id_channel,
                          std::string& responded_at);
 };

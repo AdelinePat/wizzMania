@@ -27,6 +27,33 @@ int64_t Database::verify_user(const std::string& username,
   }
 }
 
+void Database::user_exists(const int64_t id_user) {
+  std::lock_guard<std::mutex> lock(db_mutex);
+
+  try {
+    this->ensure_connection();
+    std::unique_ptr<sql::PreparedStatement> prep_statement(
+        this->conn->prepareStatement("SELECT id_user "
+                                     "FROM users "
+                                     "WHERE id_user = ?"));
+    prep_statement->setInt64(1, id_user);
+
+    std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
+    if (!res->next()) {
+      throw NotFoundError("User " + std::to_string(id_user) + " not found");
+    }
+    // return res->getInt64("id_user");
+    // return -1;
+
+  } catch (const NotFoundError&) {
+    throw;  // let it propagate as-is
+  } catch (sql::SQLException& e) {
+    std::cerr << "[DB] verify_user error: " << e.what() << std::endl;
+    throw InternalError(std::string("[DB] user_exists error: ") + e.what());
+    // return -1;
+  }
+}
+
 bool Database::has_channel_access(int64_t id_user, int64_t id_channel,
                                   ChannelStatus membership) {
   std::lock_guard<std::mutex> lock(db_mutex);
@@ -341,41 +368,142 @@ std::optional<int64_t> Database::create_user(const std::string& username,
 }
 
 //===DELETE ACCOUNT===//
-bool Database::delete_user(int64_t id_user) {
+void Database::delete_user(
+    int64_t id_user,
+    std::unordered_map<int64_t, std::unordered_set<int64_t>>& deleted_channels,
+    std::unordered_map<int64_t, std::unordered_set<int64_t>>&
+        canceled_invitations,
+    ChannelStatus membership) {
   std::lock_guard<std::mutex> lock(db_mutex);
   try {
     this->ensure_connection();
+    this->conn->setAutoCommit(false);
 
-    // 1. Set messages.id_user to NULL (keep message history)
-    std::unique_ptr<sql::PreparedStatement> prep_statement1(
-        this->conn->prepareStatement(
-            "UPDATE messages SET id_user = NULL WHERE id_user = ?;"));
-    prep_statement1->setInt64(1, id_user);
-    prep_statement1->executeUpdate();
+    // Step 1: Transfer ownership of channels this user created
+    {
+      std::unique_ptr<sql::PreparedStatement> ps(this->conn->prepareStatement(
+          "UPDATE channels c "
+          "SET c.created_by = COALESCE( "
+          "  (SELECT uc.id_user FROM userChannel uc "
+          "   WHERE uc.id_channel = c.id_channel "
+          "   AND uc.id_user <> ? "
+          "   AND uc.membership = ? "
+          "   ORDER BY uc.responded_at ASC "
+          "   LIMIT 1), "
+          "  1 "
+          ") "
+          "WHERE c.created_by = ?;"));
+      ps->setInt64(1, id_user);
+      ps->setInt(2, static_cast<int32_t>(membership));
+      ps->setInt64(3, id_user);
+      ps->executeUpdate();
+    }
 
-    // 2. Delete userChannel entries
-    std::unique_ptr<sql::PreparedStatement> prep_statement2(
-        this->conn->prepareStatement(
-            "DELETE FROM userChannel WHERE id_user = ?;"));
-    prep_statement2->setInt64(1, id_user);
-    prep_statement2->executeUpdate();
+    // ── Step 2a: Collect DM channels to delete (both members accepted) ───
+    // These are channels with exactly 2 accepted members, user is one of them
+    {
+      std::unique_ptr<sql::PreparedStatement> ps(this->conn->prepareStatement(
+          "SELECT uc1.id_channel, uc2.id_user AS other_user "
+          "FROM userChannel uc1 "
+          "JOIN userChannel uc2 ON uc1.id_channel = uc2.id_channel "
+          "WHERE uc1.id_user = ? AND uc1.membership = ? "
+          "AND uc2.id_user <> ? AND uc2.membership = ? "
+          "AND (SELECT COUNT(*) FROM userChannel uc3 "
+          "     WHERE uc3.id_channel = uc1.id_channel "
+          "     AND uc3.membership = ?) = 2;"));
+      ps->setInt64(1, id_user);
+      ps->setInt(2, static_cast<int32_t>(membership));
+      ps->setInt64(3, id_user);
+      ps->setInt(4, static_cast<int32_t>(membership));
+      ps->setInt(5, static_cast<int32_t>(membership));
 
-    // 3. Transfer channel ownership to System user (id=1)
-    std::unique_ptr<sql::PreparedStatement> prep_statement3(
-        this->conn->prepareStatement(
-            "UPDATE channels SET created_by = 1 WHERE created_by = ?;"));
-    prep_statement3->setInt64(1, id_user);
-    prep_statement3->executeUpdate();
+      std::unique_ptr<sql::ResultSet> res(ps->executeQuery());
+      while (res->next()) {
+        int64_t id_channel = res->getInt64("id_channel");
+        int64_t other_user = res->getInt64("other_user");
+        deleted_channels[id_channel].insert(other_user);
+      }
+    }
 
-    // 4. Delete user
-    std::unique_ptr<sql::PreparedStatement> prep_statement4(
-        this->conn->prepareStatement("DELETE FROM users WHERE id_user = ?;"));
-    prep_statement4->setInt64(1, id_user);
-    int affected_rows = prep_statement4->executeUpdate();
-    return affected_rows > 0;
+    // ── Step 2b: Collect channels where user is sole accepted member ────
+    // Pending members need to know their invitation was canceled
+    {
+      std::unique_ptr<sql::PreparedStatement> ps(this->conn->prepareStatement(
+          "SELECT uc1.id_channel, uc2.id_user AS pending_user "
+          "FROM userChannel uc1 "
+          "JOIN userChannel uc2 ON uc1.id_channel = uc2.id_channel "
+          "WHERE uc1.id_user = ? AND uc1.membership = ? "
+          "AND uc2.membership = ? "  // pending members
+          "AND (SELECT COUNT(*) FROM userChannel uc3 "
+          "     WHERE uc3.id_channel = uc1.id_channel "
+          "     AND uc3.membership = ?) = 1;"));  // user is sole accepted
+      ps->setInt64(1, id_user);
+      ps->setInt(2, static_cast<int32_t>(membership));
+      ps->setInt(3, static_cast<int32_t>(ChannelStatus::PENDING));
+      ps->setInt(4, static_cast<int32_t>(membership));
 
-  } catch (sql::SQLException& e) {
-    std::cerr << "[DB] delete_user error: " << e.what() << std::endl;
-    return false;
+      std::unique_ptr<sql::ResultSet> res(ps->executeQuery());
+      while (res->next()) {
+        int64_t id_channel = res->getInt64("id_channel");
+        int64_t pending_user = res->getInt64("pending_user");
+        canceled_invitations[id_channel].insert(pending_user);
+      }
+    }
+
+    // ── Step 3: Delete channels where alice is sole accepted member ──────
+    {
+      std::unique_ptr<sql::PreparedStatement> ps(this->conn->prepareStatement(
+          "DELETE FROM channels "
+          "WHERE id_channel IN ("
+          "  SELECT id_channel FROM userChannel "
+          "  WHERE id_user = ? AND membership = ?) "
+          "AND (SELECT COUNT(*) FROM userChannel uc2 "
+          "     WHERE uc2.id_channel = channels.id_channel "
+          "     AND uc2.membership = ?) = 1;"));
+      ps->setInt64(1, id_user);
+      ps->setInt(2, static_cast<int32_t>(membership));
+      ps->setInt(3, static_cast<int32_t>(membership));
+      ps->executeUpdate();
+    }
+
+    // ── Step 4: Delete DM channels (both accepted, exactly 2) ───────────
+    {
+      std::unique_ptr<sql::PreparedStatement> ps(this->conn->prepareStatement(
+          "DELETE FROM channels "
+          "WHERE id_channel IN ("
+          "  SELECT id_channel FROM userChannel "
+          "  WHERE id_user = ? AND membership = ?) "
+          "AND (SELECT COUNT(*) FROM userChannel uc2 "
+          "     WHERE uc2.id_channel = channels.id_channel "
+          "     AND uc2.membership = ?) = 2;"));
+      ps->setInt64(1, id_user);
+      ps->setInt(2, static_cast<int32_t>(membership));
+      ps->setInt(3, static_cast<int32_t>(membership));
+      ps->executeUpdate();
+    }
+
+    // ── Step 5: Delete user ──────────────────────────────────────────────
+    // CASCADE removes remaining userChannel rows
+    // SET NULL on messages.id_user
+    {
+      std::unique_ptr<sql::PreparedStatement> ps(
+          this->conn->prepareStatement("DELETE FROM users WHERE id_user = ?;"));
+      ps->setInt64(1, id_user);
+      if (ps->executeUpdate() == 0) {
+        throw NotFoundError("User " + std::to_string(id_user) + " not found");
+      }
+    }
+
+    this->conn->commit();
+    this->conn->setAutoCommit(true);
+
+  } catch (...) {
+    try {
+      this->conn->rollback();
+      this->conn->setAutoCommit(true);
+    } catch (...) {
+      std::cerr << "[DB] Rollback failed\n";  // log and swallow
+    }
+    throw;  // always rethrows the original exception
   }
 }

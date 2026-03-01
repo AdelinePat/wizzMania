@@ -99,19 +99,30 @@ int64_t UserService::register_user(const std::string& username,
   return new_id.value();
 }
 
-
 // DELETE USER
 
-void UserService::delete_user(int64_t id_user) {
-  // verify user exists
-  std::optional<ServerSend::Contact> user = db.get_contact(id_user);
-  if(!user.has_value()) {
-    throw NotFoundError("User not found");
-  }
+void UserService::delete_user(
+    int64_t id_user,
+    std::unordered_map<int64_t, std::unordered_set<int64_t>>& deleted_channels,
+    std::unordered_map<int64_t, std::unordered_set<int64_t>>&
+        canceled_invitations) {
+  // verify user exist
 
-  //Delete the user in the DB
-  bool deleted = db.delete_user(id_user);
-  if(!deleted) {
-    throw InternalError("Failed to delete user");
+  if (id_user == 1) {
+    throw ForbiddenError("Cannot delete system user");
   }
+  db.user_exists(id_user);
+
+  // std::optional<ServerSend::Contact> user = db.get_contact(id_user);
+  // if(!user.has_value()) {
+  //   throw NotFoundError("User not found");
+  // }
+
+  // Delete the user in the DB
+  // bool deleted = db.delete_user(id_user);
+  db.delete_user(id_user, deleted_channels, canceled_invitations);
+
+  // if (!deleted) {
+  //   throw InternalError("Failed to delete user");
+  // }
 }
