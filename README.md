@@ -46,12 +46,6 @@ wizzMania/
 
 - **Docker & Docker Compose** (server + database)
 - **Qt 6** with CMake and MinGW/GCC (client)
-- **Git** with submodules
-
-```bash
-git clone --recurse-submodules <repo_url>
-# or if already cloned:
-git submodule update --init --recursive
 ```
 
 Create a `.env` file at the root from the template:
