@@ -131,11 +131,20 @@ void CreateChannelWidget::setErrorMessage(const QString& message) {
   if (!errorLabel) {
     return;
   }
+  errorLabel->setWordWrap(true);
+  errorLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
   if (message.isEmpty()) {
     errorLabel->clear();
+    errorLabel->setMinimumHeight(0);
     errorLabel->hide();
     return;
   }
   errorLabel->setText(message);
+  const int availableWidth =
+      errorLabel->width() > 0 ? errorLabel->width() : 360;
+  const QRect bounds = errorLabel->fontMetrics().boundingRect(
+      QRect(0, 0, availableWidth, 10000), Qt::TextWordWrap | Qt::AlignLeft,
+      message);
+  errorLabel->setMinimumHeight(bounds.height() + 6);
   errorLabel->show();
 }

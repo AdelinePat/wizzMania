@@ -24,9 +24,10 @@ class MessageController {
   MessageService message_service;
   UserService user_service;
 
-  void broadcast_new_message(const int64_t id_channel, const int64_t id_message,
-                             const int64_t id_user, const std::string& body,
-                             const std::string& timestamp);
+  void broadcast_new_message(
+      const int64_t id_channel, const int64_t id_message, const int64_t id_user,
+      const std::string& body, const std::string& timestamp,
+      std::optional<int64_t> excluded_id_user = std::nullopt);
 
  public:
   explicit MessageController(Database& db, WebSocketManager& ws)
@@ -43,6 +44,13 @@ class MessageController {
 
   crow::response get_history(const crow::request& req, int64_t id_user,
                              int64_t id_channel);
+  crow::response send_message_http(const crow::request& req, int64_t id_user,
+                                   int64_t id_channel);
+  crow::response mark_as_read_http(const crow::request& req, int64_t id_user,
+                                   int64_t id_channel,
+                                   const std::string& auth_token);
+  crow::response wizz_http(const crow::request& req, int64_t id_user,
+                           int64_t id_channel);
   void mark_as_read(crow::websocket::connection& conn, int64_t id_user,
                     const crow::json::rvalue& json_msg);
 
@@ -51,7 +59,7 @@ class MessageController {
   //                              std::vector<ServerSend::Message>& messages,
   //                              int limit);
 
-    void wizz(crow::websocket::connection& conn, int64_t id_user,
+  void wizz(crow::websocket::connection& conn, int64_t id_user,
             const crow::json::rvalue& json_msg);
 };
 

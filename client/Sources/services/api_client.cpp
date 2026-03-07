@@ -31,6 +31,19 @@ QNetworkReply* ApiClient::patchAuth(const QString& path, const QString& token) {
   return network.sendCustomRequest(request, "PATCH", QByteArray());
 }
 
+QNetworkReply* ApiClient::patchJsonAuth(const QString& path,
+                                        const QJsonObject& payload,
+                                        const QString& token) {
+  const QString base = ServerConfig::baseUrl();
+  const QString urlStr =
+      base.endsWith('/') ? (base + path) : (base + "/" + path);
+  QNetworkRequest request{QUrl(urlStr)};
+  request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+  request.setRawHeader("X-Auth-Token", token.toUtf8());
+  return network.sendCustomRequest(request, "PATCH",
+                                   QJsonDocument(payload).toJson());
+}
+
 QNetworkReply* ApiClient::deleteAuth(const QString& path,
                                      const QString& token) {
   const QString base = ServerConfig::baseUrl();

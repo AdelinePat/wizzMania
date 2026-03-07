@@ -108,6 +108,28 @@ MainWindow::MainWindow(QWidget* parent)
             QMessageBox::warning(this, tr("Create Channel"), message);
           });
 
+  connect(channelService, &ChannelService::messageSent, this,
+          &MainWindow::onNewMessageReceived);
+  connect(channelService, &ChannelService::messageSendFailed, this,
+          [this](int64_t channelId, const QString& message) {
+            Q_UNUSED(channelId);
+            QMessageBox::warning(this, tr("Message"), message);
+          });
+  connect(channelService, &ChannelService::markAsReadUpdated, this,
+          &MainWindow::onUpdateChannelUnreadCount);
+  connect(channelService, &ChannelService::markAsReadFailed, this,
+          [this](int64_t channelId, const QString& message) {
+            Q_UNUSED(channelId);
+            qWarning().noquote() << "[HTTP][MARK_AS_READ][FAILED]" << message;
+          });
+  connect(channelService, &ChannelService::wizzSent, this,
+          &MainWindow::onWizzReceived);
+  connect(channelService, &ChannelService::wizzFailed, this,
+          [this](int64_t channelId, const QString& message) {
+            Q_UNUSED(channelId);
+            QMessageBox::warning(this, tr("Wizz"), message);
+          });
+
   connect(wsClient, &WebSocketClient::newMessageReceived, this,
           &MainWindow::onNewMessageReceived);
   connect(wsClient, &WebSocketClient::wizzReceived, this,
@@ -199,14 +221,6 @@ MainWindow::MainWindow(QWidget* parent)
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
           [this]() { qInfo() << "[UI] Logout requested"; });
 
-  // Channel panel leave channel button
-  connect(channelPanel, &ChannelPanelWidget::leaveChannelRequested, this,
-          [this](int64_t channelId) {
-            if (invitationService) {
-              invitationService->leaveChannel(channelId, authToken);
-            }
-          });
-
   // Forward invitation actions to HTTP API (not WebSocket)
   connect(userHomeWidget, &UserHomeWidget::acceptInvitationRequested, this,
           [this](int64_t id) { acceptInvitation(id); });
@@ -294,6 +308,24 @@ void MainWindow::setupChatView() {
           &MainWindow::onSendMessageRequested);
   connect(rightPanel, &RightPanelWidget::wizzRequested, this,
           &MainWindow::onWizzRequested);
+  connect(rightPanel, &RightPanelWidget::leaveChannelRequested, this, [this]() {
+    if (currentChannelId <= 0) {
+      QMessageBox::warning(this, tr("Leave Channel"),
+                           tr("Select a channel first."));
+      return;
+    }
+
+    QMessageBox msgBox;
+    msgBox.setWindowTitle(tr("Leave Channel"));
+    msgBox.setText(tr("Are you sure you want to leave this channel?"));
+    msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Yes);
+    msgBox.setDefaultButton(QMessageBox::Cancel);
+    msgBox.button(QMessageBox::Yes)->setText(tr("Confirm"));
+
+    if (msgBox.exec() == QMessageBox::Yes && invitationService) {
+      invitationService->leaveChannel(currentChannelId, authToken);
+    }
+  });
 
   // Set initial splitter sizes (250px for left panel, rest for right)
   ui->chatSplitter->setSizes({250, 650});
@@ -389,7 +421,9 @@ void MainWindow::onChannelHistoryReceived(
   int64_t lastMessageId = 0;
   if (!ordered.empty()) {
     lastMessageId = ordered.back().id_message;
-    wsClient->markAsRead(history.id_channel, lastMessageId);
+    if (channelService) {
+      channelService->markAsRead(history.id_channel, lastMessageId, authToken);
+    }
   }
 
   // Clear unread count when channel is accessed
@@ -407,7 +441,7 @@ void MainWindow::onNewMessageReceived(
                     << " id_message=" << msg.message.id_message << " body_len="
                     << static_cast<int>(msg.message.body.size());
   // Update channel preview / unread badge regardless of active channel
-  QString preview = QString::fromStdString(msg.message.body);
+  QString preview = resolveAtMentions(QString::fromStdString(msg.message.body));
   bool incrementUnread = (msg.id_channel != currentChannelId &&
                           msg.message.id_sender != currentUserId);
   if (channelPanel) {
@@ -417,8 +451,9 @@ void MainWindow::onNewMessageReceived(
 
   // If the message is for the currently open channel, append to view
   if (msg.id_channel == currentChannelId) {
-    if (wsClient) {
-      wsClient->markAsRead(msg.id_channel, msg.message.id_message);
+    if (channelService) {
+      channelService->markAsRead(msg.id_channel, msg.message.id_message,
+                                 authToken);
       if (channelPanel) {
         channelPanel->updateChannelUnreadCount(msg.id_channel, 0,
                                                msg.message.id_message);
@@ -430,10 +465,6 @@ void MainWindow::onNewMessageReceived(
 
 void MainWindow::onWizzReceived(
     const ServerSend::WizzNotification& notification) {
-  if (notification.id_user == currentUserId) {
-    return;
-  }
-
   const QString sender = usernameForUserId(notification.id_user);
   statusBar()->showMessage(tr("⚡ WIZZ from %1").arg(sender), 3000);
   playWizzAnimation();
@@ -478,7 +509,14 @@ void MainWindow::populateChannels(
     const std::vector<ServerSend::ChannelInfo>& channels) {
   channelTitles.clear();
 
-  channelPanel->setChannels(channels);
+  std::vector<ServerSend::ChannelInfo> channelsWithResolvedPreview = channels;
+  for (auto& channel : channelsWithResolvedPreview) {
+    channel.last_message.body =
+        resolveAtMentions(QString::fromStdString(channel.last_message.body))
+            .toStdString();
+  }
+
+  channelPanel->setChannels(channelsWithResolvedPreview);
 
   for (const auto& channel : channels) {
     for (const auto& participant : channel.participants) {
@@ -529,7 +567,9 @@ void MainWindow::onSendMessageRequested(const QString& message) {
 
   qInfo().noquote() << "[UI][SEND] channel_id=" << currentChannelId
                     << " body_len=" << message.size() << " body=" << message;
-  wsClient->sendMessage(currentChannelId, message);
+  if (channelService) {
+    channelService->sendMessage(currentChannelId, message, authToken);
+  }
   rightPanel->focusInput();
 
   // Fallback refresh: ensures UI catches up even if a NEW_MESSAGE event is
@@ -548,7 +588,9 @@ void MainWindow::onWizzRequested() {
   }
 
   qInfo().noquote() << "[UI][WIZZ] channel_id=" << currentChannelId;
-  wsClient->sendWizz(currentChannelId);
+  if (channelService) {
+    channelService->sendWizz(currentChannelId, authToken);
+  }
   rightPanel->focusInput();
 }
 

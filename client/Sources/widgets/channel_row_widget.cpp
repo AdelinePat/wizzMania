@@ -43,24 +43,6 @@ ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
     rootLayout->addWidget(unreadLabel, 0, Qt::AlignRight | Qt::AlignVCenter);
   }
 
-  // Leave button (dangerous action)
-  QPushButton* leaveBtn = new QPushButton("X", this);
-  leaveBtn->setObjectName("channelLeaveBtn");
-  connect(leaveBtn, &QPushButton::clicked, this,
-          [this, channelId = this->channelId]() {
-            QMessageBox msgBox;
-            msgBox.setWindowTitle("Leave Channel");
-            msgBox.setText("Are you sure you want to leave this channel?");
-            msgBox.setStandardButtons(QMessageBox::Cancel | QMessageBox::Yes);
-            msgBox.setDefaultButton(QMessageBox::Cancel);
-            msgBox.button(QMessageBox::Yes)->setText("Confirm");
-
-            if (msgBox.exec() == QMessageBox::Yes) {
-              emit leaveChannelRequested(channelId);
-            }
-          });
-  rootLayout->addWidget(leaveBtn, 0, Qt::AlignRight | Qt::AlignVCenter);
-
   updatePreviewElision();
 }
 

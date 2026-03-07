@@ -4,8 +4,6 @@
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QMessageBox>
-#include <QPushButton>
 #include <QResizeEvent>
 #include <QSizePolicy>
 #include <QVBoxLayout>
@@ -21,9 +19,6 @@ class ChannelRowWidget : public QWidget {
 
  protected:
   void resizeEvent(QResizeEvent* event) override;
-
- signals:
-  void leaveChannelRequested(int64_t channelId);
 
  private:
   void updatePreviewElision();

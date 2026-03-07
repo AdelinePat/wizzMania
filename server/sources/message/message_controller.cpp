@@ -51,11 +51,10 @@ void MessageController::send_message_internal(int64_t id_user,
                               timestamp);
 }
 
-void MessageController::broadcast_new_message(const int64_t id_channel,
-                                              const int64_t id_message,
-                                              const int64_t id_user,
-                                              const std::string& body,
-                                              const std::string& timestamp) {
+void MessageController::broadcast_new_message(
+    const int64_t id_channel, const int64_t id_message, const int64_t id_user,
+    const std::string& body, const std::string& timestamp,
+    std::optional<int64_t> excluded_id_user) {
   ServerSend::SendMessageResponse broadcast;
   broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
   broadcast.id_channel = id_channel;
@@ -65,7 +64,57 @@ void MessageController::broadcast_new_message(const int64_t id_channel,
       JsonHelpers::ServerSendHelpers::to_json(broadcast).dump();
   std::unordered_set<int64_t> participants =
       user_service.get_users_by_channel(id_channel);
+
+  if (excluded_id_user.has_value()) {
+    participants.erase(excluded_id_user.value());
+  }
+
   ws_manager.broadcast_to_users(participants, broadcast_json_str);
+}
+
+crow::response MessageController::send_message_http(const crow::request& req,
+                                                    int64_t id_user,
+                                                    int64_t id_channel) {
+  crow::json::rvalue json_msg = crow::json::load(req.body);
+  if (!json_msg) {
+    throw BadRequestError("Invalid SEND_MESSAGE format");
+  }
+
+  std::optional<ClientSend::SendMessageRequest> parsed =
+      JsonHelpers::ClientSendHelpers::parse_send_message(json_msg);
+  if (!parsed.has_value()) {
+    throw BadRequestError("Invalid SEND_MESSAGE format");
+  }
+
+  if (parsed->id_channel != id_channel) {
+    throw BadRequestError("Channel mismatch in SEND_MESSAGE payload");
+  }
+
+  if (!user_service.has_access(id_user, id_channel)) {
+    throw UnauthorizedError(
+        "User has no permission to SEND_MESSAGE to this channel");
+  }
+
+  const std::string timestamp = Utils::get_timestamp();
+  const std::string body = parsed->body;
+  const int64_t new_id_message =
+      message_service.create_message(id_user, id_channel, body, timestamp);
+
+  ServerSend::SendMessageResponse response;
+  response.type = WizzMania::MessageType::NEW_MESSAGE;
+  response.id_channel = id_channel;
+  response.message = Structure::create_message_struct(new_id_message, id_user,
+                                                      body, timestamp);
+
+  const std::string response_json =
+      JsonHelpers::ServerSendHelpers::to_json(response).dump();
+
+  broadcast_new_message(id_channel, new_id_message, id_user, body, timestamp,
+                        id_user);
+
+  crow::response http_response(200, response_json);
+  http_response.add_header("Content-Type", "application/json");
+  return http_response;
 }
 
 // switch to HTTP
@@ -110,6 +159,42 @@ crow::response MessageController::get_history(const crow::request& req,
   crow::response response(200, history_str);
   response.add_header("Content-Type", "application/json");
   return response;
+}
+
+crow::response MessageController::mark_as_read_http(
+    const crow::request& req, int64_t id_user, int64_t id_channel,
+    const std::string& auth_token) {
+  crow::json::rvalue json_msg = crow::json::load(req.body);
+  if (!json_msg) {
+    throw BadRequestError("Invalid MARK_AS_READ format");
+  }
+
+  std::optional<ClientSend::MarkAsRead> mark =
+      JsonHelpers::ClientSendHelpers::parse_mark_as_read(json_msg);
+  if (!mark.has_value()) {
+    throw BadRequestError("Invalid MARK_AS_READ format");
+  }
+
+  if (mark->id_channel != id_channel) {
+    throw BadRequestError("Channel mismatch in MARK_AS_READ payload");
+  }
+
+  if (!user_service.has_access(id_user, id_channel)) {
+    throw UnauthorizedError(
+        "User has no permission to MARK_AS_READ in this channel");
+  }
+
+  message_service.mark_as_read(id_user, id_channel, mark->last_id_message);
+  mark->unread_count = db.get_unread_count(id_user, id_channel);
+
+  const std::string payload =
+      JsonHelpers::ClientSendHelpers::to_json(mark.value()).dump();
+
+  ws_manager.send_to_user_except(id_user, payload, auth_token);
+
+  crow::response http_response(200, payload);
+  http_response.add_header("Content-Type", "application/json");
+  return http_response;
 }
 
 // void MessageController::send_history(crow::websocket::connection& conn,
@@ -166,8 +251,8 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
     std::cout << "[MARK_AS_READ] User " << id_user << " -> Channel "
               << mark->id_channel << " read up to message "
               << mark->last_id_message << "\n";
-              // << mark->id_channel << " read up to message "
-              // << mark->last_id_message << "\n";
+    // << mark->id_channel << " read up to message "
+    // << mark->last_id_message << "\n";
 
     // check if user has access to this channel
     // bool has_access = user_service.has_access(id_user, mark->id_channel);
@@ -195,7 +280,7 @@ void MessageController::mark_as_read(crow::websocket::connection& conn,
 }
 
 void MessageController::wizz(crow::websocket::connection& conn, int64_t id_user,
-                              const crow::json::rvalue& json_msg) {
+                             const crow::json::rvalue& json_msg) {
   try {
     std::optional<ClientSend::WizzRequest> req =
         JsonHelpers::ClientSendHelpers::parse_wizz(json_msg);
@@ -203,7 +288,8 @@ void MessageController::wizz(crow::websocket::connection& conn, int64_t id_user,
       throw BadRequestError("Invalid WIZZ format");
     }
 
-    std::cout << "[WIZZ] User " << id_user << " in channel " << req->id_channel << "\n";
+    std::cout << "[WIZZ] User " << id_user << " in channel " << req->id_channel
+              << "\n";
 
     if (!user_service.has_access(id_user, req->id_channel)) {
       throw ForbiddenError("No access to this channel");
@@ -225,4 +311,44 @@ void MessageController::wizz(crow::websocket::connection& conn, int64_t id_user,
   } catch (const WizzManiaError& e) {
     WizzManiaError::send_ws_error(conn, e);
   }
+}
+
+crow::response MessageController::wizz_http(const crow::request& req,
+                                            int64_t id_user,
+                                            int64_t id_channel) {
+  crow::json::rvalue json_msg = crow::json::load(req.body);
+  if (!json_msg) {
+    throw BadRequestError("Invalid WIZZ format");
+  }
+
+  std::optional<ClientSend::WizzRequest> parsed =
+      JsonHelpers::ClientSendHelpers::parse_wizz(json_msg);
+  if (!parsed.has_value()) {
+    throw BadRequestError("Invalid WIZZ format");
+  }
+
+  if (parsed->id_channel != id_channel) {
+    throw BadRequestError("Channel mismatch in WIZZ payload");
+  }
+
+  if (!user_service.has_access(id_user, id_channel)) {
+    throw ForbiddenError("No access to this channel");
+  }
+
+  ServerSend::WizzNotification notif;
+  notif.type = WizzMania::MessageType::WIZZ;
+  notif.id_channel = id_channel;
+  notif.id_user = id_user;
+
+  const std::string payload =
+      JsonHelpers::ServerSendHelpers::to_json(notif).dump();
+
+  std::unordered_set<int64_t> participants =
+      user_service.get_users_by_channel(id_channel);
+  participants.erase(id_user);
+  ws_manager.broadcast_to_users(participants, payload);
+
+  crow::response http_response(200, payload);
+  http_response.add_header("Content-Type", "application/json");
+  return http_response;
 }
