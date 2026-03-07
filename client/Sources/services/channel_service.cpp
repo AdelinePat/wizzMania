@@ -103,3 +103,149 @@ void ChannelService::fetchHistory(int64_t channelId, int64_t beforeIdMessage,
     reply->deleteLater();
   });
 }
+
+void ChannelService::sendMessage(int64_t channelId, const QString& body,
+                                 const QString& token) {
+  ClientSend::SendMessageRequest request;
+  request.type = WizzMania::MessageType::SEND_MESSAGE;
+  request.id_channel = channelId;
+  request.body = body.toStdString();
+
+  QNetworkReply* reply =
+      api.postJsonAuth(QString("channels/%1/messages").arg(channelId),
+                       MessageJson::toJson(request), token);
+
+  connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
+    const int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray rawBody = reply->readAll();
+
+    if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+      QString message = QString::fromUtf8(rawBody);
+      if (statusCode == 405) {
+        message =
+            "Server endpoint not available (405). Restart/rebuild the server "
+            "so HTTP routes for messages/wizz/read are active.";
+      }
+      emit messageSendFailed(
+          channelId, message.isEmpty() ? reply->errorString() : message);
+      reply->deleteLater();
+      return;
+    }
+
+    const QJsonDocument doc = QJsonDocument::fromJson(rawBody);
+    if (!doc.isObject()) {
+      emit messageSendFailed(channelId, "Invalid JSON response from server.");
+      reply->deleteLater();
+      return;
+    }
+
+    ServerSend::SendMessageResponse response;
+    if (!MessageJson::fromJson(doc.object(), response)) {
+      emit messageSendFailed(channelId,
+                             "Failed to parse send message response.");
+      reply->deleteLater();
+      return;
+    }
+
+    emit messageSent(response);
+    reply->deleteLater();
+  });
+}
+
+void ChannelService::markAsRead(int64_t channelId, int64_t lastMessageId,
+                                const QString& token) {
+  ClientSend::MarkAsRead request;
+  request.type = WizzMania::MessageType::MARK_AS_READ;
+  request.id_channel = channelId;
+  request.last_id_message = lastMessageId;
+
+  QNetworkReply* reply =
+      api.patchJsonAuth(QString("channels/%1/read").arg(channelId),
+                        MessageJson::toJson(request), token);
+
+  connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
+    const int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray rawBody = reply->readAll();
+
+    if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+      QString message = QString::fromUtf8(rawBody);
+      if (statusCode == 405) {
+        message =
+            "Server endpoint not available (405). Restart/rebuild the server "
+            "so HTTP routes for messages/wizz/read are active.";
+      }
+      emit markAsReadFailed(channelId,
+                            message.isEmpty() ? reply->errorString() : message);
+      reply->deleteLater();
+      return;
+    }
+
+    const QJsonDocument doc = QJsonDocument::fromJson(rawBody);
+    if (!doc.isObject()) {
+      emit markAsReadFailed(channelId, "Invalid JSON response from server.");
+      reply->deleteLater();
+      return;
+    }
+
+    ClientSend::MarkAsRead response;
+    if (!MessageJson::fromJson(doc.object(), response)) {
+      emit markAsReadFailed(channelId,
+                            "Failed to parse mark-as-read response.");
+      reply->deleteLater();
+      return;
+    }
+
+    emit markAsReadUpdated(response.id_channel,
+                           static_cast<int>(response.unread_count),
+                           response.last_id_message);
+    reply->deleteLater();
+  });
+}
+
+void ChannelService::sendWizz(int64_t channelId, const QString& token) {
+  ClientSend::WizzRequest request;
+  request.type = WizzMania::MessageType::WIZZ;
+  request.id_channel = channelId;
+
+  QNetworkReply* reply =
+      api.postJsonAuth(QString("channels/%1/wizz").arg(channelId),
+                       MessageJson::toJson(request), token);
+
+  connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
+    const int statusCode =
+        reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
+    const QByteArray rawBody = reply->readAll();
+
+    if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
+      QString message = QString::fromUtf8(rawBody);
+      if (statusCode == 405) {
+        message =
+            "Server endpoint not available (405). Restart/rebuild the server "
+            "so HTTP routes for messages/wizz/read are active.";
+      }
+      emit wizzFailed(channelId,
+                      message.isEmpty() ? reply->errorString() : message);
+      reply->deleteLater();
+      return;
+    }
+
+    const QJsonDocument doc = QJsonDocument::fromJson(rawBody);
+    if (!doc.isObject()) {
+      emit wizzFailed(channelId, "Invalid JSON response from server.");
+      reply->deleteLater();
+      return;
+    }
+
+    ServerSend::WizzNotification response;
+    if (!MessageJson::fromJson(doc.object(), response)) {
+      emit wizzFailed(channelId, "Failed to parse wizz response.");
+      reply->deleteLater();
+      return;
+    }
+
+    emit wizzSent(response);
+    reply->deleteLater();
+  });
+}

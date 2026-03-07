@@ -50,7 +50,8 @@ class Database {
   Database(const std::string& host, const std::string& user,
            const std::string& password, const std::string& database);
   ~Database();
-  std::mutex db_mutex;  // controllers need to access this!!
+  //   std::mutex db_mutex;  // controllers need to access this!!
+  std::recursive_mutex db_mutex;
 
   int64_t verify_user(const std::string& username, const std::string& password);
   void user_exists(const int64_t id_user);

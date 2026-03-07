@@ -24,11 +24,7 @@ int64_t ChannelService::get_number_accepted_users_in_channel(
 }
 
 int64_t ChannelService::get_inviter_id(int64_t id_user, int64_t id_channel) {
-  // std::optional<int64_t> id_creator_opt = db.get_channel_creator(id_channel);
   int64_t id_creator = this->get_creator_id(id_channel);
-  // if (!id_creator || id_creator == id_user) {
-  //   throw NotFoundError("Couldn't find inviter for this channel");
-  // }
 
   if (id_creator == id_user) {
     throw NotFoundError("Couldn't find inviter for this channel");
@@ -83,12 +79,8 @@ int64_t ChannelService::create_channel(
 
 std::vector<ServerSend::ChannelInfo> ChannelService::get_all_user_channels(
     int64_t id_user) {
-  // return db.get_initial_channels(id_user);
-
-  // Create ChannelInfo list for initial_data
-  // std::vector<ServerSend::ChannelInfo> Database::get_initial_channels(
-  //     const int64_t id_user) {
-  std::lock_guard<std::mutex> lock(db.db_mutex);
+  // std::lock_guard<std::mutex> lock(db.db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db.db_mutex);
 
   std::vector<ServerSend::ChannelInfo> channels_info = db.get_channels(id_user);
   std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =

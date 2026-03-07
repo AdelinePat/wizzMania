@@ -79,8 +79,12 @@ void LoginWidget::setStatusText(const QString& text, bool isError) {
     return;
   }
 
+  ui->errorLabel->setWordWrap(true);
+  ui->errorLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+
   if (text.isEmpty()) {
     ui->errorLabel->setStyleSheet(QString());
+    ui->errorLabel->setMinimumHeight(0);
   } else if (isError) {
     ui->errorLabel->setStyleSheet("color: rgb(220,120,120);");
   } else {
@@ -88,5 +92,13 @@ void LoginWidget::setStatusText(const QString& text, bool isError) {
   }
 
   ui->errorLabel->setText(text);
+  if (!text.isEmpty()) {
+    const int availableWidth =
+        ui->errorLabel->width() > 0 ? ui->errorLabel->width() : 300;
+    const QRect bounds = ui->errorLabel->fontMetrics().boundingRect(
+        QRect(0, 0, availableWidth, 10000), Qt::TextWordWrap | Qt::AlignCenter,
+        text);
+    ui->errorLabel->setMinimumHeight(bounds.height() + 6);
+  }
   ui->errorLabel->setVisible(!text.isEmpty());
 }

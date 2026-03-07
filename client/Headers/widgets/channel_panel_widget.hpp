@@ -51,9 +51,6 @@ class ChannelPanelWidget : public QWidget {
   // Emitted when the logout button is clicked
   void logoutRequested();
 
-  // Emitted when the leave button on a channel row is clicked
-  void leaveChannelRequested(int64_t channelId);
-
  private:
   void applyChannelDataToItem(QListWidgetItem* item,
                               const ServerSend::ChannelInfo& channel);

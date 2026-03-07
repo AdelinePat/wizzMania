@@ -24,11 +24,6 @@ class WebSocketClient : public QObject {
   void disconnectFromServer();
   bool isConnected() const;
 
-  void sendMessage(int64_t channelId, const QString& body);
-  void sendWizz(int64_t channelId);
-  void openChannel(int64_t channelId);
-  void markAsRead(int64_t channelId, int64_t lastMessageId);
-
  signals:
   void connected();
   void disconnected(const QString& reason);

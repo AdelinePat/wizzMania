@@ -182,7 +182,19 @@ void RegisterWidget::onCancelClicked() {
 }
 
 void RegisterWidget::setErrorText(const QString& text) {
+  errorLabel->setWordWrap(true);
+  errorLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
   errorLabel->setText(text);
+  if (text.isEmpty()) {
+    errorLabel->setMinimumHeight(0);
+  } else {
+    const int availableWidth =
+        errorLabel->width() > 0 ? errorLabel->width() : 320;
+    const QRect bounds = errorLabel->fontMetrics().boundingRect(
+        QRect(0, 0, availableWidth, 10000), Qt::TextWordWrap | Qt::AlignCenter,
+        text);
+    errorLabel->setMinimumHeight(bounds.height() + 6);
+  }
   errorLabel->setVisible(!text.isEmpty());
 }
 

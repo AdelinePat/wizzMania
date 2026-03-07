@@ -37,8 +37,6 @@ void ChannelPanelWidget::rebuildChannelRowWidget(QListWidgetItem* item) {
 
   ChannelRowWidget* row = new ChannelRowWidget(
       channelId, title, preview, unreadCount, isGroup, channelsList);
-  connect(row, &ChannelRowWidget::leaveChannelRequested, this,
-          &ChannelPanelWidget::leaveChannelRequested);
   item->setSizeHint(row->sizeHint());
   channelsList->setItemWidget(item, row);
 }

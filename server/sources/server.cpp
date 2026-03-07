@@ -37,6 +37,7 @@ int main() {
   crow::App<CORS> app;
 
   WebSocketManager ws_manager;
+  // WebSocketManager ws_manager(app.get_context());
 
   UserController user_controller(db, ws_manager);
   MessageController message_controller(db, ws_manager);

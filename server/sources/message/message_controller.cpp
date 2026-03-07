@@ -61,11 +61,18 @@ crow::response MessageController::send_message(const crow::request& req,
   broadcast_new_message(id_channel, new_id_message, id_user, msg_body,
                         timestamp, token);
 
-  crow::json::wvalue resp;
-  resp["id_message"] = new_id_message;
-  resp["timestamp"] = timestamp;
+  ServerSend::SendMessageResponse broadcast;
+  broadcast.type = WizzMania::MessageType::NEW_MESSAGE;
+  broadcast.id_channel = id_channel;
+  broadcast.message =
+      Structure::create_message_struct(new_id_message, id_user, msg_body, timestamp);
+  std::string broadcast_json_str =
+      JsonHelpers::ServerSendHelpers::to_json(broadcast).dump();
+  // crow::json::wvalue resp;
+  // resp["id_message"] = new_id_message;
+  // resp["timestamp"] = timestamp;
 
-  crow::response res(201, resp.dump());
+  crow::response res(201, broadcast_json_str);
   res.add_header("Content-Type", "application/json");
   return res;
 }
@@ -113,6 +120,52 @@ void MessageController::broadcast_new_message(const int64_t id_channel,
     ws_manager.broadcast_to_users(participants, broadcast_json_str);
   }
 }
+
+// crow::response MessageController::send_message_http(const crow::request& req,
+//                                                     int64_t id_user,
+//                                                     int64_t id_channel) {
+//   crow::json::rvalue json_msg = crow::json::load(req.body);
+//   if (!json_msg) {
+//     throw BadRequestError("Invalid SEND_MESSAGE format");
+//   }
+
+//   std::optional<ClientSend::SendMessageRequest> parsed =
+//       JsonHelpers::ClientSendHelpers::parse_send_message(json_msg);
+//   if (!parsed.has_value()) {
+//     throw BadRequestError("Invalid SEND_MESSAGE format");
+//   }
+
+//   if (parsed->id_channel != id_channel) {
+//     throw BadRequestError("Channel mismatch in SEND_MESSAGE payload");
+//   }
+
+//   if (!user_service.has_access(id_user, id_channel)) {
+//     throw UnauthorizedError(
+//         "User has no permission to SEND_MESSAGE to this channel");
+//   }
+
+//   const std::string timestamp = Utils::get_timestamp();
+//   const std::string body = parsed->body;
+//   const int64_t new_id_message =
+//       message_service.create_message(id_user, id_channel, body, timestamp);
+
+//   ServerSend::SendMessageResponse response;
+//   response.type = WizzMania::MessageType::NEW_MESSAGE;
+//   response.id_channel = id_channel;
+//   response.message = Structure::create_message_struct(new_id_message,
+//   id_user,
+//                                                       body, timestamp);
+
+//   const std::string response_json =
+//       JsonHelpers::ServerSendHelpers::to_json(response).dump();
+
+//   broadcast_new_message(id_channel, new_id_message, id_user, body, timestamp,
+//                         id_user);
+
+//   crow::response http_response(200, response_json);
+//   http_response.add_header("Content-Type", "application/json");
+//   return http_response;
+// }
 
 // switch to HTTP
 crow::response MessageController::get_history(const crow::request& req,
@@ -229,6 +282,7 @@ crow::response MessageController::mark_as_read(const crow::request& req,
 
   // Notify other connected devices of this user via WS
   ClientSend::MarkAsRead mark;
+  mark.type = WizzMania::MessageType::MARK_AS_READ;
   mark.id_channel = id_channel;
   mark.last_id_message = last_id_message;
   mark.unread_count = unread_count;
@@ -259,10 +313,12 @@ crow::response MessageController::wizz(int64_t id_user, int64_t id_channel,
 
   std::unordered_set<int64_t> participants =
       user_service.get_users_by_channel(id_channel);
+
   ws_manager.send_to_user_except(id_user, json, token);
+  
   participants.erase(id_user);
   ws_manager.broadcast_to_users(participants, json);
-  
+
   crow::response res(200, json);
   res.add_header("Content-Type", "application/json");
   return res;
