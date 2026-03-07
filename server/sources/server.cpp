@@ -186,6 +186,23 @@ int main() {
         }
       });
 
+  // ===== POST /channels/<id>/messages =====
+  CROW_ROUTE(app, "/channels/<int>/messages")
+      .methods("POST"_method)([&message_controller, &auth_controller](
+                                  const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          std::string token = req.get_header_value("X-Auth-Token");
+          return message_controller.send_message(
+              req, id_user, static_cast<int64_t>(id_channel), token);
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[SEND MESSAGE] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
+        }
+      });
+
   // ===== GET / /channels/id_channel/history endpoint =====
   CROW_ROUTE(app, "/channels/<int>/history")
       .methods("GET"_method)([&message_controller, &auth_controller](
@@ -198,6 +215,40 @@ int main() {
           return crow::response(e.get_code(), e.get_message());
         } catch (const std::exception& e) {
           std::cerr << "[GET HISTORY] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
+        }
+      });
+
+  // ===== PATCH /channels/<id>/read =====
+  CROW_ROUTE(app, "/channels/<int>/read")
+      .methods("PATCH"_method)([&message_controller, &auth_controller](
+                                   const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          std::string token = req.get_header_value("X-Auth-Token");
+          return message_controller.mark_as_read(
+              req, id_user, static_cast<int64_t>(id_channel), token);
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[MARK AS READ] Unexpected error: " << e.what() << "\n";
+          return crow::response(500, e.what());
+        }
+      });
+
+  // ===== POST /channels/<id>/wizz =====
+  CROW_ROUTE(app, "/channels/<int>/wizz")
+      .methods("POST"_method)([&message_controller, &auth_controller](
+                                  const crow::request& req, int id_channel) {
+        try {
+          int64_t id_user = auth_controller.authenticate_http(req);
+          std::string token = req.get_header_value("X-Auth-Token");
+          return message_controller.wizz(id_user,
+                                         static_cast<int64_t>(id_channel), token);
+        } catch (const WizzManiaError& e) {
+          return crow::response(e.get_code(), e.get_message());
+        } catch (const std::exception& e) {
+          std::cerr << "[WIZZ] Unexpected error: " << e.what() << "\n";
           return crow::response(500, e.what());
         }
       });
@@ -276,20 +327,20 @@ int main() {
         std::cout << "[WS] User " << id_user << " - type: " << type_int << "\n";
 
         switch (msg_type) {
-          case WizzMania::MessageType::SEND_MESSAGE: {
-            message_controller.send_message(conn, id_user, json_msg);
-            break;
-          }
+            // case WizzMania::MessageType::SEND_MESSAGE: {
+            //   message_controller.send_message(conn, id_user, json_msg);
+            //   break;
+            // }
 
-          case WizzMania::MessageType::MARK_AS_READ: {
-            message_controller.mark_as_read(conn, id_user, json_msg);
-            break;
-          }
+            // case WizzMania::MessageType::MARK_AS_READ: {
+            //   message_controller.mark_as_read(conn, id_user, json_msg);
+            //   break;
+            // }
 
-          case WizzMania::MessageType::WIZZ: {
-            message_controller.wizz(conn, id_user, json_msg);
-            break;
-          }
+          // case WizzMania::MessageType::WIZZ: {
+          //   message_controller.wizz(conn, id_user, json_msg);
+          //   break;
+          // }
 
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {
