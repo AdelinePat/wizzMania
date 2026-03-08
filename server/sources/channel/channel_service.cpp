@@ -79,8 +79,7 @@ int64_t ChannelService::create_channel(
 
 std::vector<ServerSend::ChannelInfo> ChannelService::get_all_user_channels(
     int64_t id_user) {
-  // std::lock_guard<std::mutex> lock(db.db_mutex);
-  std::lock_guard<std::recursive_mutex> lock(db.db_mutex);
+  // std::lock_guard<std::recursive_mutex> lock(db.db_mutex);
 
   std::vector<ServerSend::ChannelInfo> channels_info = db.get_channels(id_user);
   std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =

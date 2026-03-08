@@ -9,6 +9,7 @@
 
 #include "channel_service.hpp"
 #include "database.hpp"               // use
+#include "idatabase.hpp"
 #include "exception.hpp"              // use
 #include "helpers.hpp"                // use
 #include "invitation_controller.hpp"  // use
@@ -20,7 +21,7 @@
 
 class ChannelController {
  private:
-  Database& db;
+  IDatabase& db;
   WebSocketManager& ws_manager;
   //   InvitationService invitation_service;
   ChannelService channel_service;
@@ -28,7 +29,7 @@ class ChannelController {
   InvitationController invitation_controller;
 
  public:
-  explicit ChannelController(Database& db, WebSocketManager& ws)
+  explicit ChannelController(IDatabase& db, WebSocketManager& ws)
       : db(db),
         ws_manager(ws),
         channel_service(db),

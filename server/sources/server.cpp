@@ -259,8 +259,6 @@ int main() {
       .methods("POST"_method)(
           [&user_controller, &auth_controller](const crow::request& req) {
             try {
-              // int64_t id_user = auth_controller.authenticate_http(req);
-              int64_t id_user = auth_controller.authenticate_http(req);
               std::string token = req.get_header_value("X-Auth-Token");
               // auth_controller.authenticate_http(req);
               return user_controller.logout(token);
@@ -328,21 +326,6 @@ int main() {
         std::cout << "[WS] User " << id_user << " - type: " << type_int << "\n";
 
         switch (msg_type) {
-            // case WizzMania::MessageType::SEND_MESSAGE: {
-            //   message_controller.send_message(conn, id_user, json_msg);
-            //   break;
-            // }
-
-            // case WizzMania::MessageType::MARK_AS_READ: {
-            //   message_controller.mark_as_read(conn, id_user, json_msg);
-            //   break;
-            // }
-
-          // case WizzMania::MessageType::WIZZ: {
-          //   message_controller.wizz(conn, id_user, json_msg);
-          //   break;
-          // }
-
             // case WizzMania::MessageType::TYPING_START:
             // case WizzMania::MessageType::TYPING_STOP: {
             //   auto req =
@@ -365,17 +348,6 @@ int main() {
             //   break;
             // }
 
-            // case WizzMania::MessageType::LOGOUT: {
-            //   auto req = JsonHelpers::Auth::parse_logout_request(json_msg);
-            //   std::cout << "[LOGOUT] User " << id_user;
-            //   if (req.has_value() && !req->reason.empty()) {
-            //     std::cout << " (" << req->reason << ")";
-            //   }
-            //   std::cout << "\n";
-
-            //   conn.close("User logout");
-            //   break;
-            // }
 
           default:
             std::cout << "[WS] Unhandled type: " << type_int << "\n";

@@ -63,7 +63,7 @@ No authentication required.
 { "username": "alice", "email": "alice@example.com", "password": "S3cur3!" }
 ```
 
-Password rules: min 8 characters, at least one uppercase, one lowercase, one special character.
+Password rules: min 8 characters, at least one uppercase, one lowercase, one digit, one special character.
 
 **Response 201:**
 ```json
@@ -155,6 +155,110 @@ If `title` is omitted, one is generated automatically from participant usernames
 
 ---
 
+### `POST /channels/:id_channel/messages`
+
+🔒 Authentication required.
+
+Sends a message to a channel. The message is broadcast to all channel members via WebSocket (`NEW_MESSAGE (101)`). The sender's other connected devices also receive the broadcast; the requesting session receives only the HTTP response.
+
+**Request body:**
+```json
+{ "body": "Hello!" }
+```
+
+**Response 201:**
+```json
+{
+  "type": 101,
+  "id_channel": 1,
+  "message": {
+    "id_message": 42,
+    "id_sender": 3,
+    "body": "Hello!",
+    "timestamp": "2026-02-26T10:30:00Z",
+    "is_system": false
+  }
+}
+```
+
+**Possible errors:**
+
+| Code | Message |
+|------|---------|
+| 400 | Invalid SEND_MESSAGE format |
+| 401 | User has no permission to SEND_MESSAGE to this channel |
+
+---
+
+### `PATCH /channels/:id_channel/read`
+
+🔒 Authentication required.
+
+Marks messages as read up to and including the given message ID. Updates `last_read_id_message` in the database and recalculates `unread_count`. The user's other connected devices receive the result via WebSocket.
+
+**Request body:**
+```json
+{ "last_id_message": 42 }
+```
+
+**Response 200:**
+```json
+{ "type": 16, "id_channel": 1, "last_id_message": 42, "unread_count": 0 }
+```
+
+**Possible errors:**
+
+| Code | Message |
+|------|---------|
+| 400 | Invalid MARK_AS_READ format |
+| 401 | User has no permission to MARK_AS_READ in this channel |
+
+---
+
+### `POST /channels/:id_channel/wizz`
+
+🔒 Authentication required.
+
+Sends a Wizz to a channel. Ephemeral — not stored in the database. Triggers a window shake animation on the client. All other channel members and the sender's other connected devices receive a `WIZZ (21)` WS notification. The requesting session receives only the HTTP response.
+
+**No request body required.**
+
+**Response 200:**
+```json
+{ "type": 21, "id_channel": 1, "id_user": 3 }
+```
+
+**Response 403:** `"No access to this channel"`
+
+---
+
+### `GET /channels/:id_channel/history`
+
+🔒 Authentication required.
+
+Returns paginated message history for a channel.
+
+**Query parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `before_id` | integer | — | Fetch messages older than this message ID (for pagination) |
+| `limit` | integer | 50 | Number of messages to return (max 100) |
+
+**Response 200:**
+```json
+{
+  "type": 114,
+  "id_channel": 1,
+  "messages": [ ...Message ],
+  "has_more": true
+}
+```
+
+**Response 401:** `"User has no permission to GET_HISTORY for this channel"`
+
+---
+
 ### `PATCH /invitations/:id_channel/accept`
 
 🔒 Authentication required.
@@ -229,33 +333,6 @@ Leaves a channel. Remaining participants receive a `USER_LEFT (107)` WS notifica
 
 ---
 
-### `GET /channels/:id_channel/history`
-
-🔒 Authentication required.
-
-Returns paginated message history for a channel.
-
-**Query parameters:**
-
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `before_id` | integer | — | Fetch messages older than this message ID (for pagination) |
-| `limit` | integer | 50 | Number of messages to return (max 100) |
-
-**Response 200:**
-```json
-{
-  "type": 114,
-  "id_channel": 1,
-  "messages": [ ...Message ],
-  "has_more": true
-}
-```
-
-**Response 401:** `"User has no permission to GET_HISTORY for this channel"`
-
----
-
 ## WebSocket
 
 **Connection URL:** `ws://localhost:8888/ws`
@@ -269,11 +346,8 @@ All messages are JSON with an integer `type` field. The first message after conn
 | Type | Name | Description |
 |------|------|-------------|
 | 0 | `WS_AUTH` | Authenticate the WebSocket connection |
-| 10 | `SEND_MESSAGE` | Send a message to a channel |
-| 16 | `MARK_AS_READ` | Mark messages as read |
-| 21 | `WIZZ` | Send a WIZZ to a channel |
 
-> `CREATE_CHANNEL`, `ACCEPT_INVITATION`, `REJECT_INVITATION`, `LEAVE_CHANNEL`, and `CANCEL_INVITATION` are defined in the message type enum but are handled via HTTP, not WebSocket.
+> All other client-initiated actions (`SEND_MESSAGE`, `MARK_AS_READ`, `WIZZ`, `CREATE_CHANNEL`, `ACCEPT_INVITATION`, `REJECT_INVITATION`, `LEAVE_CHANNEL`, `CANCEL_INVITATION`) are defined in the message type enum but are handled via **HTTP**, not WebSocket.
 
 #### Server → Client
 
@@ -333,60 +407,6 @@ Sent automatically after successful authentication. Contains everything the clie
 
 ---
 
-### SEND_MESSAGE (type 10)
-
-**Send:**
-```json
-{ "type": 10, "id_channel": 1, "body": "Hello!" }
-```
-
-**Broadcast to all channel participants — NEW_MESSAGE (type 101):**
-```json
-{
-  "type": 101,
-  "id_channel": 1,
-  "message": {
-    "id_message": 42,
-    "id_sender": 3,
-    "body": "Hello!",
-    "timestamp": "2026-02-26 10:30:00",
-    "is_system": false
-  }
-}
-```
-
----
-
-### MARK_AS_READ (type 16)
-
-**Send:**
-```json
-{ "type": 16, "id_channel": 1, "last_id_message": 42 }
-```
-
-**Response — broadcast to all of the user's connected devices:**
-```json
-{ "type": 16, "id_channel": 1, "last_id_message": 42, "unread_count": 0 }
-```
-
----
-
-### WIZZ (type 21)
-
-Ephemeral — not stored in the database. Triggers a window shake animation on the client.
-
-**Send:**
-```json
-{ "type": 21, "id_channel": 1 }
-```
-
-**Broadcast to all channel participants:**
-```json
-{ "type": 21, "id_channel": 1, "id_user": 3 }
-```
-
----
-
 ### ERROR (type 255)
 
 ```json
@@ -410,7 +430,7 @@ Reused across multiple endpoints and WebSocket messages.
   "id_message": 42,
   "id_sender": 3,
   "body": "Hello!",
-  "timestamp": "2026-02-26 10:30:00",
+  "timestamp": "2026-02-26T10:30:00Z",
   "is_system": false
 }
 ```

@@ -21,7 +21,7 @@ crow::response UserController::login(const crow::request& req) {
 
   int64_t id_user = this->user_service.login(login_req.value());
   if (id_user == 1) {
-    throw UnauthorizedError("Invalid username or password")
+    throw UnauthorizedError("Invalid username or password");
   };
   std::string token = auth_controller.generateToken(id_user);
   return this->send_login_response(id_user, login_req->username, token);
@@ -93,11 +93,16 @@ crow::response UserController::register_user(const crow::request& req) {
 
 // delete user
 crow::response UserController::delete_user(int64_t id_user) {
+  if (id_user == 1) {
+    throw UnauthorizedError("Cannot delete this account");
+  };
   std::cout << "[DELETE ACCOUNT] User " << id_user
             << " requested account deletion\n";
 
   std::unordered_map<int64_t, std::unordered_set<int64_t>> deleted_channels;
   std::unordered_map<int64_t, std::unordered_set<int64_t>> canceled_invitations;
+
+  
 
   this->user_service.delete_user(id_user, deleted_channels,
                                  canceled_invitations);

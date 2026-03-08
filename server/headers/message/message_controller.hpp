@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "database.hpp"
+#include "idatabase.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
@@ -19,7 +20,7 @@
 
 class MessageController {
  private:
-  Database& db;
+  IDatabase& db;
   WebSocketManager& ws_manager;
   MessageService message_service;
   UserService user_service;
@@ -30,7 +31,7 @@ class MessageController {
                              const std::string& token = "");
 
  public:
-  explicit MessageController(Database& db, WebSocketManager& ws)
+  explicit MessageController(IDatabase& db, WebSocketManager& ws)
       : db(db), ws_manager(ws), message_service(db), user_service(db) {}
 
   crow::response send_message(const crow::request& req, int64_t id_user,

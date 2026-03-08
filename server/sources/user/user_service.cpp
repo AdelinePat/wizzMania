@@ -12,14 +12,17 @@ int64_t UserService::login(AuthMessages::LoginRequest login_request) {
               << "\n";
     throw UnauthorizedError("Invalid username or password");
   }
+
+  
   return id_user;
 }
 
 bool UserService::has_access(int64_t id_user, int64_t id_channel) {
-  bool is_system_user = (id_user == 1);
+  if (id_user == 1) return true;  
+  // bool is_system_user = (id_user == 1);
 
   bool has_channel_access = db.has_channel_access(id_user, id_channel);
-  return (is_system_user || has_channel_access);
+  return has_channel_access;
 }
 
 std::unordered_set<int64_t> UserService::get_users_by_channel(

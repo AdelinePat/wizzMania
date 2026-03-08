@@ -13,6 +13,7 @@
 #include <unordered_set>
 
 #include "database.hpp"
+#include "idatabase.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
@@ -20,7 +21,7 @@
 #include "utils.hpp"
 
 class UserService {
-  Database& db;
+  IDatabase& db;
 
  private:
   // crow::response send_login_error(const int code, const std::string&
@@ -29,7 +30,7 @@ class UserService {
   //                                    const std::string& token);
 
  public:
-  explicit UserService(Database& db) : db(db) {}
+  explicit UserService(IDatabase& db) : db(db) {}
 
   // crow::response login(Database& db, const crow::request& req);
   int64_t login(AuthMessages::LoginRequest login_request);

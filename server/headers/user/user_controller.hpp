@@ -11,6 +11,7 @@
 
 #include "auth_controller.hpp"
 #include "database.hpp"
+#include "idatabase.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
@@ -21,13 +22,13 @@
 
 class UserController {
  private:
-  Database& db;
+  IDatabase& db;
   WebSocketManager& ws;
   UserService user_service;
   AuthController auth_controller;
 
  public:
-  explicit UserController(Database& db, WebSocketManager& ws)
+  explicit UserController(IDatabase& db, WebSocketManager& ws)
       : db(db), ws(ws), user_service(db), auth_controller(ws) {}
 
   crow::response login(const crow::request& req);

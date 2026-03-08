@@ -57,6 +57,7 @@ if(NOT BUILD_TESTS)
         headers/user/user_service.hpp
         headers/server.hpp
         headers/database.hpp
+        headers/idatabase.hpp
         headers/exception.hpp
         headers/helpers.hpp
         headers/message/message_controller.hpp
@@ -140,16 +141,23 @@ if(BUILD_TESTS)
 
     add_executable(tests
         sources/auth/auth_service.cpp
+        sources/user/user_service.cpp
         ../common/utils.cpp
         ../tests/common/test_utils.cpp
         ../tests/auth/test_auth_service.cpp
+        ../tests/user/test_user_service.cpp
     )
     
     target_include_directories(tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/headers
         ${CMAKE_CURRENT_SOURCE_DIR}/headers/auth
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/user
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/message
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/invitation
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/channel
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tests/database
         ${Boost_INCLUDE_DIRS}
     )
 
