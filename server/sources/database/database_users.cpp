@@ -2,25 +2,46 @@
 
 // ===== ESSENTIALS =====
 // rename : get_id_user ?
-int64_t Database::verify_user(const std::string& username,
+int64_t Database::verify_user(const std::string& identifier,
                               const std::string& password) {
   // std::lock_guard<std::mutex> lock(db_mutex);
   std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
+
+    const bool is_email = Utils::is_valid_email(identifier);
+
+    const std::string query =
+        is_email ? "SELECT id_user, password FROM users WHERE email = ?"
+                 : "SELECT id_user, password FROM users WHERE username = ?";
+
+    // std::unique_ptr<sql::PreparedStatement> prep_statement(
+    //     this->conn->prepareStatement("SELECT id_user "
+    //                                  "FROM users "
+    //                                  "WHERE username = ? AND password = ?"));
     std::unique_ptr<sql::PreparedStatement> prep_statement(
-        this->conn->prepareStatement("SELECT id_user "
-                                     "FROM users "
-                                     "WHERE username = ? AND password = ?"));
-    prep_statement->setString(1, username);
-    prep_statement->setString(2, password);
+        this->conn->prepareStatement(query));
+    prep_statement->setString(1, identifier);
+    // prep_statement->setString(2, password);
 
     std::unique_ptr<sql::ResultSet> res(prep_statement->executeQuery());
-    if (res->next()) {
-      return res->getInt64("id_user");
+    if (!res->next()) {
+      return -1;  // no user found with that username or email
     }
-    return -1;
+
+    int64_t id_user = res->getInt64("id_user");
+    std::string stored_hash = res->getString("password");
+
+    if (!PasswordHelper::verify_password(password, stored_hash)) {
+      return -1;  // wrong password
+    }
+
+    return id_user;
+    // if (res->next()) {
+    //   return res->getInt64("id_user");
+    // }
+    // return -1;
 
   } catch (sql::SQLException& e) {
     std::cerr << "[DB] verify_user error: " << e.what() << std::endl;

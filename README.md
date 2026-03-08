@@ -105,12 +105,15 @@ All **client-side dependencies** need to be installed on your host machine (see 
 | [Crow](https://github.com/CrowCpp/Crow) | v1.3.0 | Server (Docker) | HTTP and WebSocket framework |
 | [jwt-cpp](https://github.com/Thalhammer/jwt-cpp) | v0.7.0 | Server (Docker) | JWT token creation and validation |
 | [nlohmann/json](https://github.com/nlohmann/json) | v3 | Server (Docker) | JSON serialization/deserialization |
+| [libbcrypt](https://github.com/trusch/libbcrypt) | no releases — commit `d6523c3` (Jun 22, 2021) | Server (Docker) | bcrypt password hashing |
 | Boost | system | Server (Docker) | Async I/O (required by Crow) |
 | libmysqlclient-dev | system | Server (Docker) | Low-level C library to connect and send queries to MySQL |
 | mysql-client | system | Server (Docker) | MySQL CLI tools — useful for debugging inside the container |
 | libmysqlcppconn-dev | system | Server (Docker) | Official C++ wrapper over libmysqlclient — this is what the server code uses directly |
 | Google Test / Mock | system | Server (Docker) | Unit testing framework |
 | CMake | — | Client (host) | Build system for the Qt client |
+
+> **Note on libbcrypt:** this library has no official releases or tags. The server was built and tested against commit `d6523c370de6e724ce4ec703e2449b5b028ea3b1` (June 22, 2021). If the build breaks in the future, check that commit or update the `Dockerfile.server` accordingly.
 
 > **Note on MySQL libraries:** `libmysqlclient-dev` is the C foundation, `libmysqlcppconn-dev` is the C++ layer your server code actually talks to, and `mysql-client` is just a convenience tool for manual DB access inside the container.
 

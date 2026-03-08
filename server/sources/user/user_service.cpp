@@ -13,12 +13,11 @@ int64_t UserService::login(AuthMessages::LoginRequest login_request) {
     throw UnauthorizedError("Invalid username or password");
   }
 
-  
   return id_user;
 }
 
 bool UserService::has_access(int64_t id_user, int64_t id_channel) {
-  if (id_user == 1) return true;  
+  if (id_user == 1) return true;
   // bool is_system_user = (id_user == 1);
 
   bool has_channel_access = db.has_channel_access(id_user, id_channel);
@@ -95,7 +94,9 @@ int64_t UserService::register_user(const std::string& username,
   }
 
   // create user in Database
-  std::optional<int64_t> new_id = db.create_user(clean_name, email, password);
+  const std::string hashed = PasswordHelper::hash_password(password);
+
+  std::optional<int64_t> new_id = db.create_user(clean_name, email, hashed);
   if (!new_id.has_value()) {
     throw InternalError("Failed to create user");
   }

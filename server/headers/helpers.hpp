@@ -5,6 +5,8 @@
 
 #include "crow.h"
 // #include "json_helpers.hpp"
+#include <bcrypt/BCrypt.hpp>
+
 #include "message_structure.hpp"
 // #include "exception.hpp"
 
@@ -36,6 +38,19 @@ class Structure {
   //                 const std::string& error_message);
 
   // crow::response send_http_error(int code, const std::string& message);
+};
+
+// Server-only password hashing using bcrypt.
+// Never put this in utils — utils is shared with the client.
+class PasswordHelper {
+ public:
+  // Hashes a plain text password. Returns the bcrypt string (60 chars)
+  // which embeds the salt — store this directly in the DB.
+  static std::string hash_password(const std::string& password);
+
+  // Returns true if plain text password matches the stored bcrypt hash.
+  static bool verify_password(const std::string& password,
+                              const std::string& hash);
 };
 
 #endif

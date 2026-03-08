@@ -29,6 +29,16 @@ RUN apt-get update && apt-get install -y \
 #     cp -r /tmp/crow/include/* /usr/local/include/ && \
 #     rm -rf /tmp/crow
 
+# libbcrypt — no official releases/tags available
+# Pinned commit reference: d6523c370de6e724ce4ec703e2449b5b028ea3b1 (June 22, 2021)
+# If this breaks, check that commit on https://github.com/trusch/libbcrypt
+RUN git clone --depth 1 https://github.com/trusch/libbcrypt.git /tmp/libbcrypt && \
+    cd /tmp/libbcrypt && \
+    mkdir build && cd build && \
+    cmake .. && make && make install && \
+    ldconfig && \
+    rm -rf /tmp/libbcrypt
+
 
 # Crow — targeting the v1.3.0 tag
 RUN git clone --depth 1 --branch v1.3.0 https://github.com/CrowCpp/Crow.git /tmp/crow && \

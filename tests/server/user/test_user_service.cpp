@@ -90,7 +90,7 @@ TEST_F(UserServiceTest, RegisterUser_DbCreateFails_ThrowsInternalError) {
       .WillOnce(Return(std::nullopt));
   EXPECT_CALL(mock_db, email_exists("alice@example.com"))
       .WillOnce(Return(false));
-  EXPECT_CALL(mock_db, create_user("alice", "alice@example.com", "Password1!"))
+  EXPECT_CALL(mock_db, create_user("alice", "alice@example.com", _))
       .WillOnce(Return(std::nullopt));
 
   EXPECT_THROW(
@@ -104,7 +104,7 @@ TEST_F(UserServiceTest, RegisterUser_HappyPath_ReturnsNewId) {
       .WillOnce(Return(std::nullopt));
   EXPECT_CALL(mock_db, email_exists("alice@example.com"))
       .WillOnce(Return(false));
-  EXPECT_CALL(mock_db, create_user("alice", "alice@example.com", "Password1!"))
+  EXPECT_CALL(mock_db, create_user("alice", "alice@example.com", _))
       .WillOnce(Return(std::optional<int64_t>{7}));
 
   int64_t new_id =

@@ -24,6 +24,7 @@
 #include "idatabase.hpp"
 #include "message_structure.hpp"
 #include "messages.hpp"
+#include "utils.hpp"
 
 class Database : public IDatabase {
  private:
@@ -63,7 +64,7 @@ class Database : public IDatabase {
 
   // ── Users ──────────────────────────────────────────────────────────────────
 
-  int64_t verify_user(const std::string& username,
+  int64_t verify_user(const std::string& identifier,
                       const std::string& password) override;
   void user_exists(const int64_t id_user) override;
   std::optional<int64_t> get_id_user(const std::string& username) override;

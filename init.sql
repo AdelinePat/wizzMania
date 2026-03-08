@@ -62,17 +62,18 @@ CREATE TABLE messages (
 INSERT INTO users (username, email, password)
 VALUES ('System', 'system@wizzmania.internal', 'SYSTEM_NO_LOGIN');  -- id=1
 
+-- clear password is "hash"
 INSERT INTO users (username, email, password) VALUES
-('alice', 'alice@mail.com', 'hash'),   -- id=2
-('bob',   'bob@mail.com',   'hash'),   -- id=3
-('carol', 'carol@mail.com', 'hash'),   -- id=4
-('dave',  'dave@mail.com',  'hash'),   -- id=5
-('eve',   'eve@mail.com',   'hash'),   -- id=6
-('frank', 'frank@mail.com', 'hash'),   -- id=7
-('grace', 'grace@mail.com', 'hash'),   -- id=8
-('heidi', 'heidi@mail.com', 'hash'),   -- id=9
-('ivan',  'ivan@mail.com',  'hash'),   -- id=10
-('judy',  'judy@mail.com',  'hash');   -- id=11
+('alice', 'alice@mail.com', '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=2
+('bob',   'bob@mail.com',   '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=3
+('carol', 'carol@mail.com', '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=4
+('dave',  'dave@mail.com',  '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=5
+('eve',   'eve@mail.com',   '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=6
+('frank', 'frank@mail.com', '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=7
+('grace', 'grace@mail.com', '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=8
+('heidi', 'heidi@mail.com', '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=9
+('ivan',  'ivan@mail.com',  '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq'),   -- id=10
+('judy',  'judy@mail.com',  '$2a$12$1hBdPF7YNmYHXnL8pGFpVOdblgnqQJEdf9plJQdyuel8oarnOnRJq');   -- id=11
 
 
 -- =====================================

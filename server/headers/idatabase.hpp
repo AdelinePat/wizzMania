@@ -19,7 +19,7 @@ class IDatabase {
 
   // ── Users ──────────────────────────────────────────────────────────────────
 
-  virtual int64_t verify_user(const std::string& username,
+  virtual int64_t verify_user(const std::string& identifier,
                               const std::string& password) = 0;
 
   virtual void user_exists(const int64_t id_user) = 0;
