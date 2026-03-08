@@ -20,6 +20,9 @@ crow::response UserController::login(const crow::request& req) {
   }
 
   int64_t id_user = this->user_service.login(login_req.value());
+  if (id_user == 1) {
+    throw UnauthorizedError("Invalid username or password")
+  };
   std::string token = auth_controller.generateToken(id_user);
   return this->send_login_response(id_user, login_req->username, token);
 }
