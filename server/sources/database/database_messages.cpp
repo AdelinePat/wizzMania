@@ -2,8 +2,10 @@
 
 // Get unread_count for each channels a user participates in
 // Returns map<id_channel, count>
+// Must gard lock before call !
 std::map<int64_t, int64_t> Database::get_unread_count(const int64_t id_user) {
   std::map<int64_t, int64_t> unread_counts;
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -35,9 +37,11 @@ std::map<int64_t, int64_t> Database::get_unread_count(const int64_t id_user) {
 
 // Get last message of each channels a specific user participates in
 // Returns map<id_channel, message>
+// Must be guard lock outside method!
 std::map<int64_t, ServerSend::Message> Database::get_last_messages(
     const int64_t id_user) {
   std::map<int64_t, ServerSend::Message> last_messages;
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -82,7 +86,8 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
                                               int64_t id_channel,
                                               const std::string& body,
                                               const std::string& timestamp) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -116,7 +121,9 @@ std::optional<int64_t> Database::save_message(int64_t id_user,
 // ==== MARK AS READ === //
 bool Database::update_last_read_message(int64_t id_user, int64_t id_channel,
                                         int64_t last_read_id_message) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
+
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
@@ -144,7 +151,8 @@ bool Database::update_last_read_message(int64_t id_user, int64_t id_channel,
 
 std::vector<ServerSend::Message> Database::get_channel_history(
     int64_t id_channel, int64_t before_id_message, int limit) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
   std::vector<ServerSend::Message> messages;
 
   try {
@@ -182,9 +190,12 @@ std::vector<ServerSend::Message> Database::get_channel_history(
 
 // Get unread_count for a channel for a user
 // Returns count>
+// Lock inside
 int64_t Database::get_unread_count(const int64_t id_user,
                                    const int64_t id_channel) {
   int64_t unread_count = 0;
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -226,6 +237,8 @@ int64_t Database::get_unread_count(const int64_t id_user,
 ServerSend::Message Database::get_last_message(const int64_t id_user,
                                                const int64_t id_channel) {
   ServerSend::Message last_message;
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -256,7 +269,7 @@ ServerSend::Message Database::get_last_message(const int64_t id_user,
     return last_message;
 
   } catch (sql::SQLException& e) {
-    std::cerr << "[DB] get_last_messages error: " << e.what() << std::endl;
+    std::cerr << "[DB] get_last_message error: " << e.what() << std::endl;
     return last_message;
   }
 }

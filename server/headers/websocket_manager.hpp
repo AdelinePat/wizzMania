@@ -3,6 +3,7 @@
 
 #include <crow.h>
 
+#include <iwebsocket_manager.hpp>
 #include <mutex>
 #include <unordered_map>
 #include <unordered_set>  // SHOULD APPEAR BEFORE CROW, ELSE EVERYTHING BREAKS !!!!!!
@@ -12,7 +13,7 @@
 
 using WSConn = crow::websocket::connection*;
 
-class WebSocketManager {
+class WebSocketManager : public IWebSocketManager {
  private:
   // --------------------
   // WebSocket connection maps
@@ -24,6 +25,8 @@ class WebSocketManager {
 
   std::mutex ws_mutex;
   void send_to_user_(int64_t id_user, const std::string& message);
+  void send_to_user_except_(int64_t id_user, const std::string& message,
+                            const std::string& exclude_token);
 
  public:
   void add_user(int64_t id_user, WSConn conn, const std::string& token);
@@ -42,8 +45,6 @@ class WebSocketManager {
   void send_to_user(int64_t id_user, const std::string& message);
   void send_to_user_except(int64_t id_user, const std::string& message,
                            const std::string& exclude_token);
-  void send_to_user_except_(int64_t id_user, const std::string& message,
-                            const std::string& exclude_token);
 
   std::string get_token_for_connection(WSConn conn);
   void disconnect_user(int64_t id_user, const std::string& reason);

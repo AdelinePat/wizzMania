@@ -9,16 +9,17 @@
 #include <vector>
 
 #include "database.hpp"
+#include "idatabase.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 
 class MessageService {
-  Database& db;
+  IDatabase& db;
 
  public:
-  explicit MessageService(Database& db) : db(db) {}
+  explicit MessageService(IDatabase& db) : db(db) {}
 
   int64_t create_message(int64_t id_user, int64_t id_channel, std::string& body,
                          std::string& timestamp);

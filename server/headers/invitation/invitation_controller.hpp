@@ -8,9 +8,11 @@
 #include <vector>
 
 #include "channel_service.hpp"
-#include "database.hpp"            // use
-#include "exception.hpp"           // use
-#include "helpers.hpp"             // use
+#include "database.hpp"   // use
+#include "idatabase.hpp"
+#include "exception.hpp"  // use
+#include "helpers.hpp"    // use
+#include "idatabase.hpp"
 #include "invitation_service.hpp"  // use
 #include "json_helpers.hpp"        // use
 #include "message_controller.hpp"
@@ -22,8 +24,8 @@
 
 class InvitationController {
  private:
-  Database& db;
-  WebSocketManager& ws_manager;
+  IDatabase& db;
+  IWebSocketManager& ws_manager;
   InvitationService invitation_service;
   ChannelService channel_service;
   MessageController message_controller;
@@ -38,7 +40,7 @@ class InvitationController {
                                         const std::string& token);
 
  public:
-  explicit InvitationController(Database& db, WebSocketManager& ws)
+  explicit InvitationController(IDatabase& db, IWebSocketManager& ws)
       : db(db),
         ws_manager(ws),
         invitation_service(db),

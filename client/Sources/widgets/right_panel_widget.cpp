@@ -5,8 +5,20 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
   rootLayout->setContentsMargins(0, 0, 0, 0);
   rootLayout->setSpacing(10);
 
-  titleLabel = new QLabel("Select a chat to start messaging", this);
+  QWidget* headerRow = new QWidget(this);
+  QHBoxLayout* headerLayout = new QHBoxLayout(headerRow);
+  headerLayout->setContentsMargins(0, 0, 0, 0);
+  headerLayout->setSpacing(8);
+
+  titleLabel = new QLabel("Select a chat to start messaging", headerRow);
   titleLabel->setObjectName("chatTitleLabel");
+
+  leaveButton = new QPushButton("Leave", headerRow);
+  leaveButton->setObjectName("channelLeaveBtn");
+  leaveButton->setMinimumHeight(32);
+
+  headerLayout->addWidget(titleLabel, 1);
+  headerLayout->addWidget(leaveButton, 0, Qt::AlignRight | Qt::AlignVCenter);
 
   messagesList = new QListWidget(this);
   messagesList->setObjectName("messagesList");
@@ -37,7 +49,7 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
   inputLayout->addWidget(wizzButton);
   inputLayout->addWidget(sendButton);
 
-  rootLayout->addWidget(titleLabel);
+  rootLayout->addWidget(headerRow);
   rootLayout->addWidget(messagesList, 1);
   rootLayout->addWidget(inputRow);
 
@@ -61,6 +73,9 @@ RightPanelWidget::RightPanelWidget(QWidget* parent) : QWidget(parent) {
 
   connect(wizzButton, &QPushButton::clicked, this,
           [this]() { emit wizzRequested(); });
+
+  connect(leaveButton, &QPushButton::clicked, this,
+          [this]() { emit leaveChannelRequested(); });
 }
 
 void RightPanelWidget::setChatTitle(const QString& title) {
@@ -94,6 +109,7 @@ void RightPanelWidget::setInputEnabled(bool enabled) {
   sendButton->setEnabled(enabled);
   wizzButton->setEnabled(enabled);
   messageInput->setEnabled(enabled);
+  leaveButton->setEnabled(enabled);
 }
 
 void RightPanelWidget::focusInput() { messageInput->setFocus(); }

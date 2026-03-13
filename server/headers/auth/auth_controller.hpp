@@ -18,11 +18,11 @@
 
 class AuthController {
  private:
-  WebSocketManager& ws_manager;
+  IWebSocketManager& ws_manager;
   AuthService auth_service;
 
  public:
-  explicit AuthController(WebSocketManager& ws)
+  explicit AuthController(IWebSocketManager& ws)
       : ws_manager(ws), auth_service() {}
   std::string generateToken(int64_t id_user);
 

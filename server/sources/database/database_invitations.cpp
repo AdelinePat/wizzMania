@@ -103,14 +103,18 @@ void Database::update_invitation(int64_t id_user, int64_t id_channel,
 
 void Database::accept_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
+
   return this->update_invitation(id_user, id_channel, responded_at,
                                  ChannelStatus::ACCEPTED);
 };
 
 void Database::reject_invitation(int64_t id_user, int64_t id_channel,
                                  const std::string& responded_at) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
+
   try {
     this->ensure_connection();
     this->conn->setAutoCommit(false);
@@ -144,7 +148,9 @@ void Database::reject_invitation(int64_t id_user, int64_t id_channel,
 }
 
 void Database::cancel_invitation(int64_t id_user, int64_t id_channel, std::string& responded_at) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
+
   try {
     this->ensure_connection();
     this->conn->setAutoCommit(false);

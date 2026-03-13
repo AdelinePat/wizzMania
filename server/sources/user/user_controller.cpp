@@ -20,6 +20,9 @@ crow::response UserController::login(const crow::request& req) {
   }
 
   int64_t id_user = this->user_service.login(login_req.value());
+  if (id_user == 1) {
+    throw UnauthorizedError("Invalid username or password");
+  };
   std::string token = auth_controller.generateToken(id_user);
   return this->send_login_response(id_user, login_req->username, token);
 }
@@ -62,15 +65,12 @@ crow::response UserController::register_user(const crow::request& req) {
   // Parsed json BODY
   crow::json::rvalue json_body = crow::json::load(req.body);
   if (!json_body) {
-    // return WizzManiaError::send_http_error(400, "Invalid JSON");
     throw BadRequestError("Invalid JSON");
   }
 
   // extract the fields
   if (!json_body.has("username") || !json_body.has("email") ||
       !json_body.has("password")) {
-    // return WizzManiaError::send_http_error(
-    //     400, "Missing username, email or password");
     throw BadRequestError("Missing username, email or password");
   }
 
@@ -79,8 +79,6 @@ crow::response UserController::register_user(const crow::request& req) {
   std::string password = json_body["password"].s();
 
   // call service (all validation happens there)
-  //  try
-  //  {
   int64_t new_id = this->user_service.register_user(username, email, password);
 
   crow::json::wvalue response;
@@ -91,27 +89,54 @@ crow::response UserController::register_user(const crow::request& req) {
   crow::response res(201, response.dump());
   res.add_header("Content-Type", "application/json");
   return res;
-
-  // }
-  //  catch (const WizzManiaError& e) {
-  //     return WizzManiaError::send_http_error(e.get_code(), e.get_message());
-  //   }
 }
 
 // delete user
 crow::response UserController::delete_user(int64_t id_user) {
+  if (id_user == 1) {
+    throw UnauthorizedError("Cannot delete this account");
+  };
   std::cout << "[DELETE ACCOUNT] User " << id_user
             << " requested account deletion\n";
-  // try
-  // {
-  this->user_service.delete_user(id_user);
 
-  // Disconnect all webSocket sessions for this user
-  // std::vector<WSConn> connections = ws.get_user_connections(id_user);
-  // DANGEROUS, no guard lock, raw manipulation , need to use ws_manager instead
-  // for(WSConn conn : connections) {
-  //   conn->close("Account deleted");
-  // }
+  std::unordered_map<int64_t, std::unordered_set<int64_t>> deleted_channels;
+  std::unordered_map<int64_t, std::unordered_set<int64_t>> canceled_invitations;
+
+  
+
+  this->user_service.delete_user(id_user, deleted_channels,
+                                 canceled_invitations);
+
+  // TODO : create a channel deleted notification (structure and message) but
+  // clients need to implement it too
+  ServerSend::UserLeftNotification left_notif;
+  left_notif.type = WizzMania::MessageType::USER_LEFT;
+  left_notif.id_user = id_user;
+
+  for (auto& [id_channel, users] : deleted_channels) {
+    left_notif.id_channel = id_channel;
+    std::string json =
+        JsonHelpers::ServerSendHelpers::to_json(left_notif).dump();
+    ws.broadcast_to_users(users, json);
+  }
+
+  // TODO : create a cancel invitation notification (structure and message) but
+  // clients need to implement it too (if created, need to change "cancel
+  // invitation structure in invitation_controller!")
+  ServerSend::RejectInvitationResponse cancel_notif;
+  cancel_notif.type = WizzMania::MessageType::CANCEL_INVITATION;
+
+  cancel_notif.contact.id_user = id_user;
+  cancel_notif.contact.username =
+      "";  // user is gone, client only needs id_channel anyway
+
+  for (auto& [id_channel, users] : canceled_invitations) {
+    cancel_notif.id_channel = id_channel;
+    std::string json =
+        JsonHelpers::ServerSendHelpers::to_json(cancel_notif).dump();
+    ws.broadcast_to_users(users, json);
+  }
+
   ws.disconnect_user(id_user, "Account deleted");
 
   crow::json::wvalue response;
@@ -121,10 +146,4 @@ crow::response UserController::delete_user(int64_t id_user) {
   crow::response res(200, response.dump());
   res.add_header("Content-Type", "application/json");
   return res;
-
-  // }
-  // catch(const WizzManiaError& e)
-  // {
-  //   return WizzManiaError::send_http_error(e.get_code(), e.get_message());
-  // }
 }

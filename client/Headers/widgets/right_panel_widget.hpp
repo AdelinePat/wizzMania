@@ -26,6 +26,7 @@ class RightPanelWidget : public QWidget {
  signals:
   void sendRequested(const QString& text);
   void wizzRequested();
+  void leaveChannelRequested();
 
  private:
   QLabel* titleLabel;
@@ -33,6 +34,7 @@ class RightPanelWidget : public QWidget {
   QLineEdit* messageInput;
   QPushButton* wizzButton;
   QPushButton* sendButton;
+  QPushButton* leaveButton;
 };
 
 #endif  // RIGHTPANELWIDGET_HPP

@@ -12,14 +12,16 @@ int64_t UserService::login(AuthMessages::LoginRequest login_request) {
               << "\n";
     throw UnauthorizedError("Invalid username or password");
   }
+
   return id_user;
 }
 
 bool UserService::has_access(int64_t id_user, int64_t id_channel) {
-  bool is_system_user = (id_user == 1);
+  if (id_user == 1) return true;
+  // bool is_system_user = (id_user == 1);
 
   bool has_channel_access = db.has_channel_access(id_user, id_channel);
-  return (is_system_user || has_channel_access);
+  return has_channel_access;
 }
 
 std::unordered_set<int64_t> UserService::get_users_by_channel(
@@ -92,26 +94,39 @@ int64_t UserService::register_user(const std::string& username,
   }
 
   // create user in Database
-  std::optional<int64_t> new_id = db.create_user(clean_name, email, password);
+  const std::string hashed = PasswordHelper::hash_password(password);
+
+  std::optional<int64_t> new_id = db.create_user(clean_name, email, hashed);
   if (!new_id.has_value()) {
     throw InternalError("Failed to create user");
   }
   return new_id.value();
 }
 
-
 // DELETE USER
 
-void UserService::delete_user(int64_t id_user) {
-  // verify user exists
-  std::optional<ServerSend::Contact> user = db.get_contact(id_user);
-  if(!user.has_value()) {
-    throw NotFoundError("User not found");
-  }
+void UserService::delete_user(
+    int64_t id_user,
+    std::unordered_map<int64_t, std::unordered_set<int64_t>>& deleted_channels,
+    std::unordered_map<int64_t, std::unordered_set<int64_t>>&
+        canceled_invitations) {
+  // verify user exist
 
-  //Delete the user in the DB
-  bool deleted = db.delete_user(id_user);
-  if(!deleted) {
-    throw InternalError("Failed to delete user");
+  if (id_user == 1) {
+    throw ForbiddenError("Cannot delete system user");
   }
+  db.user_exists(id_user);
+
+  // std::optional<ServerSend::Contact> user = db.get_contact(id_user);
+  // if(!user.has_value()) {
+  //   throw NotFoundError("User not found");
+  // }
+
+  // Delete the user in the DB
+  // bool deleted = db.delete_user(id_user);
+  db.delete_user(id_user, deleted_channels, canceled_invitations);
+
+  // if (!deleted) {
+  //   throw InternalError("Failed to delete user");
+  // }
 }

@@ -9,16 +9,17 @@
 #include <vector>
 
 #include "database.hpp"
+#include "idatabase.hpp"
 #include "exception.hpp"
 #include "helpers.hpp"
 #include "json_helpers.hpp"
 #include "message_structure.hpp"
 
 class ChannelService {
-  Database& db;
+  IDatabase& db;
 
  public:
-  explicit ChannelService(Database& db) : db(db) {}
+  explicit ChannelService(IDatabase& db) : db(db) {}
 
   ServerSend::ChannelInfo get_channel(
       int64_t id_user, int64_t id_channel,

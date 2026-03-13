@@ -21,17 +21,34 @@ RUN apt-get update && apt-get install -y \
 # Install Boost (includes Beast + ASIO)
 RUN apt-get update && apt-get install -y \
     libboost-all-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*, 
 
 # Install Crow (header-only library)
-RUN git clone --depth 1 https://github.com/CrowCpp/Crow.git /tmp/crow && \
+# RUN git clone --depth 1 https://github.com/CrowCpp/Crow.git /tmp/crow && \
+#     mkdir -p /usr/local/include && \
+#     cp -r /tmp/crow/include/* /usr/local/include/ && \
+#     rm -rf /tmp/crow
+
+# libbcrypt — no official releases/tags available
+# Pinned commit reference: d6523c370de6e724ce4ec703e2449b5b028ea3b1 (June 22, 2021)
+# If this breaks, check that commit on https://github.com/trusch/libbcrypt
+RUN git clone --depth 1 https://github.com/trusch/libbcrypt.git /tmp/libbcrypt && \
+    cd /tmp/libbcrypt && \
+    mkdir build && cd build && \
+    cmake .. && make && make install && \
+    ldconfig && \
+    rm -rf /tmp/libbcrypt
+
+
+# Crow — targeting the v1.3.0 tag
+RUN git clone --depth 1 --branch v1.3.0 https://github.com/CrowCpp/Crow.git /tmp/crow && \
     mkdir -p /usr/local/include && \
     cp -r /tmp/crow/include/* /usr/local/include/ && \
     rm -rf /tmp/crow
 
 # Install JWT-cpp (header only library) 
 RUN cd /tmp && \
-    git clone https://github.com/Thalhammer/jwt-cpp.git && \
+    git clone  --depth 1 --branch v0.7.0 https://github.com/Thalhammer/jwt-cpp.git && \
     cp -r jwt-cpp/include/jwt-cpp /usr/local/include/ && \
     rm -rf /tmp/jwt-cpp
     

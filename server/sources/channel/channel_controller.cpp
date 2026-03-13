@@ -20,6 +20,7 @@ crow::response ChannelController::create_channel(int64_t id_user,
   std::unordered_set<int64_t> participants;
   try {
     for (const std::string& username : usernames) {
+      // TODO add mutex!!
       int64_t current_id_user = user_service.get_id_user(username);
       participants.insert(current_id_user);
     }

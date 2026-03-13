@@ -57,6 +57,7 @@ if(NOT BUILD_TESTS)
         headers/user/user_service.hpp
         headers/server.hpp
         headers/database.hpp
+        headers/idatabase.hpp
         headers/exception.hpp
         headers/helpers.hpp
         headers/message/message_controller.hpp
@@ -67,6 +68,7 @@ if(NOT BUILD_TESTS)
         headers/channel/channel_service.hpp
         headers/json_helpers.hpp
         headers/websocket_manager.hpp
+        headers/iwebsocket_manager.hpp
     )
 
     add_executable(wizzmania-server ${SERVER_SOURCES})
@@ -93,6 +95,7 @@ if(NOT BUILD_TESTS)
         ${MYSQL_LIBRARIES}
         ${Boost_LIBRARIES}
         mysqlcppconn
+        bcrypt 
     )
 
     target_compile_options(wizzmania-server PRIVATE
@@ -140,16 +143,30 @@ if(BUILD_TESTS)
 
     add_executable(tests
         sources/auth/auth_service.cpp
+        sources/user/user_service.cpp
+        sources/message/message_controller.cpp
+        sources/message/message_service.cpp
+        sources/helpers.cpp
         ../common/utils.cpp
         ../tests/common/test_utils.cpp
         ../tests/auth/test_auth_service.cpp
+        ../tests/user/test_user_service.cpp
+        ../tests/message/test_message_controller.cpp
+        ../tests/test_password_helpers.cpp
     )
     
     target_include_directories(tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}
         ${CMAKE_CURRENT_SOURCE_DIR}/headers
         ${CMAKE_CURRENT_SOURCE_DIR}/headers/auth
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/user
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/message
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/invitation
+        ${CMAKE_CURRENT_SOURCE_DIR}/headers/channel
         ${CMAKE_CURRENT_SOURCE_DIR}/../common
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tests/
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tests/database
+        ${CMAKE_CURRENT_SOURCE_DIR}/../tests/message
         ${Boost_INCLUDE_DIRS}
     )
 
@@ -167,6 +184,7 @@ if(BUILD_TESTS)
         ${Boost_LIBRARIES}
         OpenSSL::SSL
         OpenSSL::Crypto
+        bcrypt 
     )
 endif()
 

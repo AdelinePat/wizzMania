@@ -5,6 +5,8 @@ ServerSend::ChannelInfo Database::get_channel_info(int64_t id_user,
                                                    int64_t id_channel,
                                                    ChannelStatus membership) {
   ServerSend::ChannelInfo channel_info;
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
@@ -41,9 +43,11 @@ ServerSend::ChannelInfo Database::get_channel_info(int64_t id_user,
 
 // Get all channels for a specific user , populate most of ChannelInfo struct,
 // missing participants vector
+// Must gard lock outside method!
 std::vector<ServerSend::ChannelInfo> Database::get_channels(
     const int64_t id_user, ChannelStatus membership) {
   std::vector<ServerSend::ChannelInfo> channels_info;
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -116,8 +120,6 @@ std::optional<int64_t> Database::create_channel(const int64_t created_by,
 bool Database::create_user_channels(
     const int64_t id_creator, const int64_t id_channel,
     const std::unordered_set<int64_t>& participants) {
-  //   std::unordered_set<int64_t> invitees = participants;
-  // invitees.erase(id_creator);
   try {
     this->ensure_connection();
     std::string query =
@@ -158,7 +160,8 @@ std::optional<int64_t> Database::create_channel_with_participants(
     const int64_t id_creator, const std::string& title,
     const std::string& created_at,
     const std::unordered_set<int64_t>& participants) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
 
   try {
     this->ensure_connection();
@@ -198,6 +201,8 @@ std::optional<int64_t> Database::create_channel_with_participants(
 // ==== INVITATION
 
 std::optional<int64_t> Database::get_channel_creator(int64_t id_channel) {
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
@@ -222,6 +227,8 @@ int64_t Database::get_number_invited_users_in_channel(
     int64_t id_channel, ChannelStatus membership,
     ChannelStatus other_membership) {
   // count PENDING + ACCEPTED
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
+
   this->ensure_connection();
   std::unique_ptr<sql::PreparedStatement> prep_statement(
       this->conn->prepareStatement("SELECT COUNT(*) as total FROM userChannel "
@@ -238,7 +245,8 @@ int64_t Database::get_number_invited_users_in_channel(
 }
 
 void Database::leave_channel(int64_t id_user, int64_t id_channel) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
   try {
     this->ensure_connection();
     this->conn->setAutoCommit(false);
@@ -256,7 +264,7 @@ void Database::leave_channel(int64_t id_user, int64_t id_channel) {
       del->executeUpdate();
       // CASCADE handles userChannel and messages automatically
     }
-    conn->commit(); 
+    conn->commit();
     conn->setAutoCommit(true);
 
   } catch (sql::SQLException& e) {
@@ -293,7 +301,8 @@ int Database::leave_channel(int64_t id_user, int64_t id_channel,
 
 std::optional<int64_t> Database::find_existing_channel(
     const std::unordered_set<int64_t>& all_participants) {
-  std::lock_guard<std::mutex> lock(db_mutex);
+  // std::lock_guard<std::mutex> lock(db_mutex);
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
   try {
     this->ensure_connection();
 
@@ -338,6 +347,7 @@ std::optional<int64_t> Database::find_existing_channel(
 }
 
 std::optional<bool> Database::does_channel_exist(int64_t id_channel) {
+  std::lock_guard<std::recursive_mutex> lock(db_mutex);
   try {
     this->ensure_connection();
     std::unique_ptr<sql::PreparedStatement> prep_statement(
