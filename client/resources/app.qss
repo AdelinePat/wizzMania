@@ -1,284 +1,675 @@
-/* Global background and text */
+/* ================================================================
+   WizzMania — Qt Stylesheet  (ocean-teal + forest-green)
+   ================================================================ */
+
+/* ── RESET ─────────────────────────────────────────────────────── */
 QWidget {
-  background-color: rgb(0,17,26);
-  color: rgb(200,200,200);
+  background-color: #00111a;
+  color: #ccdde8;
+  font-family: "Segoe UI", "Cantarell", "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+}
+QWidget:focus { outline: none; }
+
+/* ── TRANSPARENT WRAPPERS ───────────────────────────────────────── */
+/* Any layout-only container that should not paint its own background */
+QWidget#transparentWidget,
+QWidget#registerScrollContent,
+QWidget#msgColumn,
+QWidget#systemMsgWrap {
+  background-color: transparent;
 }
 
-/* Login page */
-QWidget#LoginWidget { background-color: rgb(0,17,26); }
-QLabel#titleLabel { color: rgb(82,134,77); }
+/* ── SCROLLBARS ─────────────────────────────────────────────────── */
+QScrollBar:vertical {
+  background: transparent;
+  width: 5px;
+  margin: 0;
+}
+QScrollBar::handle:vertical {
+  background: #002030;
+  border-radius: 2px;
+  min-height: 28px;
+}
+QScrollBar::handle:vertical:hover { background: #1a5c7a; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical,  QScrollBar::sub-page:vertical { background: transparent; }
+QScrollBar:horizontal {
+  background: transparent;
+  height: 5px;
+}
+QScrollBar::handle:horizontal {
+  background: #002030;
+  border-radius: 2px;
+  min-width: 28px;
+}
+QScrollBar::handle:horizontal:hover { background: #1a5c7a; }
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal { width: 0; }
 
-/* ========== INPUT FIELD STYLES ========== */
+/* ── SCROLL AREAS ───────────────────────────────────────────────── */
+QScrollArea#registerScrollArea,
+QScrollArea { background-color: transparent; border: none; }
 
-/* Base input field styles */
-QLineEdit {
-  background-color: rgb(0,27,41);
-  color: rgb(200,200,200);
-  border: 1px solid rgb(66,126,157);
-  border-radius: 4px;
-  padding: 6px 8px;
+/* ── LEFT PANEL ─────────────────────────────────────────────────── */
+QWidget#leftPanel {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001824, stop:1 #00111a);
+  border-right: 1px solid rgba(66,126,157,0.18);
 }
 
-/* Variant: messaging input with more padding */
-QLineEdit#messageInput {
-  padding: 8px;
+/* ── RIGHT PANEL ────────────────────────────────────────────────── */
+QWidget#rightPanel {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #00111a, stop:1 #000d14);
 }
 
-/* Panels */
-QWidget#leftPanel { background-color: rgb(0,22,33); }
-QWidget#rightPanel { background-color: rgb(0,17,26); }
-QLabel#appLabel { color: rgb(82,134,77); padding: 5px; }
+/* ── CHAT HEADER BAR ────────────────────────────────────────────── */
+/* Explicit gradient so it never shows the default QWidget solid paint */
+QWidget#chatHeaderRow {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001824, stop:1 #001520);
+  border-bottom: 1px solid rgba(66,126,157,0.15);
+}
 
-/* Channel list */
-QListWidget#channelsList, QListWidget#chatGroupsList {
-  color: rgb(200,200,200);
+QLabel#chatTitleLabel {
+  color: #ccdde8;
+  font-size: 15px;
+  font-weight: 700;
+  background: transparent;
+}
+
+/* ── CHAT INPUT AREA ────────────────────────────────────────────── */
+QWidget#chatInputArea {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001520, stop:1 #001824);
+  border-top: 1px solid rgba(66,126,157,0.15);
+}
+
+/* ── MESSAGES LIST ───────────────────────────────────────────────── */
+QListWidget#messagesList {
+  background: transparent;
   border: none;
-  border-radius: 4px;
+  outline: none;
 }
-QListWidget#channelsList::item, QListWidget#chatGroupsList::item { border-bottom: 1px solid rgb(0,35,50); }
-QListWidget#channelsList::item:selected, QListWidget#chatGroupsList::item:selected { background-color: rgb(82,134,77); }
+QListWidget#messagesList::item {
+  background: transparent;
+  border: none;
+  padding: 0;
+}
 
-/* Channel row pieces */
-/* channel icon background removed to avoid dark blocks behind text */
-QLabel#channelIconLabel { background-color: transparent; color: rgb(145,185,215); border-radius: 6px; font-size: 12px; }
-QLabel#channelTitleLabel { color: rgb(220,230,240); font-weight: 600; font-size: 12px; }
-QLabel#channelPreviewLabel { color: rgb(135,150,165); font-size: 11px; }
-QLabel#channelUnreadLabel { background-color: rgb(82,134,77); color: white; border-radius: 9px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
+/* ── MESSAGE AVATARS ─────────────────────────────────────────────── */
+QLabel#avatarSelf {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #1a5c7a, stop:1 #0d3d52);
+  color: #9dd4ed;
+  border-radius: 17px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(66,126,157,0.35);
+}
+QLabel#avatarOther {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #1a4a38, stop:1 #0d3226);
+  color: #7dc49a;
+  border-radius: 17px;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid rgba(82,134,77,0.35);
+}
 
-/* Right panel */
-QLabel#chatTitleLabel { color: rgb(200,200,200); padding: 5px; font-size: 12px; font-weight: 700; }
-QListWidget#messagesList { color: rgb(200,200,200); border: none; border-radius: 4px; }
-QLineEdit#messageInput { background-color: rgb(0,27,41); color: rgb(200,200,200); border: 1px solid rgb(66,126,157); border-radius: 4px; padding: 8px; }
+/* ── MESSAGE BUBBLES ─────────────────────────────────────────────── */
+QFrame[owner="self"] {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #002a3e, stop:1 #001e2e);
+  border-radius: 4px 14px 14px 14px;
+  border: 1px solid rgba(66,126,157,0.28);
+}
+QFrame[owner="other"] {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #001e2a, stop:1 #001520);
+  border-radius: 14px 4px 14px 14px;
+  border: 1px solid rgba(82,134,77,0.18);
+}
 
-/* Message bubble styling via owner property */
-/* Make message bubbles less heavy: transparent background and subtle border */
-QFrame[owner="self"] { background-color: transparent; border-radius: 12px; border: 1px solid rgba(31,139,76,0.12); }
-QFrame[owner="other"] { background-color: transparent; border-radius: 12px; border: 1px solid rgba(35,62,87,0.08); }
-QLabel#bodyLabel { color: #e4edf5; font-size: 13px; }
-QLabel#timeLabel { color: #9aa6b2; font-size: 10px; }
-QLabel#systemLabel { color: #9aa6b2; font-style: italic; font-size: 12px; padding: 2px 8px; }
+QLabel#senderLabel {
+  color: #52a86e;
+  font-size: 11px;
+  font-weight: 700;
+  background: transparent;
+  letter-spacing: 0.02em;
+}
+QLabel#bodyLabel {
+  color: #ccdde8;
+  font-size: 13px;
+  background: transparent;
+  line-height: 1.5;
+}
+QLabel#timeLabel {
+  color: #1e4a62;
+  font-size: 10px;
+  background: transparent;
+  padding: 0 2px;
+}
+QLabel#systemLabel {
+  color: #1e4a62;
+  font-style: italic;
+  font-size: 12px;
+  padding: 3px 12px;
+  background: transparent;
+}
 
-/* Portrait and name */
-QPushButton#userPortraitBtn { border-radius: 24px; background-color: rgb(82,134,77); color: white; font-weight: 700; }
-QLabel#userPortraitName { color: rgb(220,230,240); font-size: 12px; }
+/* ── LOGIN WIDGET ────────────────────────────────────────────────── */
+QWidget#LoginWidget {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #000d14, stop:0.5 #001520, stop:1 #000d14);
+}
 
-/* ========== BUTTON STYLES ========== */
+QFrame#loginCard {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001e2f, stop:1 #001520);
+  border: 1px solid rgba(66,126,157,0.28);
+  border-radius: 16px;
+}
 
-/* Green action buttons - confirm, accept, create, send */
+QLabel#titleLabel {
+  color: #5BA3C4;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  background: transparent;
+}
+QLabel#taglineLabel {
+  color: #2e5870;
+  font-size: 13px;
+  background: transparent;
+}
+QLabel#fieldLabelUsername,
+QLabel#fieldLabelPassword {
+  color: #2e5870;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  background: transparent;
+}
+QFrame#dividerLine {
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(66,126,157,0.18);
+  max-height: 1px;
+}
+QLabel#noAccountLabel {
+  color: #2e5870;
+  font-size: 12px;
+  background: transparent;
+}
+
+/* Flat inline link buttons */
+QPushButton#registerButton,
+QPushButton#registerLinkBtn {
+  background: transparent;
+  color: #427E9D;
+  border: none;
+  padding: 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: underline;
+}
+QPushButton#registerButton:hover,
+QPushButton#registerLinkBtn:hover { color: #5BA3C4; }
+
+/* ── REGISTER WIDGET ─────────────────────────────────────────────── */
+QWidget#registerBackground {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #000d14, stop:0.5 #001520, stop:1 #000d14);
+}
+QFrame#registerCard {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001e2f, stop:1 #001520);
+  border: 1px solid rgba(66,126,157,0.28);
+  border-radius: 16px;
+}
+QLabel#registerLogoLabel {
+  color: #5BA3C4;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  background: transparent;
+}
+QLabel#registerTitleLabel {
+  color: #ccdde8;
+  font-size: 16px;
+  font-weight: 600;
+  background: transparent;
+}
+QLabel#registerSubtitleLabel {
+  color: #2e5870;
+  font-size: 12px;
+  background: transparent;
+}
+QLabel#registerFieldLabel {
+  color: #2e5870;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  background: transparent;
+}
+QLabel#registerErrorLabel {
+  color: #c0899d;
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+}
+QFrame#registerDivider {
+  background: transparent;
+  border: none;
+  border-top: 1px solid rgba(66,126,157,0.18);
+  max-height: 1px;
+}
+
+/* ── INPUT FIELDS ────────────────────────────────────────────────── */
+QLineEdit {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001b29, stop:1 #001520);
+  color: #ccdde8;
+  border: 1px solid rgba(66,126,157,0.22);
+  border-radius: 8px;
+  padding: 9px 12px;
+  selection-background-color: #1a5c7a;
+  selection-color: #fff;
+}
+QLineEdit:focus {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001f30, stop:1 #001824);
+  border-color: #427E9D;
+}
+QLineEdit:disabled {
+  background-color: #001520;
+  color: #1e3d52;
+  border-color: rgba(66,126,157,0.10);
+}
+QLineEdit#messageInput {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001b29, stop:1 #001520);
+  border: 1px solid rgba(66,126,157,0.22);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+QLineEdit#messageInput:focus { border-color: #427E9D; }
+
+QLineEdit#registerInput,
+QLineEdit#createChannelInput {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001b29, stop:1 #001520);
+  color: #ccdde8;
+  border: 1px solid rgba(66,126,157,0.22);
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+}
+QLineEdit#registerInput:focus,
+QLineEdit#createChannelInput:focus { border-color: #427E9D; }
+
+/* ── APP LABEL ───────────────────────────────────────────────────── */
+QLabel#appLabel {
+  color: #5BA3C4;
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  background: transparent;
+  padding: 4px 2px;
+}
+
+/* ── USER PORTRAIT ───────────────────────────────────────────────── */
+QPushButton#userPortraitBtn {
+  border-radius: 24px;
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #1a5c7a, stop:1 #0d3d52);
+  color: #9dd4ed;
+  font-weight: 700;
+  font-size: 15px;
+  border: 2px solid rgba(66,126,157,0.35);
+}
+QPushButton#userPortraitBtn:hover {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #236680, stop:1 #114a60);
+  border-color: #427E9D;
+}
+QPushButton#userPortraitBtn:pressed { background: #427E9D; color: #fff; }
+QLabel#userPortraitName {
+  color: #4a7a95;
+  font-size: 11px;
+  font-weight: 500;
+  background: transparent;
+}
+
+/* ── CHANNELS SECTION LABEL ──────────────────────────────────────── */
+QLabel#channelsHeaderLabel {
+  color: #1e4a62;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+}
+
+/* ── CHANNEL LIST ────────────────────────────────────────────────── */
+QListWidget#channelsList,
+QListWidget#chatGroupsList {
+  background: transparent;
+  border: none;
+  outline: none;
+}
+QListWidget#channelsList::item,
+QListWidget#chatGroupsList::item {
+  background: transparent;
+  border-radius: 8px;
+  margin: 1px 4px;
+  padding: 0;
+  border: 1px solid transparent;
+}
+QListWidget#channelsList::item:hover,
+QListWidget#chatGroupsList::item:hover {
+  background: rgba(66,126,157,0.08);
+  border-color: rgba(66,126,157,0.14);
+}
+QListWidget#channelsList::item:selected,
+QListWidget#chatGroupsList::item:selected {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+    stop:0 rgba(66,126,157,0.22), stop:1 rgba(66,126,157,0.08));
+  border-color: rgba(66,126,157,0.32);
+}
+
+/* ── CHANNEL ROW WIDGET ──────────────────────────────────────────── */
+QLabel#channelIconLabel {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+    stop:0 #001b29, stop:1 #001520);
+  color: #427E9D;
+  border-radius: 8px;
+  font-size: 14px;
+  border: 1px solid rgba(66,126,157,0.18);
+}
+QLabel#channelTitleLabel {
+  color: #ccdde8;
+  font-weight: 600;
+  font-size: 13px;
+  background: transparent;
+}
+QLabel#channelPreviewLabel {
+  color: #2e5870;
+  font-size: 11px;
+  background: transparent;
+}
+QLabel#channelUnreadLabel {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #5BA3C4, stop:1 #427E9D);
+  color: #fff;
+  border-radius: 10px;
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ── "+" CREATE CHANNEL BUTTON ───────────────────────────────────── */
+QPushButton#createChannelBtn {
+  background: transparent;
+  color: #1e4a62;
+  border: 1px solid rgba(66,126,157,0.18);
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 16px;
+}
+QPushButton#createChannelBtn:hover {
+  background: rgba(66,126,157,0.12);
+  color: #5BA3C4;
+  border-color: rgba(66,126,157,0.40);
+}
+QPushButton#createChannelBtn:pressed { background: #427E9D; color: #fff; }
+
+/* ── TAB WIDGET (UserHome) ───────────────────────────────────────── */
+QTabWidget::pane {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001824, stop:1 #00111a);
+  border: none;
+  border-top: 1px solid rgba(66,126,157,0.15);
+}
+QTabBar::tab {
+  background: transparent;
+  color: #1e4a62;
+  padding: 8px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-right: 2px;
+}
+QTabBar::tab:hover { color: #4a7a95; }
+QTabBar::tab:selected { color: #5BA3C4; border-bottom: 2px solid #427E9D; }
+
+/* ── INVITATION LISTS ────────────────────────────────────────────── */
+QListWidget#invitationsList,
+QListWidget#sentInvitationsList {
+  background: transparent;
+  border: none;
+  outline: none;
+}
+QListWidget#invitationsList::item,
+QListWidget#sentInvitationsList::item {
+  background: transparent;
+  border-bottom: 1px solid rgba(66,126,157,0.08);
+  padding: 2px 0;
+}
+QLabel#invitationTitleLabel {
+  color: #ccdde8;
+  font-weight: 600;
+  font-size: 13px;
+  background: transparent;
+}
+QLabel#invitationSubLabel {
+  color: #2e5870;
+  font-size: 11px;
+  background: transparent;
+}
+
+/* ── PROFILE HEADER ──────────────────────────────────────────────── */
+QLabel#profileHeaderLabel {
+  color: #ccdde8;
+  font-size: 14px;
+  font-weight: 700;
+  background: transparent;
+}
+
+/* ── CREATE CHANNEL DIALOG ───────────────────────────────────────── */
+CreateChannelWidget,
+QDialog {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001e2f, stop:1 #001520);
+  border: 1px solid rgba(66,126,157,0.28);
+  border-radius: 14px;
+}
+QLabel#createChannelTitleLabel {
+  color: #ccdde8;
+  font-size: 17px;
+  font-weight: 700;
+  background: transparent;
+}
+QLabel#createChannelDescLabel {
+  color: #2e5870;
+  font-size: 12px;
+  background: transparent;
+}
+QLabel#createChannelSectionLabel {
+  color: #1e4a62;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  background: transparent;
+}
+QLabel#createChannelHintLabel {
+  color: #1e4a62;
+  font-size: 11px;
+  background: transparent;
+}
+QLabel#createChannelErrorLabel {
+  color: #c0899d;
+  font-size: 11px;
+  font-weight: 600;
+  background: transparent;
+}
+
+/* ── BUTTONS — BASE ──────────────────────────────────────────────── */
+QPushButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #001e2f, stop:1 #001520);
+  color: #4a7a95;
+  border: 1px solid rgba(66,126,157,0.22);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-weight: 600;
+}
+QPushButton:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #002535, stop:1 #001824);
+  color: #ccdde8;
+  border-color: rgba(66,126,157,0.40);
+}
+
+/* ── BUTTONS — PRIMARY GREEN ─────────────────────────────────────── */
 QPushButton#loginButton,
 QPushButton#sendButton,
-QPushButton#createChannelBtn,
 QPushButton#invitationAcceptBtn,
 QPushButton#createChannelAddBtn,
 QPushButton#createChannelCreateBtn,
-QPushButton#registerCreateBtn,
-QPushButton#userPortraitBtn {
-  background-color: rgb(82,134,77);
-  color: white;
-  border: none;
-  border-radius: 4px;
-  font-weight: 600;
+QPushButton#registerCreateBtn {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #62a65c, stop:1 #477043);
+  color: #fff;
+  border: 1px solid rgba(82,134,77,0.50);
+  border-radius: 8px;
+  font-weight: 700;
 }
 QPushButton#loginButton:hover,
 QPushButton#sendButton:hover,
-QPushButton#createChannelBtn:hover,
 QPushButton#invitationAcceptBtn:hover,
 QPushButton#createChannelAddBtn:hover,
 QPushButton#createChannelCreateBtn:hover,
-QPushButton#registerCreateBtn:hover,
-QPushButton#userPortraitBtn:hover {
-  background-color: rgb(92,144,87);
+QPushButton#registerCreateBtn:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #72b66c, stop:1 #558050);
+  border-color: rgba(82,134,77,0.70);
 }
 QPushButton#loginButton:pressed,
 QPushButton#sendButton:pressed,
-QPushButton#createChannelBtn:pressed,
-QPushButton#invitationAcceptBtn:pressed,
-QPushButton#createChannelAddBtn:pressed,
-QPushButton#createChannelCreateBtn:pressed,
-QPushButton#registerCreateBtn:pressed,
-QPushButton#userPortraitBtn:pressed {
-  background-color: rgb(72,124,67);
+QPushButton#registerCreateBtn:pressed {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 #477043, stop:1 #365735);
+}
+QPushButton#loginButton:disabled,
+QPushButton#sendButton:disabled,
+QPushButton#registerCreateBtn:disabled {
+  background: #001520;
+  color: #1e3d52;
+  border-color: rgba(66,126,157,0.10);
 }
 
-/* Gray cancel/neutral buttons - reject, cancel, remove */
+/* ── BUTTONS — GHOST ─────────────────────────────────────────────── */
 QPushButton#invitationRejectBtn,
 QPushButton#invitationCancelBtn,
 QPushButton#createChannelRemoveBtn,
 QPushButton#createChannelCancelBtn,
 QPushButton#registerCancelBtn {
-  background-color: rgb(100,110,120);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  background: rgba(66,126,157,0.06);
+  color: #4a7a95;
+  border: 1px solid rgba(66,126,157,0.20);
+  border-radius: 8px;
+  font-weight: 500;
 }
 QPushButton#invitationRejectBtn:hover,
 QPushButton#invitationCancelBtn:hover,
 QPushButton#createChannelRemoveBtn:hover,
 QPushButton#createChannelCancelBtn:hover,
 QPushButton#registerCancelBtn:hover {
-  background-color: rgb(110,120,130);
-}
-QPushButton#invitationRejectBtn:pressed,
-QPushButton#invitationCancelBtn:pressed,
-QPushButton#createChannelRemoveBtn:pressed,
-QPushButton#createChannelCancelBtn:pressed,
-QPushButton#registerCancelBtn:pressed {
-  background-color: rgb(90,100,110);
+  background: rgba(66,126,157,0.14);
+  color: #ccdde8;
+  border-color: rgba(66,126,157,0.38);
 }
 QPushButton#createChannelRemoveBtn:disabled {
-  background-color: rgb(70,80,90);
-  color: rgb(120,130,140);
+  background: transparent;
+  color: #1e3d52;
+  border-color: rgba(66,126,157,0.08);
 }
 
-/* Red dangerous buttons - leave, delete */
+/* ── BUTTONS — DANGER ────────────────────────────────────────────── */
 QPushButton#channelLeaveBtn,
 QPushButton#deleteAccountBtn {
-  background-color: rgb(139,48,48);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  background: rgba(192,137,157,0.08);
+  color: #c0899d;
+  border: 1px solid rgba(192,137,157,0.25);
+  border-radius: 8px;
   font-weight: 600;
 }
 QPushButton#channelLeaveBtn:hover,
 QPushButton#deleteAccountBtn:hover {
-  background-color: rgb(159,68,68);
+  background: rgba(192,137,157,0.18);
+  border-color: rgba(192,137,157,0.48);
 }
 QPushButton#channelLeaveBtn:pressed,
-QPushButton#deleteAccountBtn:pressed {
-  background-color: rgb(119,38,38);
-}
+QPushButton#deleteAccountBtn:pressed { background: rgba(192,137,157,0.28); }
 
-/* Blue secondary button - logout */
+/* ── BUTTON — LOGOUT ─────────────────────────────────────────────── */
 QPushButton#logoutBtn {
-  background-color: rgb(66,126,157);
-  color: white;
-  border: none;
-  border-radius: 4px;
+  background: transparent;
+  color: #1e4a62;
+  border: 1px solid rgba(66,126,157,0.14);
+  border-radius: 8px;
   padding: 6px 12px;
   font-size: 11px;
+  font-weight: 500;
 }
-QPushButton#logoutBtn:hover { background-color: rgb(76,136,167); }
-QPushButton#logoutBtn:pressed { background-color: rgb(56,116,147); }
+QPushButton#logoutBtn:hover {
+  background: rgba(66,126,157,0.08);
+  color: #4a7a95;
+  border-color: rgba(66,126,157,0.28);
+}
 
-/* Button-specific sizes and padding */
-QPushButton#loginButton, QPushButton#sendButton { font-weight: bold; }
-QPushButton#createChannelBtn { font-weight: 700; font-size: 14px; }
-QPushButton#channelLeaveBtn { padding: 4px 8px; font-size: 11px;}
-QPushButton#deleteAccountBtn { padding: 6px 12px; font-size: 11px; }
-QPushButton#logoutBtn { padding: 6px 12px; font-size: 11px; }
-QPushButton#invitationAcceptBtn, QPushButton#invitationRejectBtn, QPushButton#invitationCancelBtn { padding: 4px 10px; font-size: 11px; }
-QPushButton#createChannelAddBtn { padding: 6px 12px; font-size: 11px; }
-QPushButton#createChannelCreateBtn { padding: 8px 16px; font-size: 12px; }
-QPushButton#createChannelCancelBtn { padding: 8px 16px; font-size: 12px; }
-QPushButton#createChannelRemoveBtn { padding: 6px 12px; font-size: 11px; }
-
-/* ========== LABEL STYLES ========== */
-
-/* Headers - bold large text */
-QLabel#titleLabel,
-QLabel#profileHeaderLabel,
-QLabel#channelsHeaderLabel,
-QLabel#createChannelTitleLabel,
-QLabel#registerTitleLabel {
-  color: rgb(82,134,77);
+/* ── BUTTON — WIZZ ───────────────────────────────────────────────── */
+QPushButton#wizzButton {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 rgba(66,126,157,0.15), stop:1 rgba(66,126,157,0.08));
+  color: #427E9D;
+  border: 1px solid rgba(66,126,157,0.25);
+  border-radius: 10px;
+  font-size: 16px;
   font-weight: 700;
 }
-QLabel#profileHeaderLabel,
-QLabel#channelsHeaderLabel {
-  color: rgb(220,230,240);
-  font-size: 12px;
+QPushButton#wizzButton:hover {
+  background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+    stop:0 rgba(66,126,157,0.28), stop:1 rgba(66,126,157,0.15));
+  border-color: #427E9D;
+  color: #5BA3C4;
 }
-QLabel#createChannelTitleLabel {
-  font-size: 18px;
-}
-QLabel#titleLabel, QLabel#registerTitleLabel {
-  font-size: 24px;
-}
-
-/* Subtitles - lighter text */
-QLabel#createChannelDescLabel {
-  color: rgb(155,170,185);
-  font-size: 12px;
-}
-QLabel#createChannelErrorLabel {
-  color: rgb(220,100,100);
-  font-size: 11px;
-  font-weight: 600;
-}
-QLabel#invitationSubLabel,
-QLabel#createChannelHintLabel {
-  color: rgb(135,150,165);
-  font-size: 11px;
+QPushButton#wizzButton:pressed { background: #427E9D; color: #fff; }
+QPushButton#wizzButton:disabled {
+  background: transparent;
+  color: #1e3d52;
+  border-color: rgba(66,126,157,0.08);
 }
 
-/* Section headers */
-QLabel#createChannelSectionLabel {
-  color: rgb(220,230,240);
-  font-weight: 700;
-  font-size: 13px;
-}
-
-/* Item titles */
-QLabel#invitationTitleLabel {
-  color: rgb(220,230,240);
-  font-weight: 600;
-  font-size: 12px;
-}
-
-/* Utility labels */
-QLabel#appLabel { color: rgb(82,134,77); padding: 5px; }
-QLabel#chatTitleLabel { color: rgb(200,200,200); padding: 5px; font-size: 12px; font-weight: 700; }
-QLabel#channelTitleLabel { color: rgb(220,230,240); font-weight: 600; font-size: 12px; }
-QLabel#channelPreviewLabel { color: rgb(135,150,165); font-size: 11px; }
-QLabel#channelIconLabel { background-color: transparent; color: rgb(145,185,215); border-radius: 6px; font-size: 12px; }
-QLabel#channelUnreadLabel { background-color: rgb(82,134,77); color: white; border-radius: 9px; padding: 1px 6px; font-size: 10px; font-weight: 700; }
-QLabel#userPortraitName { color: rgb(220,230,240); font-size: 12px; }
-QLabel#bodyLabel { color: #e4edf5; font-size: 13px; }
-QLabel#timeLabel { color: #9aa6b2; font-size: 10px; }
-QLabel#systemLabel { color: #9aa6b2; font-style: italic; font-size: 12px; padding: 2px 8px; }
-
-QLineEdit#createChannelInput {
-  background-color: rgb(0,27,41);
-  color: rgb(200,200,200);
-  border: 1px solid rgb(66,126,157);
-  border-radius: 4px;
-  padding: 6px 8px;
-  font-size: 12px;
-}
-
-/* Create Channel Dialog */
-CreateChannelWidget {
-  background-color: rgb(0,17,26);
-}
-
-/* ========== REGISTER WIDGET STYLES ========== */
-
-QLabel#registerFieldLabel {
-  color: rgb(220,230,240);
-  font-weight: 600;
-  font-size: 12px;
-}
-
-QLabel#registerErrorLabel {
-  color: rgb(220,100,100);
-  font-size: 11px;
-  font-weight: 600;
-}
-
-QLineEdit#registerInput {
-  background-color: rgb(0,27,41);
-  color: rgb(200,200,200);
-  border: 1px solid rgb(66,126,157);
-  border-radius: 4px;
-  padding: 8px;
-  font-size: 12px;
-  max-width: 480px;
-  min-width: 240px;
-}
-
-QPushButton#registerCreateBtn,
-QPushButton#registerCancelBtn {
-  min-height: 40px;
-  max-width: 220px;
-  min-width: 100px;
-}
+/* ── SIZE OVERRIDES ──────────────────────────────────────────────── */
+QPushButton#loginButton        { min-height: 44px; font-size: 14px; border-radius: 10px; }
+QPushButton#sendButton         { border-radius: 10px; font-size: 13px; }
+QPushButton#channelLeaveBtn    { padding: 4px 10px; font-size: 11px; }
+QPushButton#deleteAccountBtn   { padding: 6px 12px; font-size: 11px; }
+QPushButton#logoutBtn          { padding: 6px 12px; font-size: 11px; }
+QPushButton#invitationAcceptBtn,
+QPushButton#invitationRejectBtn,
+QPushButton#invitationCancelBtn { padding: 5px 12px; font-size: 11px; border-radius: 6px; }
+QPushButton#createChannelAddBtn    { padding: 6px 12px; font-size: 11px; }
+QPushButton#createChannelCreateBtn { padding: 9px 20px; font-size: 13px; }
+QPushButton#createChannelCancelBtn { padding: 9px 20px; font-size: 13px; }
+QPushButton#createChannelRemoveBtn { padding: 5px 10px; font-size: 11px; }
+QPushButton#registerCreateBtn  { min-height: 44px; font-size: 14px; border-radius: 10px; }
+QPushButton#registerCancelBtn  { min-height: 40px; min-width: 100px; max-width: 200px; }

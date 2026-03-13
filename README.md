@@ -264,7 +264,6 @@ Refer to it to test the project manually or understand the client ↔ server pro
 
 ---
 
-
 ## Development
 
 ### Filtering Qt client logs
@@ -280,6 +279,24 @@ QT_LOGGING_RULES="*.debug=true;*.info=true;qt.network.*=true" ./wizzmania-client
 # Silent (no logs at all)
 QT_LOGGING_RULES="*=false" ./wizzmania-client
 ```
+
+### Testing the API without the Qt client
+
+A lightweight web client is available in `tests/draft/` for quickly testing HTTP endpoints and WebSocket behaviour — useful if you don't want to set up Qt just to check the API.
+
+1. Create a `secret.js` file in `tests/draft/` with the same values as your `.env`:
+```javascript
+export const SERVER_IP = "localhost";
+export const SERVER_PORT = 8888;
+```
+2. Start a local HTTP server from that folder:
+```bash
+cd tests/draft
+python3 -m http.server 8880
+```
+3. Open `http://localhost:8880` in your browser
+
+> Make sure the server is already running before opening the client. `SERVER_IP` and `SERVER_PORT` must match the values in your `.env`.
 
 ---
 

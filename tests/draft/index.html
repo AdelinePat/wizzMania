@@ -187,6 +187,24 @@
       text-align: center;
     }
 
+    .auth-toggle {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .auth-toggle a {
+      color: var(--accent-bright);
+      text-decoration: none;
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    .auth-toggle a:hover {
+      text-decoration: underline;
+    }
+
     /* ===================== APP LAYOUT ===================== */
     #app-screen {
       display: none;
@@ -412,6 +430,9 @@
     .sidebar-footer {
       border-top: 1px solid var(--border);
       padding: 12px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
 
     .logout-btn {
@@ -431,6 +452,27 @@
       background: rgba(248, 113, 113, 0.1);
       border-color: var(--danger);
       color: var(--danger);
+    }
+
+    .delete-account-btn {
+      width: 100%;
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      color: var(--text-muted);
+      font-family: var(--font-ui);
+      font-size: 12px;
+      padding: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+      opacity: 0.6;
+    }
+
+    .delete-account-btn:hover {
+      background: rgba(248, 113, 113, 0.08);
+      border-color: rgba(248, 113, 113, 0.3);
+      color: var(--danger);
+      opacity: 1;
     }
 
     /* ===================== MAIN ===================== */
@@ -760,6 +802,25 @@
       background: rgba(248, 113, 113, 0.15);
       color: var(--danger);
       border-color: var(--danger);
+    }
+
+    .cancel-inv-btn {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-family: var(--font-ui);
+      font-size: 12px;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .cancel-inv-btn:hover {
+      background: rgba(248, 113, 113, 0.1);
+      border-color: var(--danger);
+      color: var(--danger);
     }
 
     .outgoing-tag {
@@ -1204,23 +1265,51 @@
       background: var(--text-muted);
       cursor: not-allowed;
     }
+
+    .modal-btn-danger {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+    }
+
+    .modal-btn-danger:hover {
+      background: rgba(248, 113, 113, 0.25);
+    }
   </style>
 </head>
 
 <body>
 
-  <!-- LOGIN -->
+  <!-- LOGIN / REGISTER -->
   <div id="login-screen">
     <div class="login-card">
       <div class="login-logo">Wizz<span>Mania</span></div>
-      <div class="login-tagline">Sign in to continue</div>
-      <label class="field-label" for="username">Username</label>
-      <input class="login-input" type="text" id="username" placeholder="your username" value="alice"
-        autocomplete="off" />
-      <label class="field-label" for="password">Password</label>
-      <input class="login-input" type="password" id="password" placeholder="••••••••" value="hash" />
-      <button class="login-btn" id="loginBtn">Connect</button>
-      <div id="login-error"></div>
+
+      <!-- LOGIN FORM -->
+      <div id="login-form">
+        <div class="login-tagline">Sign in to continue</div>
+        <label class="field-label" for="username">Username</label>
+        <input class="login-input" type="text" id="username" placeholder="your username" autocomplete="off" />
+        <label class="field-label" for="password">Password</label>
+        <input class="login-input" type="password" id="password" placeholder="••••••••" />
+        <button class="login-btn" id="loginBtn">Connect</button>
+        <div id="login-error"></div>
+        <div class="auth-toggle">No account? <a id="showRegisterLink">Create one</a></div>
+      </div>
+
+      <!-- REGISTER FORM -->
+      <div id="register-form" style="display:none">
+        <div class="login-tagline">Create your account</div>
+        <label class="field-label" for="reg-username">Username</label>
+        <input class="login-input" type="text" id="reg-username" placeholder="choose a username" autocomplete="off" />
+        <label class="field-label" for="reg-email">Email</label>
+        <input class="login-input" type="email" id="reg-email" placeholder="your@email.com" />
+        <label class="field-label" for="reg-password">Password</label>
+        <input class="login-input" type="password" id="reg-password" placeholder="min 8 chars, upper, digit, special" />
+        <button class="login-btn" id="registerBtn">Create account</button>
+        <div id="register-error"></div>
+        <div class="auth-toggle">Already have an account? <a id="showLoginLink">Sign in</a></div>
+      </div>
     </div>
   </div>
 
@@ -1254,6 +1343,7 @@
 
       <div class="sidebar-footer">
         <button class="logout-btn" id="logoutBtn">Sign out</button>
+        <button class="delete-account-btn" id="deleteAccountBtn">Delete account</button>
       </div>
     </div>
 
@@ -1339,6 +1429,19 @@
       <div class="modal-actions">
         <button class="modal-btn modal-btn-cancel" id="cancelCreateChannelBtn">Cancel</button>
         <button class="modal-btn modal-btn-create" id="submitCreateChannelBtn" disabled>Create</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DELETE ACCOUNT CONFIRM MODAL -->
+  <div class="modal-overlay" id="deleteAccountModal">
+    <div class="modal">
+      <div class="modal-title">Delete Account</div>
+      <div class="modal-subtitle">This is permanent. Your messages will be preserved but your account cannot be recovered.</div>
+      <div class="modal-error" id="deleteAccountError"></div>
+      <div class="modal-actions">
+        <button class="modal-btn modal-btn-cancel" id="cancelDeleteAccountBtn">Cancel</button>
+        <button class="modal-btn modal-btn-danger" id="confirmDeleteAccountBtn">Delete forever</button>
       </div>
     </div>
   </div>
