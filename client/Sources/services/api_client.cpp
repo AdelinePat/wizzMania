@@ -68,8 +68,8 @@ QNetworkReply* ApiClient::postJsonAuth(const QString& path,
 
 QString ApiClient::extractErrorMessage(QNetworkReply* reply,
                                        const QByteArray& body) const {
-  const QString fallback = reply ? reply->errorString()
-                                 : QString("Unknown network error");
+  const QString fallback =
+      reply ? reply->errorString() : QString("Unknown network error");
 
   const QJsonDocument doc = QJsonDocument::fromJson(body);
   if (doc.isObject()) {

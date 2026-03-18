@@ -168,6 +168,9 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onLogoutSucceeded);
   connect(authManager, &AuthManager::registerSucceeded, this,
           [this](const QString& message) {
+            if (registerWidget) {
+              registerWidget->resetForm();
+            }
             registerWidget->hide();
             loginWidget->show();
             loginWidget->setSuccessText(message);

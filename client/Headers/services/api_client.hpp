@@ -1,9 +1,9 @@
 #ifndef APICLIENT_H
 #define APICLIENT_H
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
-#include <QJsonArray>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QNetworkRequest>

@@ -2,12 +2,12 @@
 
 #include <QDebug>
 #include <QFrame>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QLineEdit>
 #include <QPushButton>
 #include <QScrollArea>
 #include <QVBoxLayout>
-#include <QHBoxLayout>
 
 #include "utils.hpp"
 
@@ -53,7 +53,8 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
   titleLabel->setAlignment(Qt::AlignCenter);
 
   // ── Helper: builds a labeled field block ──────────────────────
-  auto makeField = [card](const QString& labelText, QLineEdit* input) -> QWidget* {
+  auto makeField = [card](const QString& labelText,
+                          QLineEdit* input) -> QWidget* {
     QWidget* block = new QWidget(card);
     block->setObjectName("transparentWidget");
     QVBoxLayout* bl = new QVBoxLayout(block);
@@ -96,7 +97,8 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
   passwordRowLayout->setContentsMargins(0, 0, 0, 0);
   passwordRowLayout->setSpacing(12);
   passwordRowLayout->addWidget(makeField("Password", passwordInput));
-  passwordRowLayout->addWidget(makeField("Confirm password", confirmPasswordInput));
+  passwordRowLayout->addWidget(
+      makeField("Confirm password", confirmPasswordInput));
 
   // ── Error label ───────────────────────────────────────────────
   errorLabel = new QLabel(card);
@@ -111,7 +113,8 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
   createBtn->setObjectName("registerCreateBtn");
   createBtn->setMinimumHeight(44);
   createBtn->setCursor(Qt::PointingHandCursor);
-  connect(createBtn, &QPushButton::clicked, this, &RegisterWidget::onCreateClicked);
+  connect(createBtn, &QPushButton::clicked, this,
+          &RegisterWidget::onCreateClicked);
 
   // ── Divider + sign-in link ────────────────────────────────────
   QFrame* divider = new QFrame(card);
@@ -132,7 +135,8 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
   cancelBtn->setObjectName("registerLinkBtn");
   cancelBtn->setFlat(true);
   cancelBtn->setCursor(Qt::PointingHandCursor);
-  connect(cancelBtn, &QPushButton::clicked, this, &RegisterWidget::onCancelClicked);
+  connect(cancelBtn, &QPushButton::clicked, this,
+          &RegisterWidget::onCancelClicked);
 
   signinLayout->addStretch();
   signinLayout->addWidget(alreadyLabel);
@@ -140,10 +144,14 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
   signinLayout->addStretch();
 
   // ── Enter-key chain ───────────────────────────────────────────
-  connect(usernameInput,        &QLineEdit::returnPressed, this, [this]{ emailInput->setFocus(); });
-  connect(emailInput,           &QLineEdit::returnPressed, this, [this]{ passwordInput->setFocus(); });
-  connect(passwordInput,        &QLineEdit::returnPressed, this, [this]{ confirmPasswordInput->setFocus(); });
-  connect(confirmPasswordInput, &QLineEdit::returnPressed, this, &RegisterWidget::onCreateClicked);
+  connect(usernameInput, &QLineEdit::returnPressed, this,
+          [this] { emailInput->setFocus(); });
+  connect(emailInput, &QLineEdit::returnPressed, this,
+          [this] { passwordInput->setFocus(); });
+  connect(passwordInput, &QLineEdit::returnPressed, this,
+          [this] { confirmPasswordInput->setFocus(); });
+  connect(confirmPasswordInput, &QLineEdit::returnPressed, this,
+          &RegisterWidget::onCreateClicked);
 
   // ── Assemble card ─────────────────────────────────────────────
   cardLayout->addWidget(logoLabel);
@@ -175,44 +183,77 @@ RegisterWidget::RegisterWidget(QWidget* parent) : QWidget(parent) {
 
 RegisterWidget::~RegisterWidget() {}
 
-void RegisterWidget::showErrorMessage(const QString& text) { setErrorText(text); }
+void RegisterWidget::showErrorMessage(const QString& text) {
+  setErrorText(text);
+}
+
+void RegisterWidget::resetForm() {
+  clearFields();
+  setErrorText(QString());
+}
 
 void RegisterWidget::onCreateClicked() {
   QString username = usernameInput->text().trimmed();
-  QString email    = emailInput->text().trimmed();
+  QString email = emailInput->text().trimmed();
   QString password = passwordInput->text();
-  QString confirm  = confirmPasswordInput->text();
+  QString confirm = confirmPasswordInput->text();
   setErrorText(QString());
 
-  if (username.isEmpty()) { setErrorText("Please enter a username."); usernameInput->setFocus(); return; }
+  if (username.isEmpty()) {
+    setErrorText("Please enter a username.");
+    usernameInput->setFocus();
+    return;
+  }
   try {
     std::string cleaned = Utils::clean_username(username.toStdString());
-    qInfo() << "[REGISTER] Cleaned username:" << QString::fromStdString(cleaned);
+    qInfo() << "[REGISTER] Cleaned username:"
+            << QString::fromStdString(cleaned);
   } catch (const BadInput& e) {
-    setErrorText(QString::fromStdString(e.what())); usernameInput->setFocus(); return;
+    setErrorText(QString::fromStdString(e.what()));
+    usernameInput->setFocus();
+    return;
   }
-  if (email.isEmpty()) { setErrorText("Please enter an email."); emailInput->setFocus(); return; }
+  if (email.isEmpty()) {
+    setErrorText("Please enter an email.");
+    emailInput->setFocus();
+    return;
+  }
   if (!Utils::is_valid_email(email.toStdString())) {
-    setErrorText("Please enter a valid email address."); emailInput->setFocus(); return;
+    setErrorText("Please enter a valid email address.");
+    emailInput->setFocus();
+    return;
   }
-  if (password.isEmpty()) { setErrorText("Please enter a password."); passwordInput->setFocus(); return; }
-  if (confirm.isEmpty()) { setErrorText("Please confirm your password."); confirmPasswordInput->setFocus(); return; }
+  if (password.isEmpty()) {
+    setErrorText("Please enter a password.");
+    passwordInput->setFocus();
+    return;
+  }
+  if (confirm.isEmpty()) {
+    setErrorText("Please confirm your password.");
+    confirmPasswordInput->setFocus();
+    return;
+  }
   if (password != confirm) {
-    setErrorText("Passwords do not match."); passwordInput->setFocus(); passwordInput->selectAll(); return;
+    setErrorText("Passwords do not match.");
+    passwordInput->setFocus();
+    passwordInput->selectAll();
+    return;
   }
   if (!Utils::is_valid_password(password.toStdString())) {
-    setErrorText("Password must be at least 8 characters and contain uppercase, lowercase, a digit, and a special character (!@#$%^&*-_=+;:,.<>?/).");
-    passwordInput->setFocus(); passwordInput->selectAll(); return;
+    setErrorText(
+        "Password must be at least 8 characters and contain uppercase, "
+        "lowercase, a digit, and a special character (!@#$%^&*-_=+;:,.<>?/).");
+    passwordInput->setFocus();
+    passwordInput->selectAll();
+    return;
   }
 
   qInfo() << "[REGISTER] Valid: username=" << username << " email=" << email;
   emit registerRequested(username, email, password);
-  clearFields();
 }
 
 void RegisterWidget::onCancelClicked() {
-  clearFields();
-  setErrorText(QString());
+  resetForm();
   emit cancelRequested();
 }
 
