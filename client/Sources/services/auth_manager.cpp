@@ -25,9 +25,7 @@ void AuthManager::login(const QString& username, const QString& password) {
     const QJsonObject obj = doc.object();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      const QString serverMessage = obj.value("message").toString();
-      const QString fallback = reply->errorString();
-      emit loginFailed(serverMessage.isEmpty() ? fallback : serverMessage);
+      emit loginFailed(api.extractErrorMessage(reply, body));
       reply->deleteLater();
       return;
     }
@@ -85,12 +83,7 @@ void AuthManager::registerUser(const QString& username, const QString& email,
     const QJsonObject obj = doc.object();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      QString serverMessage = obj.value("message").toString();
-      if (serverMessage.isEmpty()) {
-        serverMessage = obj.value("error").toString();
-      }
-      const QString fallback = reply->errorString();
-      emit registerFailed(serverMessage.isEmpty() ? fallback : serverMessage);
+      emit registerFailed(api.extractErrorMessage(reply, body));
       reply->deleteLater();
       return;
     }
@@ -118,13 +111,7 @@ void AuthManager::deleteAccount(const QString& token) {
     const QJsonObject obj = doc.object();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      QString serverMessage = obj.value("message").toString();
-      if (serverMessage.isEmpty()) {
-        serverMessage = obj.value("error").toString();
-      }
-      const QString fallback = reply->errorString();
-      emit deleteAccountFailed(serverMessage.isEmpty() ? fallback
-                                                       : serverMessage);
+      emit deleteAccountFailed(api.extractErrorMessage(reply, body));
       reply->deleteLater();
       return;
     }

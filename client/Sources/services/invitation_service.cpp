@@ -27,9 +27,8 @@ void InvitationService::leaveChannel(int64_t channelId, const QString& token) {
     const QByteArray body = reply->readAll();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      const QString message = QString::fromUtf8(body);
       emit invitationFailed(channelId, "leave",
-                            message.isEmpty() ? reply->errorString() : message);
+                            api.extractErrorMessage(reply, body));
       reply->deleteLater();
       return;
     }
@@ -53,10 +52,8 @@ void InvitationService::sendInvitationAction(const QString& action,
         const QByteArray body = reply->readAll();
 
         if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-          const QString message = QString::fromUtf8(body);
-          emit invitationFailed(
-              channelId, action,
-              message.isEmpty() ? reply->errorString() : message);
+          emit invitationFailed(channelId, action,
+                                api.extractErrorMessage(reply, body));
           reply->deleteLater();
           return;
         }
