@@ -15,6 +15,7 @@ class RegisterWidget : public QWidget {
   ~RegisterWidget();
 
   void showErrorMessage(const QString& text);
+  void resetForm();
 
  signals:
   void registerRequested(const QString& username, const QString& email,

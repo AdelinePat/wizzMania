@@ -168,6 +168,9 @@ MainWindow::MainWindow(QWidget* parent)
           &MainWindow::onLogoutSucceeded);
   connect(authManager, &AuthManager::registerSucceeded, this,
           [this](const QString& message) {
+            if (registerWidget) {
+              registerWidget->resetForm();
+            }
             registerWidget->hide();
             loginWidget->show();
             loginWidget->setSuccessText(message);
@@ -571,14 +574,6 @@ void MainWindow::onSendMessageRequested(const QString& message) {
     channelService->sendMessage(currentChannelId, message, authToken);
   }
   rightPanel->focusInput();
-
-  // Fallback refresh: ensures UI catches up even if a NEW_MESSAGE event is
-  // missed.
-  // QTimer::singleShot(120, this, [this]() {
-  //   if (currentChannelId > 0 && wsClient && wsClient->isConnected()) {
-  //     wsClient->openChannel(currentChannelId);
-  //   }
-  // });
 }
 
 void MainWindow::onWizzRequested() {

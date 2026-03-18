@@ -30,9 +30,7 @@ void ChannelService::createChannel(const QStringList& usernames,
     const QJsonObject obj = doc.object();
 
     if (reply->error() != QNetworkReply::NoError && statusCode != 409) {
-      const QString message = obj.value("message").toString();
-      emit createChannelFailed(message.isEmpty() ? reply->errorString()
-                                                 : message);
+      emit createChannelFailed(api.extractErrorMessage(reply, body));
       reply->deleteLater();
       return;
     }
@@ -78,9 +76,7 @@ void ChannelService::fetchHistory(int64_t channelId, int64_t beforeIdMessage,
     const QByteArray body = reply->readAll();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      const QString message = QString::fromUtf8(body);
-      emit historyFailed(channelId,
-                         message.isEmpty() ? reply->errorString() : message);
+      emit historyFailed(channelId, api.extractErrorMessage(reply, body));
       reply->deleteLater();
       return;
     }
@@ -121,14 +117,13 @@ void ChannelService::sendMessage(int64_t channelId, const QString& body,
     const QByteArray rawBody = reply->readAll();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      QString message = QString::fromUtf8(rawBody);
+      QString message = api.extractErrorMessage(reply, rawBody);
       if (statusCode == 405) {
         message =
             "Server endpoint not available (405). Restart/rebuild the server "
             "so HTTP routes for messages/wizz/read are active.";
       }
-      emit messageSendFailed(
-          channelId, message.isEmpty() ? reply->errorString() : message);
+      emit messageSendFailed(channelId, message);
       reply->deleteLater();
       return;
     }
@@ -170,14 +165,13 @@ void ChannelService::markAsRead(int64_t channelId, int64_t lastMessageId,
     const QByteArray rawBody = reply->readAll();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      QString message = QString::fromUtf8(rawBody);
+      QString message = api.extractErrorMessage(reply, rawBody);
       if (statusCode == 405) {
         message =
             "Server endpoint not available (405). Restart/rebuild the server "
             "so HTTP routes for messages/wizz/read are active.";
       }
-      emit markAsReadFailed(channelId,
-                            message.isEmpty() ? reply->errorString() : message);
+      emit markAsReadFailed(channelId, message);
       reply->deleteLater();
       return;
     }
@@ -219,14 +213,13 @@ void ChannelService::sendWizz(int64_t channelId, const QString& token) {
     const QByteArray rawBody = reply->readAll();
 
     if (reply->error() != QNetworkReply::NoError || statusCode >= 400) {
-      QString message = QString::fromUtf8(rawBody);
+      QString message = api.extractErrorMessage(reply, rawBody);
       if (statusCode == 405) {
         message =
             "Server endpoint not available (405). Restart/rebuild the server "
             "so HTTP routes for messages/wizz/read are active.";
       }
-      emit wizzFailed(channelId,
-                      message.isEmpty() ? reply->errorString() : message);
+      emit wizzFailed(channelId, message);
       reply->deleteLater();
       return;
     }

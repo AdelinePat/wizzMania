@@ -1,6 +1,7 @@
 #ifndef APICLIENT_H
 #define APICLIENT_H
 
+#include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QNetworkAccessManager>
@@ -26,6 +27,8 @@ class ApiClient : public QObject {
   QNetworkReply* deleteAuth(const QString& path, const QString& token);
   QNetworkReply* postJsonAuth(const QString& path, const QJsonObject& payload,
                               const QString& token);
+  QString extractErrorMessage(QNetworkReply* reply,
+                              const QByteArray& body) const;
 
  private:
   QNetworkAccessManager network;
