@@ -420,6 +420,9 @@ QPushButton#createChannelBtn {
   border-radius: 6px;
   font-weight: 700;
   font-size: 16px;
+  padding: 0 0 4px 0;
+  min-width: 22px;
+  min-height: 22px;
 }
 QPushButton#createChannelBtn:hover {
   background: rgba(66,126,157,0.12);
