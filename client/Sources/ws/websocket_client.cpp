@@ -31,9 +31,9 @@ WebSocketClient::~WebSocketClient() {
 
 void WebSocketClient::connectWithToken(const QString& token) {
   authToken = token;
-  qInfo().noquote() << "[WS][CONNECT] url=" << ServerConfig::webSocketUrl()
+  qInfo().noquote() << "[WS][CONNECT] url=" << PathUtils::webSocketUrl()
                     << " token_len=" << authToken.size();
-  socket.open(QUrl(ServerConfig::webSocketUrl()));
+  socket.open(QUrl(PathUtils::webSocketUrl()));
 }
 
 void WebSocketClient::disconnectFromServer() {
@@ -250,7 +250,7 @@ void WebSocketClient::onReconnectTimer() {
   if (retryCount < maxRetries) {
     ++retryCount;
     qInfo() << "[WS][RECONNECT] attempt=" << retryCount;
-    socket.open(QUrl(ServerConfig::webSocketUrl()));
+    socket.open(QUrl(PathUtils::webSocketUrl()));
   } else {
     emit errorReceived("RECONNECT_FAILED",
                        "Failed to reconnect after 5 attempts.");

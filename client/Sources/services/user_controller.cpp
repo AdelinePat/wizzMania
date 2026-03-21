@@ -1,8 +1,8 @@
-#include "services/auth_manager.hpp"
+#include "services/user_controller.hpp"
 
-AuthManager::AuthManager(QObject* parent) : QObject(parent) {}
+UserController::UserController(QObject* parent) : QObject(parent) {}
 
-void AuthManager::login(const QString& username, const QString& password) {
+void UserController::login(const QString& username, const QString& password) {
   AuthMessages::LoginRequest req;
   req.username = username.toStdString();
   req.password = password.toStdString();
@@ -14,7 +14,7 @@ void AuthManager::login(const QString& username, const QString& password) {
     payload["email"] = username;
   }
 
-  QNetworkReply* reply = api.postJson("login", payload);
+  QNetworkReply* reply = api.postJsonWithoutAuth("login", payload);
   connect(reply, &QNetworkReply::finished, this, [this, reply, username]() {
     const int statusCode =
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -50,8 +50,8 @@ void AuthManager::login(const QString& username, const QString& password) {
   });
 }
 
-void AuthManager::logout(const QString& token) {
-  QNetworkReply* reply = api.postJsonAuth("logout", QJsonObject(), token);
+void UserController::logout(const QString& token) {
+  QNetworkReply* reply = api.postJsonRequest("logout", QJsonObject(), token);
   connect(reply, &QNetworkReply::finished, this, [this, reply]() {
     const int statusCode =
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -67,14 +67,14 @@ void AuthManager::logout(const QString& token) {
   });
 }
 
-void AuthManager::registerUser(const QString& username, const QString& email,
-                               const QString& password) {
+void UserController::registerUser(const QString& username, const QString& email,
+                                  const QString& password) {
   QJsonObject payload;
   payload["username"] = username;
   payload["email"] = email;
   payload["password"] = password;
 
-  QNetworkReply* reply = api.postJson("register", payload);
+  QNetworkReply* reply = api.postJsonWithoutAuth("register", payload);
   connect(reply, &QNetworkReply::finished, this, [this, reply]() {
     const int statusCode =
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
@@ -101,8 +101,8 @@ void AuthManager::registerUser(const QString& username, const QString& email,
   });
 }
 
-void AuthManager::deleteAccount(const QString& token) {
-  QNetworkReply* reply = api.deleteAuth("account", token);
+void UserController::deleteAccount(const QString& token) {
+  QNetworkReply* reply = api.deleteRequest("account", token);
   connect(reply, &QNetworkReply::finished, this, [this, reply]() {
     const int statusCode =
         reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();

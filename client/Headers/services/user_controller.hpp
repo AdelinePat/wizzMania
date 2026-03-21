@@ -1,5 +1,5 @@
-#ifndef AUTHMANAGER_H
-#define AUTHMANAGER_H
+#ifndef UserController_H
+#define UserController_H
 
 #include <QJsonDocument>
 #include <QJsonObject>
@@ -8,13 +8,13 @@
 #include <QString>
 
 #include "message_structure.hpp"
-#include "services/api_client.hpp"
+#include "services/request_service.hpp"
 
-class AuthManager : public QObject {
+class UserController : public QObject {
   Q_OBJECT
 
  public:
-  explicit AuthManager(QObject* parent = nullptr);
+  explicit UserController(QObject* parent = nullptr);
 
   void login(const QString& username, const QString& password);
   void registerUser(const QString& username, const QString& email,
@@ -37,7 +37,7 @@ class AuthManager : public QObject {
   void deleteAccountFailed(const QString& message);
 
  private:
-  ApiClient api;
+  RequestService api;
 };
 
-#endif  // AUTHMANAGER_H
+#endif  // UserController_H

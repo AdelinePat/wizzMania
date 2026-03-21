@@ -41,7 +41,7 @@ MainWindow::MainWindow(QWidget* parent)
 
   // User home widget (hidden by default)
   userHomeWidget = new UserHomeWidget(ui->rightPanel);
-  authManager = new AuthManager(this);
+  userController = new UserController(this);
   ui->rightPanelLayout->addWidget(userHomeWidget);
   userHomeWidget->setModels(incomingInvitationModel, outgoingInvitationModel);
   userHomeWidget->hide();
@@ -164,9 +164,9 @@ MainWindow::MainWindow(QWidget* parent)
   // logout
   connect(channelPanel, &ChannelPanelWidget::logoutRequested, this,
           &MainWindow::onLogoutRequested);
-  connect(authManager, &AuthManager::logoutSucceeded, this,
+  connect(userController, &UserController::logoutSucceeded, this,
           &MainWindow::onLogoutSucceeded);
-  connect(authManager, &AuthManager::registerSucceeded, this,
+  connect(userController, &UserController::registerSucceeded, this,
           [this](const QString& message) {
             if (registerWidget) {
               registerWidget->resetForm();
@@ -175,13 +175,13 @@ MainWindow::MainWindow(QWidget* parent)
             loginWidget->show();
             loginWidget->setSuccessText(message);
           });
-  connect(authManager, &AuthManager::registerFailed, this,
+  connect(userController, &UserController::registerFailed, this,
           [this](const QString& message) {
             if (registerWidget) {
               registerWidget->showErrorMessage(message);
             }
           });
-  connect(authManager, &AuthManager::deleteAccountSucceeded, this,
+  connect(userController, &UserController::deleteAccountSucceeded, this,
           [this](const QString& message) {
             suppressDisconnectPopup = true;
             onLogoutSucceeded();
@@ -189,7 +189,7 @@ MainWindow::MainWindow(QWidget* parent)
               loginWidget->setSuccessText(message);
             }
           });
-  connect(authManager, &AuthManager::deleteAccountFailed, this,
+  connect(userController, &UserController::deleteAccountFailed, this,
           [this](const QString& message) {
             QMessageBox::warning(this, tr("Delete Account"), message);
           });
@@ -239,8 +239,8 @@ MainWindow::MainWindow(QWidget* parent)
   connect(userHomeWidget, &UserHomeWidget::deleteAccountRequested, this,
           [this]() {
             qInfo() << "[HTTP] DELETE_ACCOUNT requested";
-            if (authManager) {
-              authManager->deleteAccount(authToken);
+            if (userController) {
+              userController->deleteAccount(authToken);
             }
           });
 
@@ -674,8 +674,8 @@ void MainWindow::onRegisterConfirmed(const QString& username,
                                      const QString& password) {
   qInfo() << "[UI] REGISTER_CONFIRMED username=" << username
           << "email=" << email;
-  if (authManager) {
-    authManager->registerUser(username, email, password);
+  if (userController) {
+    userController->registerUser(username, email, password);
   }
 }
 
@@ -885,7 +885,7 @@ void MainWindow::onUserLeftChannel(
 
 void MainWindow::onLogoutRequested() {
   suppressDisconnectPopup = true;
-  authManager->logout(authToken);
+  userController->logout(authToken);
   currentUserId = -1;
   // TODO finish to purge all data
 }

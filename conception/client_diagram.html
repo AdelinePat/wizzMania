@@ -633,7 +633,7 @@
         </div>
         <div class="em-card c-service">
             <span class="em-tag tag-service">Service</span>
-            <div class="em-name">AuthManager<br>+ ApiClient</div>
+            <div class="em-name">UserController<br>+ RequestService</div>
             <div class="em-desc">HTTP login only. Builds request, parses response, emits loginSucceeded / loginFailed.
             </div>
         </div>
@@ -697,7 +697,7 @@
 
                 <div class="step">
                     <div class="step-box entity-service">
-                        <span class="entity">AuthManager</span>
+                        <span class="entity">UserController</span>
                         <div class="action">Builds JSON payload</div>
                         <div class="detail">{username, password[, email]}</div>
                     </div>
@@ -721,7 +721,7 @@
 
             </div>
             <div class="branch">
-                <strong>Response parsed in AuthManager → lambda callback:</strong><br>
+                <strong>Response parsed in UserController → lambda callback:</strong><br>
                 <span class="ok">✓ token present</span> → emit <code>loginSucceeded(username, token)</code> →
                 LoginWidget re-enables → emits <code>loginSuccessful</code> →
                 <strong>MainWindow::onLoginSuccessful</strong> stores token, calls

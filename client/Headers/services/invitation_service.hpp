@@ -8,7 +8,7 @@
 #include <QObject>
 #include <QString>
 
-#include "services/api_client.hpp"
+#include "services/request_service.hpp"
 #include "utils/message_json.hpp"
 
 class InvitationService : public QObject {
@@ -35,7 +35,7 @@ class InvitationService : public QObject {
   void sendInvitationAction(const QString& action, int64_t channelId,
                             const QString& token);
 
-  ApiClient api;
+  RequestService api;
 };
 
 #endif  // INVITATIONSERVICE_H

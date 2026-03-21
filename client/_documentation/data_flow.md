@@ -171,9 +171,9 @@ sequenceDiagram
 
   Client->>Client: LoginWidget::sendLoginRequest(username,password)
 
-  Client->>Client: AuthManager::login(username,password)
+  Client->>Client: UserController::login(username,password)
 
-  Client->>Server: ApiClient::postJson("login", {username,password})
+  Client->>Server: RequestService::postJsonWithoutAuth("login", {username,password})
 
   Server->>DB: Server auth controller queries DB (user_service / database_users)
 
@@ -181,7 +181,7 @@ sequenceDiagram
 
   Server-->>Client: HTTP 200 { success:true, token, id_user }
 
-  Client->>Client: AuthManager parses response, emits loginSucceeded(username,token)
+  Client->>Client: UserController parses response, emits loginSucceeded(username,token)
 
   Client->>Client: LoginWidget emits loginSuccessful(username,token)
 

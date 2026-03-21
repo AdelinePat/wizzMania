@@ -19,7 +19,7 @@ void InvitationService::cancelInvitation(int64_t channelId,
 
 void InvitationService::leaveChannel(int64_t channelId, const QString& token) {
   const QString path = QString("channels/%1/leave").arg(channelId);
-  QNetworkReply* reply = api.patchAuth(path, token);
+  QNetworkReply* reply = api.patchRequest(path, token);
 
   connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
     const int statusCode =
@@ -42,7 +42,7 @@ void InvitationService::sendInvitationAction(const QString& action,
                                              int64_t channelId,
                                              const QString& token) {
   const QString path = QString("invitations/%1/%2").arg(channelId).arg(action);
-  QNetworkReply* reply = api.patchAuth(path, token);
+  QNetworkReply* reply = api.patchRequest(path, token);
 
   connect(
       reply, &QNetworkReply::finished, this,

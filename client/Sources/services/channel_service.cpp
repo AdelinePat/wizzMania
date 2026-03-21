@@ -13,7 +13,7 @@ void ChannelService::createChannel(const QStringList& usernames,
 
   const QJsonObject payload = MessageJson::toJson(request);
 
-  QNetworkReply* reply = api.postJsonAuth("channels", payload, token);
+  QNetworkReply* reply = api.postJsonRequest("channels", payload, token);
 
   connect(reply, &QNetworkReply::finished, this, [this, reply]() {
     const int statusCode =
@@ -68,7 +68,8 @@ void ChannelService::fetchHistory(int64_t channelId, int64_t beforeIdMessage,
           .arg(beforeIdMessage)
           .arg(limit);
 
-  QNetworkReply* reply = api.getAuth(path, token);
+  // get from client side
+  QNetworkReply* reply = api.getRequest(path, token);
 
   connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
     const int statusCode =
@@ -108,8 +109,8 @@ void ChannelService::sendMessage(int64_t channelId, const QString& body,
   request.body = body.toStdString();
 
   QNetworkReply* reply =
-      api.postJsonAuth(QString("channels/%1/messages").arg(channelId),
-                       MessageJson::toJson(request), token);
+      api.postJsonRequest(QString("channels/%1/messages").arg(channelId),
+                          MessageJson::toJson(request), token);
 
   connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
     const int statusCode =
@@ -156,8 +157,8 @@ void ChannelService::markAsRead(int64_t channelId, int64_t lastMessageId,
   request.last_id_message = lastMessageId;
 
   QNetworkReply* reply =
-      api.patchJsonAuth(QString("channels/%1/read").arg(channelId),
-                        MessageJson::toJson(request), token);
+      api.patchJsonRequest(QString("channels/%1/read").arg(channelId),
+                           MessageJson::toJson(request), token);
 
   connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
     const int statusCode =
@@ -204,8 +205,8 @@ void ChannelService::sendWizz(int64_t channelId, const QString& token) {
   request.id_channel = channelId;
 
   QNetworkReply* reply =
-      api.postJsonAuth(QString("channels/%1/wizz").arg(channelId),
-                       MessageJson::toJson(request), token);
+      api.postJsonRequest(QString("channels/%1/wizz").arg(channelId),
+                          MessageJson::toJson(request), token);
 
   connect(reply, &QNetworkReply::finished, this, [this, reply, channelId]() {
     const int statusCode =

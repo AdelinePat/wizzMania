@@ -5,7 +5,7 @@
 LoginWidget::LoginWidget(QWidget* parent)
     : QWidget(parent),
       ui(new Ui::LoginWidget),
-      authManager(new AuthManager(this)) {
+      userController(new UserController(this)) {
   ui->setupUi(this);
 
   // Connect login button
@@ -22,13 +22,13 @@ LoginWidget::LoginWidget(QWidget* parent)
   connect(ui->usernameEdit, &QLineEdit::returnPressed,
           [this]() { ui->passwordEdit->setFocus(); });
 
-  connect(authManager, &AuthManager::loginSucceeded, this,
+  connect(userController, &UserController::loginSucceeded, this,
           [this](const QString& username, const QString& token) {
             ui->loginButton->setEnabled(true);
             setErrorText(QString());
             emit loginSuccessful(username, token);
           });
-  connect(authManager, &AuthManager::loginFailed, this,
+  connect(userController, &UserController::loginFailed, this,
           [this](const QString& message) {
             ui->loginButton->setEnabled(true);
             setErrorText(message);
@@ -63,7 +63,7 @@ void LoginWidget::sendLoginRequest(const QString& username,
   setErrorText(QString());
   // TODO CLEAN inputs
   // differencier email & username
-  authManager->login(username, password);
+  userController->login(username, password);
 }
 
 void LoginWidget::setErrorText(const QString& text) {

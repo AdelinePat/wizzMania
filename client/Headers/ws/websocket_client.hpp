@@ -10,8 +10,8 @@
 #include <QWebSocket>
 
 #include "message_structure.hpp"
-#include "services/server_config.hpp"
 #include "utils/message_json.hpp"
+#include "utils/path_utils.hpp"
 
 class WebSocketClient : public QObject {
   Q_OBJECT

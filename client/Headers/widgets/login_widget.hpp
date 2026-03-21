@@ -4,7 +4,7 @@
 #include <QString>
 #include <QWidget>
 
-#include "services/auth_manager.hpp"
+#include "services/user_controller.hpp"
 
 namespace Ui {
 class LoginWidget;
@@ -32,7 +32,7 @@ class LoginWidget : public QWidget {
   void setStatusText(const QString& text, bool isError);
 
   Ui::LoginWidget* ui;
-  AuthManager* authManager;
+  UserController* userController;
 };
 
 #endif  // LOGINWIDGET_H

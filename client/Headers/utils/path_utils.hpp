@@ -1,14 +1,14 @@
-#ifndef SERVERCONFIG_H
-#define SERVERCONFIG_H
+#ifndef PathUtils_H
+#define PathUtils_H
 
 #include <QString>
 #include <QUrl>
 
-class ServerConfig {
+class PathUtils {
  public:
   static QString baseUrl();
   static QString loginUrl();
   static QString webSocketUrl();
 };
 
-#endif  // SERVERCONFIG_H
+#endif  // PathUtils_H

@@ -9,7 +9,7 @@
 #include <QStringList>
 
 #include "message_structure.hpp"
-#include "services/api_client.hpp"
+#include "services/request_service.hpp"
 #include "utils/message_json.hpp"
 
 class ChannelService : public QObject {
@@ -42,7 +42,7 @@ class ChannelService : public QObject {
   void wizzFailed(int64_t channelId, const QString& message);
 
  private:
-  ApiClient api;
+  RequestService api;
 };
 
 #endif  // CHANNELSERVICE_H

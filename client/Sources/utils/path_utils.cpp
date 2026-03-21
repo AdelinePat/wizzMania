@@ -1,10 +1,10 @@
-#include "services/server_config.hpp"
+#include "utils/path_utils.hpp"
 
 #include <cstdlib>
 
 #include "utils.hpp"
 
-QString ServerConfig::baseUrl() {
+QString PathUtils::baseUrl() {
   // Get host from SERVER_HOST env var, default to localhost
   std::string host = Utils::get_env_var("SERVER_HOST", "localhost");
   QString serverHost = QString::fromStdString(host);
@@ -17,12 +17,12 @@ QString ServerConfig::baseUrl() {
   return scheme + "://" + serverHost + ":" + QString::number(port);
 }
 
-QString ServerConfig::loginUrl() {
+QString PathUtils::loginUrl() {
   const QString base = baseUrl();
   return base.endsWith('/') ? (base + "login") : (base + "/login");
 }
 
-QString ServerConfig::webSocketUrl() {
+QString PathUtils::webSocketUrl() {
   const QUrl base(baseUrl());
   QUrl wsUrl = base;
 

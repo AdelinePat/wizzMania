@@ -18,9 +18,9 @@
 #include "message_structure.hpp"
 #include "models/incoming_invitation_model.hpp"
 #include "models/outgoing_invitation_model.hpp"
-#include "services/auth_manager.hpp"
 #include "services/channel_service.hpp"
 #include "services/invitation_service.hpp"
+#include "services/user_controller.hpp"
 #include "widgets/channel_panel_widget.hpp"
 #include "widgets/create_channel_widget.hpp"
 #include "widgets/login_widget.hpp"
@@ -99,7 +99,7 @@ class MainWindow : public QMainWindow {
   UserHomeWidget* userHomeWidget;
   IncomingInvitationModel* incomingInvitationModel;
   OutgoingInvitationModel* outgoingInvitationModel;
-  AuthManager* authManager;
+  UserController* userController;
 
   QString currentUser;
   QString authToken;

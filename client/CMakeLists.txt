@@ -34,9 +34,9 @@ find_package(Qt6 REQUIRED COMPONENTS
 set(CLIENT_SOURCES
     Sources/client.cpp
     Sources/mainwindow.cpp
-    Sources/services/api_client.cpp
-    Sources/services/auth_manager.cpp
-    Sources/services/server_config.cpp
+    Sources/services/request_service.cpp
+    Sources/services/user_controller.cpp
+    Sources/utils/path_utils.cpp
     Sources/services/channel_service.cpp 
     Sources/services/invitation_service.cpp
     Sources/ws/websocket_client.cpp
@@ -62,9 +62,9 @@ set(CLIENT_SOURCES
 # Collect header files from Headers/ directory
 set(CLIENT_HEADERS
     Headers/mainwindow.hpp
-    Headers/services/api_client.hpp
-    Headers/services/auth_manager.hpp
-    Headers/services/server_config.hpp
+    Headers/services/request_service.hpp
+    Headers/services/user_controller.hpp
+    Headers/utils/path_utils.hpp
     Headers/services/channel_service.hpp  
     Headers/services/invitation_service.hpp
     Headers/ws/websocket_client.hpp

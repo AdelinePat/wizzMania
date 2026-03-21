@@ -31,19 +31,19 @@ main() → crée QApplication → affiche MainWindow → lance event loop
 
 **Couche métier** : logique réutilisable, pas d'UI
 
-#### **`AuthManager`**
+#### **`UserController`**
 - **Rôle** : Gère le login HTTP
-- **Utilise** : `ApiClient` pour faire la requête `POST /login`
+- **Utilise** : `RequestService` pour faire la requête `POST /login`
 - **Émet** : `loginSucceeded(username, token)` ou `loginFailed()`
 - **Quand** : Appelé quand l'utilisateur clique "Login" dans `LoginWidget`
 
-#### **`ApiClient`**
+#### **`RequestService`**
 - **Rôle** : Wrapper HTTP bas niveau (GET/POST avec QNetworkAccessManager)
-- **Quand** : Utilisé par `AuthManager` pour les requêtes REST
+- **Quand** : Utilisé par `UserController` pour les requêtes REST
 
-#### **`ServerConfig`**
+#### **`PathUtils`**
 - **Rôle** : Config centralisée (URL serveur depuis `settings.ini`)
-- **Quand** : Lu au démarrage par `WebSocketClient` et `ApiClient`
+- **Quand** : Lu au démarrage par `WebSocketClient` et `RequestService`
 
 ---
 
@@ -132,8 +132,8 @@ main()
 ### **2️⃣ Login**
 ```
 User entre credentials → LoginWidget::onLoginClicked()
-  → AuthManager::login()
-    → ApiClient::post("/login")
+  → UserController::login()
+    → RequestService::post("/login")
       ← Serveur répond {token, username, id_user}
     → emit loginSucceeded(username, token)
   → MainWindow::onLoginSuccessful()
@@ -196,7 +196,7 @@ User tape message + Enter → RightPanelWidget emit sendRequested(text)
 
 **Avantages :**
 - **Maintenabilité** : bug dans le parsing → `message_json.cpp` uniquement
-- **Testabilité** : tester `AuthManager` sans lancer toute l'app
+- **Testabilité** : tester `UserController` sans lancer toute l'app
 - **Réutilisabilité** : `MessageItemWidget` peut servir ailleurs
 - **Clarté** : chacun sa job, évite le "god object"
 
