@@ -184,6 +184,7 @@ If anything is missing, you have two options:
 ```bash
 sudo apt install qt6-base-dev qt6-base-dev-tools
 sudo apt install cmake
+sudo apt install qt6-websockets-dev
 ```
 
 **Option B — via the Qt official installer:**
@@ -232,6 +233,7 @@ Install if needed:
 ```bash
 sudo apt install qt6-base-dev qt6-base-dev-tools
 sudo apt install cmake
+sudo apt install qt6-websockets-dev
 ```
 
 Make the scripts executable (only needed once):
