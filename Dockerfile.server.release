@@ -38,10 +38,13 @@ RUN git clone --depth 1 --branch v0.7.0 \
     && rm -rf /tmp/jwt-cpp
 
 # Crow (header-only)
+# CROW_USE_BOOST=ON is required — the server uses CROW_USE_BOOST, which means
+# Crow must use Boost.Asio (already installed above) instead of standalone Asio.
 RUN git clone --depth 1 --branch v1.3.0 \
     https://github.com/CrowCpp/Crow.git /tmp/crow \
     && cmake -S /tmp/crow -B /tmp/crow/build \
        -DCROW_BUILD_EXAMPLES=OFF -DCROW_BUILD_TESTS=OFF \
+       -DCROW_USE_BOOST=ON \
     && cmake --install /tmp/crow/build \
     && rm -rf /tmp/crow
 
@@ -73,9 +76,8 @@ FROM ubuntu:22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# libmysqlcppconn7v5 is the correct runtime package name on Ubuntu 22.04.
-# It is installed automatically as a dependency of libmysqlcppconn-dev in the
-# builder stage — that is how we confirmed the actual package name.
+# libmysqlcppconn7v5 is the correct runtime package name on Ubuntu 22.04
+# (confirmed from the builder stage install logs).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     libboost-system1.74.0 \
