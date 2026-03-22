@@ -53,8 +53,8 @@
 
 ## Architecture
 
-![Architecture diagram](docs/server_architecture.png)
-
+![Serveur architecture diagram](docs/server_architecture.png)
+![Client architecture diagram](docs/client_architecture.png)
 The Qt client runs on the **host machine**. The server and the database each run in their own **Docker container**, on the same Docker network — so the server reaches the DB using the container name as hostname, no IP needed.
 
 The client communicates with the server over two channels:
@@ -284,16 +284,16 @@ QT_LOGGING_RULES="*=false" ./wizzmania-client
 
 ### Testing the API without the Qt client
 
-A lightweight web client is available in `tests/draft/` for quickly testing HTTP endpoints and WebSocket behaviour — useful if you don't want to set up Qt just to check the API.
+A lightweight web client is available in `tests/web_client/` for quickly testing HTTP endpoints and WebSocket behaviour — useful if you don't want to set up Qt just to check the API.
 
-1. Create a `secret.js` file in `tests/draft/` with the same values as your `.env`:
+1. Create a `secret.js` file in `tests/web_client/` with the same values as your `.env`:
 ```javascript
 export const SERVER_IP = "localhost";
 export const SERVER_PORT = 8888;
 ```
 2. Start a local HTTP server from that folder:
 ```bash
-cd tests/draft
+cd tests/web_client
 python3 -m http.server 8880
 ```
 3. Open `http://localhost:8880` in your browser

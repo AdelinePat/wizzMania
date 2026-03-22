@@ -1,0 +1,284 @@
+name: Release
+
+# ─────────────────────────────────────────────
+# Trigger: push a vX.Y.Z tag (from main by convention).
+#   git tag v1.0.0
+#   git push origin v1.0.0
+# ─────────────────────────────────────────────
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write   # create GitHub Release + upload assets
+  packages: write   # push to ghcr.io
+
+jobs:
+  # ============================================================
+  # 1. Qt Client — Windows (.zip, self-contained)
+  #    windeployqt runs as a CMake post-build step (CMakeLists.txt)
+  #    so we do not call it manually here.
+  # ============================================================
+  build-client-windows:
+    name: Qt Client — Windows
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.2'
+          host: 'windows'
+          target: 'desktop'
+          arch: 'win64_mingw'
+          modules: 'qtwebsockets'
+          cache: true
+
+      # jurplel adds Qt bin dir (windeployqt, qmake...) to PATH automatically.
+      # We also need the MinGW toolchain (gcc, g++, mingw32-make) in PATH.
+      # QT_ROOT_DIR is e.g. C:\Qt\6.10.2\mingw_64 — tools sit one level up.
+      - name: Add MinGW to PATH
+        shell: pwsh
+        run: |
+          $qtParent = Split-Path "$env:QT_ROOT_DIR" -Parent
+          $qtRoot   = Split-Path $qtParent -Parent
+          $mingw = Get-ChildItem "$qtRoot\Tools" -Filter "mingw*_64" |
+                     Sort-Object Name -Descending |
+                     Select-Object -First 1
+          if (-not $mingw) {
+            Write-Error "MinGW toolchain not found under $qtRoot\Tools"
+            exit 1
+          }
+          $mingwBin = Join-Path $mingw.FullName "bin"
+          Write-Host "MinGW bin: $mingwBin"
+          echo "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Configure and build
+        shell: pwsh
+        run: |
+          cmake -S client -B client/build `
+            -G "MinGW Makefiles" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          cmake --build client/build --config Release --parallel 4
+
+      - name: Zip build output
+        shell: pwsh
+        run: |
+          $dest = "dist-windows"
+          New-Item -ItemType Directory -Force -Path $dest | Out-Null
+          Copy-Item -Path "client\build\*" -Destination $dest -Recurse -Force
+          Compress-Archive -Path "$dest\*" -DestinationPath "WizzMania-client-windows-${{ github.ref_name }}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-windows
+          path: WizzMania-client-windows-${{ github.ref_name }}.zip
+
+
+  # ============================================================
+  # 2. Qt Client — Linux (.AppImage, self-contained)
+  # ============================================================
+  build-client-linux:
+    name: Qt Client — Linux
+    runs-on: ubuntu-22.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            cmake build-essential \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libfuse2
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.10.2'
+          host: 'linux'
+          target: 'desktop'
+          modules: 'qtwebsockets'
+          cache: true
+
+      - name: Configure and build
+        run: |
+          cmake -S client -B client/build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          cmake --build client/build --parallel $(nproc)
+
+      - name: Prepare AppDir
+        run: |
+          mkdir -p AppDir/usr/bin
+          mkdir -p AppDir/usr/share/applications
+          mkdir -p AppDir/usr/share/icons/hicolor/256x256/apps
+          cp client/build/wizzmania-client AppDir/usr/bin/
+          ICON_SRC=""
+          for candidate in "assets/icon.png" "client/assets/icon.png" "docs/icon.png"; do
+            [ -f "$candidate" ] && ICON_SRC="$candidate" && break
+          done
+          if [ -n "$ICON_SRC" ]; then
+            cp "$ICON_SRC" AppDir/usr/share/icons/hicolor/256x256/apps/wizzmania.png
+          else
+            printf '\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82' \
+              > AppDir/usr/share/icons/hicolor/256x256/apps/wizzmania.png
+          fi
+
+      # .desktop must have no leading whitespace on any line.
+      # Written via python3 to avoid heredoc indentation issues inside YAML.
+      - name: Write .desktop file
+        run: |
+          python3 -c "
+          lines = [
+            '[Desktop Entry]',
+            'Name=WizzMania',
+            'Exec=wizzmania-client',
+            'Icon=wizzmania',
+            'Type=Application',
+            'Categories=Network;Chat;',
+          ]
+          with open('AppDir/usr/share/applications/wizzmania.desktop', 'w') as f:
+              f.write('\n'.join(lines) + '\n')
+          "
+
+      - name: Download linuxdeploy and Qt plugin
+        run: |
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Build AppImage
+        env:
+          QMAKE: ${{ env.QT_ROOT_DIR }}/bin/qmake6
+          OUTPUT: WizzMania-client-linux-${{ github.ref_name }}.AppImage
+        run: |
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir AppDir \
+            --plugin qt \
+            --output appimage
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: client-linux
+          path: WizzMania-client-linux-${{ github.ref_name }}.AppImage
+
+
+  # ============================================================
+  # 3. Server — build Docker image, push to ghcr.io
+  # ============================================================
+  build-server-docker:
+    name: Server — Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/wizzmania-server
+          tags: |
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=latest
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.server.release
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create server release bundle
+        run: |
+          mkdir server-bundle
+          cp docker-compose.release.yml server-bundle/docker-compose.yml
+          cp init.sql                   server-bundle/init.sql
+          cp .env.template              server-bundle/.env.template
+          zip -rj "WizzMania-server-${{ github.ref_name }}.zip" server-bundle/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-release
+          path: WizzMania-server-${{ github.ref_name }}.zip
+
+
+  # ============================================================
+  # 4. Assemble all artifacts into a GitHub Release
+  # ============================================================
+  create-release:
+    name: Create GitHub Release
+    needs: [build-client-windows, build-client-linux, build-server-docker]
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            WizzMania-client-windows-*.zip
+            WizzMania-client-linux-*.AppImage
+            WizzMania-server-*.zip
+          body: |
+            ## 💬 Client
+
+            No installation required — Qt and all dependencies are bundled.
+
+            | Platform | File | How to run |
+            |---|---|---|
+            | Windows | `WizzMania-client-windows-*.zip` | Unzip anywhere, double-click `wizzmania-client.exe` |
+            | Linux | `WizzMania-client-linux-*.AppImage` | `chmod +x WizzMania-client-linux-*.AppImage` then run it |
+
+            On first launch, enter the IP and port of the server you want to connect to.
+
+            ---
+
+            ## 🖥️ Server
+
+            Requires **Docker + Docker Compose** — nothing else.
+
+            **1. Download and unzip** `WizzMania-server-*.zip`
+
+            **2. Create your env file:**
+            ```
+            cp .env.template .env
+            ```
+            Open `.env` and fill in all values — passwords, `SECRET_KEY`, and ports.
+            See the [full variable reference in the README](https://github.com/AdelinePat/WizzMania#environment-setup).
+
+            **3. Start:**
+            ```
+            docker compose up -d
+            ```
+
+            The database initialises automatically from `init.sql` on first start.
+            The server will be available on the port you set as `SERVER_PORT` (default: `8888`).
+
+            **Troubleshooting:**
+            - Server won't start → wait ~30s for the DB health check, then check `docker compose logs -f mysql-db`
+            - Port conflict → change `DB_PORT` or `SERVER_PORT` in `.env`
+            - Fresh start → `docker compose down -v && docker compose up -d`
+            - Full Docker command reference → [`docs/docker_command_sheets.md`](https://github.com/AdelinePat/WizzMania/blob/main/docs/docker_command_sheets.md)

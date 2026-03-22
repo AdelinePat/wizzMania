@@ -322,42 +322,19 @@ int main() {
         }
 
         // ===== ROUTE AUTHENTICATED MESSAGES =====
-        int64_t id_user = id_user_opt.value();
-        std::cout << "[WS] User " << id_user << " - type: " << type_int << "\n";
+        // int64_t id_user = id_user_opt.value();
+        // std::cout << "[WS] User " << id_user << " - type: " << type_int << "\n";
 
-        switch (msg_type) {
-            // case WizzMania::MessageType::TYPING_START:
-            // case WizzMania::MessageType::TYPING_STOP: {
-            //   auto req =
-            //   JsonHelpers::ClientSendHelpers::parse_typing(json_msg); if
-            //   (!req.has_value()) {
-            //     ServerSend::ErrorResponse err;
-            //     err.type = WizzMania::MessageType::ERROR;
-            //     err.message = "Invalid TYPING format";
-            //     err.error_code = "INVALID_FORMAT";
-            //     conn.send_text(JsonHelpers::ServerSendHelpers::to_json(err).dump());
-            //     return;
-            //   }
-
-            //   std::cout << "[TYPING] User " << id_user << " in channel "
-            //             << req->id_channel << ": "
-            //             << (req->is_typing ? "start" : "stop") << "\n";
-
-            //   // TODO: Broadcast typing
-
-            //   break;
-            // }
-
-
-          default:
-            std::cout << "[WS] Unhandled type: " << type_int << "\n";
-            ServerSend::ErrorResponse err;
-            err.type = WizzMania::MessageType::ERROR;
-            err.message = "Message type not implemented SERVER SIDE!";
-            err.error_code = "NOT_IMPLEMENTED";
-            conn.send_text(JsonHelpers::ServerSendHelpers::to_json(err).dump());
-            break;
-        }
+        // switch (msg_type) {
+        //   default:
+        //     std::cout << "[WS] Unhandled type: " << type_int << "\n";
+        //     ServerSend::ErrorResponse err;
+        //     err.type = WizzMania::MessageType::ERROR;
+        //     err.message = "Message type not implemented SERVER SIDE!";
+        //     err.error_code = "NOT_IMPLEMENTED";
+        //     conn.send_text(JsonHelpers::ServerSendHelpers::to_json(err).dump());
+        //     break;
+        // }
       });
 
   std::cout << "[INFO] Server listening on port " << port << "\n";
