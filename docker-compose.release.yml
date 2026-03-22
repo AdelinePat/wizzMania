@@ -32,7 +32,7 @@ services:
       start_period: 30s
 
   server:
-    image: ghcr.io/AdelinePat/wizzmania-server:latest
+    image: ghcr.io/adelinepat/wizzmania-server:latest
     container_name: wizzmania-server
     environment:
       DB_HOST: mysql-db
