@@ -50,8 +50,6 @@ COPY server/        ./server/
 COPY common/        ./common/
 # Mirror the dev docker-compose.yml volume mount:
 #   source: ./tests/server  →  target: /app/tests
-# The server's CMakeLists.txt references tests as ../tests/ (relative to /app/server)
-# which resolves to /app/tests — so only tests/server/ goes here, not all of tests/
 COPY tests/server/  ./tests/
 
 # Run tests first — abort the image build if any fail
@@ -75,9 +73,13 @@ FROM ubuntu:22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# FIX: libmysqlcppconn9v5 does not exist in Ubuntu 22.04 repositories.
+# The correct runtime package name is libmysqlcppconn9.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libssl3 libboost-system1.74.0 \
-    libmysqlclient21 libmysqlcppconn9v5 \
+    libssl3 \
+    libboost-system1.74.0 \
+    libmysqlclient21 \
+    libmysqlcppconn9 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 

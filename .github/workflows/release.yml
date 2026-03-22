@@ -27,19 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # FIX: install MinGW via Chocolatey instead of relying on jurplel's tools
-      # parameter. Chocolatey is pre-installed on all GitHub Windows runners and
-      # puts MinGW at a known fixed path: C:\ProgramData\mingw64\mingw64\bin
-      - name: Install MinGW
-        shell: pwsh
-        run: |
-          choco install mingw --no-progress -y
-          # Chocolatey installs mingw to C:\ProgramData\mingw64\mingw64\bin
-          # Add it to PATH for all subsequent steps
-          echo "C:\ProgramData\mingw64\mingw64\bin" | `
-            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
-      - name: Install Qt
+      - name: Install Qt + MinGW toolchain
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.10.2'
@@ -47,14 +35,36 @@ jobs:
           target: 'desktop'
           arch: 'win64_mingw'
           modules: 'qtwebsockets'
+          # tools_mingw1310 installs MinGW 13.1.0 alongside Qt,
+          # the exact version Qt 6.10.2 was compiled with.
+          tools: 'tools_mingw1310'
           cache: true
 
-      - name: Verify tools
+      # jurplel installs tools to {Qt base}/Tools/mingw1310_64/
+      # QT_ROOT_DIR is e.g. D:\a\wizzMania\Qt\6.10.2\mingw_64
+      # So Qt base = two levels up = D:\a\wizzMania\Qt
+      - name: Add MinGW to PATH
         shell: pwsh
         run: |
-          Write-Host "gcc: $(gcc --version | Select-Object -First 1)"
-          Write-Host "g++: $(g++ --version | Select-Object -First 1)"
-          Write-Host "mingw32-make: $(mingw32-make --version | Select-Object -First 1)"
+          $qtBase = Split-Path (Split-Path "$env:QT_ROOT_DIR" -Parent) -Parent
+          $mingwBin = "$qtBase\Tools\mingw1310_64\bin"
+          Write-Host "Qt base: $qtBase"
+          Write-Host "Expected MinGW bin: $mingwBin"
+          if (-not (Test-Path $mingwBin)) {
+            Write-Host "--- Contents of $qtBase ---"
+            Get-ChildItem $qtBase -Depth 2 | Select-Object FullName
+            Write-Error "MinGW not found at $mingwBin"
+            exit 1
+          }
+          Write-Host "Found MinGW — adding to PATH"
+          echo "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Verify compiler
+        shell: pwsh
+        run: |
+          gcc --version
+          g++ --version
+          mingw32-make --version
 
       - name: Configure and build
         shell: pwsh
@@ -211,9 +221,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # FIX: GHA cache is unreliable with some buildx configurations.
-          # Removed cache-from/cache-to — build is slower but always works.
-          # Can be re-added later if needed once the pipeline is stable.
 
       - name: Create server release bundle
         run: |
