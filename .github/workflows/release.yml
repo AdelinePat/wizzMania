@@ -247,6 +247,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          # Explicitly list only our artifacts — avoids downloading the internal
+          # Docker buildx artifact which is created automatically and fails to extract.
+          pattern: '{client-windows,client-linux,server-release}'
           merge-multiple: true
 
       - name: Create release
