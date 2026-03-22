@@ -1,0 +1,69 @@
+#include "widgets/channel_row_widget.hpp"
+
+ChannelRowWidget::ChannelRowWidget(int64_t channelId, const QString& title,
+                                   const QString& preview, int unreadCount,
+                                   bool isGroup, QWidget* parent)
+    : QWidget(parent), channelId(channelId), previewText(preview) {
+  QHBoxLayout* rootLayout = new QHBoxLayout(this);
+  rootLayout->setContentsMargins(4, 4, 4, 4);
+  rootLayout->setSpacing(6);
+
+  QLabel* iconLabel = new QLabel(isGroup ? "⊞" : "◈", this);
+  iconLabel->setAlignment(Qt::AlignCenter);
+  iconLabel->setFixedSize(26, 26);
+  iconLabel->setObjectName("channelIconLabel");
+
+  QWidget* textBlock = new QWidget(this);
+  textBlock->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  QVBoxLayout* textLayout = new QVBoxLayout(textBlock);
+  textLayout->setContentsMargins(0, 0, 0, 0);
+  textLayout->setSpacing(2);
+
+  QLabel* titleLabel = new QLabel(title, textBlock);
+  titleLabel->setObjectName("channelTitleLabel");
+
+  previewLabel = new QLabel(previewText, textBlock);
+  previewLabel->setObjectName("channelPreviewLabel");
+  previewLabel->setWordWrap(false);
+  previewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+  previewLabel->setMinimumWidth(0);
+  previewLabel->setToolTip(previewText);
+
+  textLayout->addWidget(titleLabel);
+  textLayout->addWidget(previewLabel);
+
+  rootLayout->addWidget(iconLabel);
+  rootLayout->addWidget(textBlock, 1);
+
+  if (unreadCount > 0) {
+    QLabel* unreadLabel = new QLabel(QString::number(unreadCount), this);
+    unreadLabel->setAlignment(Qt::AlignCenter);
+    unreadLabel->setMinimumWidth(18);
+    unreadLabel->setObjectName("channelUnreadLabel");
+    rootLayout->addWidget(unreadLabel, 0, Qt::AlignRight | Qt::AlignVCenter);
+  }
+
+  updatePreviewElision();
+}
+
+void ChannelRowWidget::resizeEvent(QResizeEvent* event) {
+  QWidget::resizeEvent(event);
+  updatePreviewElision();
+}
+
+void ChannelRowWidget::updatePreviewElision() {
+  if (!previewLabel) {
+    return;
+  }
+
+  const int availableWidth = previewLabel->width();
+  if (availableWidth <= 0) {
+    previewLabel->setText(previewText);
+    return;
+  }
+
+  const QFontMetrics metrics(previewLabel->font());
+  const QString elided =
+      metrics.elidedText(previewText, Qt::ElideRight, availableWidth);
+  previewLabel->setText(elided);
+}

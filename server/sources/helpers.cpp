@@ -1,0 +1,71 @@
+#include "helpers.hpp"
+
+ServerSend::Message Structure::create_message_struct(
+    int64_t id_message, int64_t id_user, const std::string& body,
+    const std::string& timestamp) {
+  ServerSend::Message message;
+  message.id_message = id_message;
+  message.id_sender = id_user;
+  message.body = body;
+  message.timestamp = timestamp;
+  message.is_system = id_user == 1;
+  return message;
+}
+
+ServerSend::ChannelInvitation Structure::create_invitation_struct(
+    int64_t id_channel, int64_t id_inviter,
+    const std::vector<ServerSend::Contact>& other_participants,
+    std::string& title) {
+  ServerSend::ChannelInvitation invitation;
+  invitation.type = WizzMania::MessageType::CHANNEL_INVITATION;
+  invitation.id_channel = id_channel;
+  invitation.id_inviter = id_inviter;
+  invitation.other_participant_ids = other_participants;
+  invitation.title = title;
+  return invitation;
+}
+
+ServerSend::ChannelInfo Structure::create_empty_channel_info_struct(
+    int64_t id_channel, int64_t created_by,
+    const std::vector<ServerSend::Contact>& other_participants,
+    std::string& title) {
+  ServerSend::ChannelInfo info;
+  info.id_channel = id_channel;
+  info.title = title;
+  info.participants = other_participants;
+  info.is_group = (info.participants.size() + 1) > 2;
+  info.created_by = created_by;
+  return info;
+}
+
+ServerSend::ChannelHistoryResponse Structure::create_history_response_struct(
+    int64_t id_channel, std::vector<ServerSend::Message>& messages,
+    size_t limit) {
+  ServerSend::ChannelHistoryResponse res;
+  res.type = WizzMania::MessageType::CHANNEL_HISTORY;
+  res.id_channel = id_channel;
+  res.messages = messages;
+  res.has_more = messages.size() == limit;
+
+  // conn.send_text(JsonHelpers::ServerSendHelpers::to_json(res).dump());
+  return res;
+}
+
+// ── PasswordHelper
+// ────────────────────────────────────────────────────────────
+
+std::string PasswordHelper::hash_password(const std::string& password) {
+  // Workfactor 12 is the bcrypt cost — higher = slower = harder to brute force.
+  // 12 is the current industry standard recommendation.
+  return BCrypt::generateHash(password, 12);
+  /*
+  The workfactor 12 means bcrypt runs 2^12 = 4096 iterations. On modern hardware
+  that's ~200-300ms per hash — fast enough for login, slow enough to make brute
+  force impractical.
+   */
+}
+
+bool PasswordHelper::verify_password(const std::string& password,
+                                     const std::string& hash) {
+  return BCrypt::validatePassword(password, hash);
+}

@@ -39,3 +39,46 @@
 
 # debug information files
 *.dwo
+
+# Environnement
+.env
+queries.sql
+settings.ini
+
+# Build directories
+build/
+build-*/
+dist-*/
+cmake-build-*/
+
+# Qt Creator files
+*.pro.user
+*.pro.user.*
+*.autosave
+*.qmlc
+*.jsc
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Qt
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+*.qm
+.qmake.stash
+
+# handle CRLF vs LF issues
+.gitattributes
+secret.js
+QT_LOGGING_RULES=*
+QT_LOGGING_RULES=*
+QT_LOGGING_RULES*

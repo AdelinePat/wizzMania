@@ -1,0 +1,63 @@
+#include "invitation_service.hpp"
+
+void InvitationService::accept_invitation(int64_t id_user, int64_t id_channel,
+                                          std::string& responded_at) {
+  db.accept_invitation(id_user, id_channel, responded_at);
+}
+
+void InvitationService::reject_invitation(int64_t id_user, int64_t id_channel,
+                                          std::string& responded_at) {
+  return db.reject_invitation(id_user, id_channel, responded_at);
+}
+
+void InvitationService::cancel_invitation(int64_t id_user, int64_t id_channel,
+                                          std::string& responded_at) {
+  return db.cancel_invitation(id_user, id_channel, responded_at);
+}
+
+std::vector<ServerSend::ChannelInvitation>
+InvitationService::get_all_user_incoming_invitations(int64_t id_user) {
+  // std::lock_guard<std::recursive_mutex> lock(db.db_mutex);
+
+  std::vector<ServerSend::ChannelInvitation> channels_invitations =
+      db.get_invitations_base(id_user);
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
+      db.get_participants_and_channel(id_user, ChannelStatus::PENDING,
+                                      ChannelStatus::ACCEPTED);
+
+  for (ServerSend::ChannelInvitation& channel : channels_invitations) {
+    auto it_participant = channel_participants.find(channel.id_channel);
+    if (it_participant != channel_participants.end()) {
+      channel.other_participant_ids = it_participant->second;
+    } else {
+      std::cerr << "[DB] Warning: no participants found for channel "
+                << channel.id_channel << "\n";
+    }
+  }
+
+  return channels_invitations;
+}
+
+std::vector<ServerSend::ChannelInfo>
+InvitationService::get_all_outgoing_invitations(int64_t id_user) {
+  // std::lock_guard<std::recursive_mutex> lock(db.db_mutex);
+
+  std::vector<ServerSend::ChannelInfo> channels_info =
+      db.get_outgoing_invitations_base(id_user, ChannelStatus::ACCEPTED);
+  std::map<int64_t, std::vector<ServerSend::Contact>> channel_participants =
+      db.get_participants_and_channel(id_user, ChannelStatus::ACCEPTED,
+                                      ChannelStatus::PENDING);
+
+  for (ServerSend::ChannelInfo& channel : channels_info) {
+    auto it_participant = channel_participants.find(channel.id_channel);
+    if (it_participant != channel_participants.end()) {
+      channel.participants = it_participant->second;
+      channel.is_group =
+          db.get_number_invited_users_in_channel(channel.id_channel) > 2;
+    } else {
+      std::cerr << "[DB] Warning: no participants found for channel "
+                << channel.id_channel << "\n";
+    }
+  }
+  return channels_info;
+}

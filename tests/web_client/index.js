@@ -1,0 +1,1267 @@
+import { SERVER_IP, SERVER_PORT } from "./secret.js";
+
+// ==================== GLOBAL STATE ====================
+let token = null;
+let userId = null;
+let username = null;
+let ws = null;
+let activeChannelId = null;
+
+const userCache = new Map();      // id_user -> username
+const channelCache = new Map();   // id_channel -> ChannelInfo
+const outgoingCache = new Map();  // id_channel -> ChannelInfo (pending sent)
+
+const SERVER_URL = `http://${SERVER_IP ?? "127.0.0.1"}:${SERVER_PORT ?? "8888"}`;
+const WS_URL = `ws://${SERVER_IP ?? "127.0.0.1"}:${SERVER_PORT ?? "8888"}/ws`;
+
+let intentionalLogout = false;
+
+// ==================== MESSAGE TYPES ====================
+const MessageType = {
+  WS_AUTH: 0, LOGOUT: 1,
+  SEND_MESSAGE: 10, CREATE_CHANNEL: 11, ACCEPT_INVITATION: 12, REJECT_INVITATION: 13,
+  LEAVE_CHANNEL: 14, UPDATE_CHANNEL_TITLE: 15, MARK_AS_READ: 16,
+  CHANNEL_OPEN: 20, CANCEL_INVITATION: 22,
+  WS_AUTH_SUCCESS: 100, NEW_MESSAGE: 101, CHANNEL_CREATED: 102, CHANNEL_INVITATION: 103,
+  INVITATION_ACCEPTED: 104, INVITATION_REJECTED: 105, USER_JOINED: 106, USER_LEFT: 107,
+  TITLE_UPDATED: 110, USER_STATUS: 111, USER_TYPING: 112,
+  INITIAL_DATA: 113, CHANNEL_HISTORY: 114, ERROR: 255
+};
+
+// ==================== LOGIN ====================
+async function login() {
+  const usernameInput = document.getElementById("username").value.trim();
+  const passwordInput = document.getElementById("password").value;
+  const errorDiv = document.getElementById("login-error");
+  const loginBtn = document.getElementById("loginBtn");
+
+  if (!usernameInput || !passwordInput) { errorDiv.textContent = "Please fill in all fields."; return; }
+
+  loginBtn.disabled = true;
+  loginBtn.textContent = "Connecting...";
+  errorDiv.textContent = "";
+
+  try {
+    const response = await fetch(`${SERVER_URL}/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: usernameInput, password: passwordInput })
+    });
+    const data = await response.json();
+    if (data.success) {
+      token = data.token;
+      userId = data.id_user;
+      username = data.username;
+      showApp();
+      connectWebSocket();
+    } else {
+      errorDiv.textContent = data.message ?? "Login failed.";
+      loginBtn.disabled = false;
+      loginBtn.textContent = "Connect";
+    }
+  } catch (err) {
+    errorDiv.textContent = `Connection error: ${err.message}`;
+    loginBtn.disabled = false;
+    loginBtn.textContent = "Connect";
+  }
+}
+
+// ==================== REGISTER ====================
+async function register() {
+  const regUsername = document.getElementById("reg-username").value.trim();
+  const regEmail = document.getElementById("reg-email").value.trim();
+  const regPassword = document.getElementById("reg-password").value;
+  const errorDiv = document.getElementById("register-error");
+  const registerBtn = document.getElementById("registerBtn");
+
+  if (!regUsername || !regEmail || !regPassword) {
+    errorDiv.textContent = "Please fill in all fields.";
+    return;
+  }
+
+  registerBtn.disabled = true;
+  registerBtn.textContent = "Creating...";
+  errorDiv.textContent = "";
+
+  try {
+    const response = await fetch(`${SERVER_URL}/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: regUsername, email: regEmail, password: regPassword })
+    });
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      // Switch back to login with a success hint
+      showLoginForm();
+      document.getElementById("username").value = regUsername;
+      document.getElementById("login-error").style.color = "var(--success)";
+      document.getElementById("login-error").textContent = "Account created! You can now sign in.";
+    } else {
+      errorDiv.textContent = data.message ?? "Registration failed.";
+    }
+  } catch (err) {
+    errorDiv.textContent = `Connection error: ${err.message}`;
+  } finally {
+    registerBtn.disabled = false;
+    registerBtn.textContent = "Create account";
+  }
+}
+
+// ==================== DELETE ACCOUNT ====================
+async function deleteAccount() {
+  const errorDiv = document.getElementById("deleteAccountError");
+  const confirmBtn = document.getElementById("confirmDeleteAccountBtn");
+
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = "Deleting...";
+  errorDiv.textContent = "";
+
+  try {
+    const response = await fetch(`${SERVER_URL}/account`, {
+      method: "DELETE",
+      headers: { "X-Auth-Token": token }
+    });
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      // Server will close our WS connection — treat as intentional
+      intentionalLogout = true;
+      closeDeleteAccountModal();
+      resetToLogin();
+    } else {
+      errorDiv.textContent = data.message ?? "Failed to delete account.";
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = "Delete forever";
+    }
+  } catch (err) {
+    errorDiv.textContent = `Connection error: ${err.message}`;
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = "Delete forever";
+  }
+}
+
+// ==================== SHOW/HIDE FORMS ====================
+function showLoginForm() {
+  document.getElementById("login-form").style.display = "";
+  document.getElementById("register-form").style.display = "none";
+  document.getElementById("login-error").style.color = "";
+  document.getElementById("login-error").textContent = "";
+}
+
+function showRegisterForm() {
+  document.getElementById("login-form").style.display = "none";
+  document.getElementById("register-form").style.display = "";
+  document.getElementById("register-error").textContent = "";
+}
+
+// ==================== SHOW APP =====================
+function showApp() {
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-screen").classList.add("visible");
+
+  const initials = username?.slice(0, 2).toUpperCase() ?? "??";
+  document.getElementById("user-avatar-initials").textContent = initials;
+  document.getElementById("sidebar-username").textContent = username;
+}
+
+function resetToLogin() {
+  // Purge state
+  token = null;
+  userId = null;
+  username = null;
+  activeChannelId = null;
+  channelCache.clear();
+  outgoingCache.clear();
+  userCache.clear();
+
+  if (ws) { ws.close(); ws = null; }
+
+  document.getElementById("app-screen").classList.remove("visible");
+  document.getElementById("login-screen").style.display = "";
+  document.getElementById("username").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("loginBtn").disabled = false;
+  document.getElementById("loginBtn").textContent = "Connect";
+  showLoginForm();
+  intentionalLogout = false;
+}
+
+// ==================== HOME / CHAT NAVIGATION ====================
+function showHome() {
+  activeChannelId = null;
+
+  document.getElementById("home-view").classList.remove("hidden");
+  document.getElementById("chat-view").classList.add("hidden");
+  document.getElementById("leaveChannelBtn").classList.add("hidden");
+
+  document.getElementById("chat-icon").textContent = "⌂";
+  document.getElementById("chat-title").textContent = "Home";
+  document.getElementById("chat-sub").textContent = "";
+
+  document.querySelectorAll("#channels-list .sidebar-item").forEach(el => el.classList.remove("active"));
+  document.getElementById("user-pill").classList.add("active");
+}
+
+function showChat(channelId) {
+  document.getElementById("home-view").classList.add("hidden");
+  document.getElementById("chat-view").classList.remove("hidden");
+  document.getElementById("user-pill").classList.remove("active");
+  document.getElementById("leaveChannelBtn").classList.remove("hidden");
+}
+
+// ==================== DM TITLE RESOLUTION ====================
+function getChannelDisplayTitle(ch) {
+  if (ch.is_group) return ch.title;
+  const other = ch.participants?.find(p => p.id_user !== userId);
+  return other?.username ?? ch.title;
+}
+
+// ==================== HOME TABS ====================
+function switchTab(tabName) {
+  document.querySelectorAll(".home-tab").forEach(t => t.classList.remove("active"));
+  document.querySelectorAll(".tab-content").forEach(c => c.classList.remove("active"));
+  document.getElementById(`tab-${tabName}`).classList.add("active");
+  document.getElementById(`tab-content-${tabName}`).classList.add("active");
+}
+
+function updateInvitationsBadge() {
+  const badge = document.getElementById("invitations-badge");
+  const invList = document.getElementById("home-invitations-content");
+  const count = invList.querySelectorAll(".inv-card:not(.outgoing)").length;
+  if (count > 0) {
+    badge.textContent = count;
+    badge.style.display = "inline-block";
+  } else {
+    badge.style.display = "none";
+  }
+}
+
+// ==================== WEBSOCKET ====================
+function connectWebSocket() {
+  ws = new WebSocket(WS_URL);
+  window.ws = ws;
+
+  ws.onopen = () => {
+    setWsDot("connecting");
+    setTimeout(() => ws.send(JSON.stringify({ type: MessageType.WS_AUTH, token })), 50);
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      switch (data.type) {
+        case MessageType.WS_AUTH_SUCCESS:    onAuthSuccess(); break;
+        case MessageType.INITIAL_DATA:       handleInitialData(data); break;
+        case MessageType.NEW_MESSAGE:        handleNewMessage(data); break;
+        case MessageType.MARK_AS_READ:       handleMarkAsReadPush(data); break;
+        case MessageType.CHANNEL_CREATED:    handleChannelCreated(data); break;
+        case MessageType.CHANNEL_INVITATION: handleChannelInvitation(data); break;
+        case MessageType.INVITATION_ACCEPTED:handleInvitationAccepted(data); break;
+        case MessageType.INVITATION_REJECTED:handleInvitationRejected(data); break;
+        case MessageType.CANCEL_INVITATION:  handleCancelInvitation(data); break;
+        case MessageType.USER_JOINED:        handleUserJoined(data); break;
+        case MessageType.USER_LEFT:          handleUserLeft(data); break;
+        case MessageType.USER_TYPING:        handleTypingNotification(data); break;
+        case MessageType.ERROR:              handleServerError(data); break;
+        default: console.log("Unhandled WS message type:", data.type, data);
+      }
+    } catch (e) { console.error("Error parsing WS message:", e); }
+  };
+
+  ws.onerror = () => setWsDot("error");
+
+  ws.onclose = (event) => {
+    if (intentionalLogout) return;
+    setWsDot("disconnected");
+    document.getElementById("messageInput").disabled = true;
+    document.getElementById("sendBtn").disabled = true;
+    addSystemMessage(`Disconnected: ${event.reason || "connection closed"}`);
+    resetToLogin();
+  };
+}
+
+function onAuthSuccess() {
+  setWsDot("connected");
+  document.getElementById("messageInput").disabled = false;
+  document.getElementById("sendBtn").disabled = false;
+}
+
+async function logout() {
+  intentionalLogout = true;
+  try {
+    await fetch(`${SERVER_URL}/logout`, {
+      method: "POST",
+      headers: { "X-Auth-Token": token }
+    });
+  } catch (err) {
+    console.error("[LOGOUT] HTTP error:", err.message);
+  }
+  resetToLogin();
+}
+
+function setWsDot(state) {
+  const dot = document.getElementById("ws-dot");
+  dot.className = "ws-status-dot";
+  if (state === "connected") { dot.classList.add("connected"); dot.title = "Connected"; }
+  else if (state === "error") { dot.classList.add("error"); dot.title = "Error"; }
+  else { dot.title = "Disconnected"; }
+}
+
+// ==================== SERVER ERROR ====================
+function handleServerError(data) {
+  const modal = document.getElementById("createChannelModal");
+  if (modal.classList.contains("open")) {
+    setModalError(data.message ?? "An error occurred");
+    document.getElementById("submitCreateChannelBtn").disabled = false;
+  } else {
+    addSystemMessage(`Server Error: ${data.message} (${data.error_code})`);
+  }
+}
+
+// ==================== INITIAL DATA ====================
+function handleInitialData(data) {
+  console.log("[INIT] raw data:", JSON.stringify(data));
+
+  if (Array.isArray(data.contacts)) data.contacts.forEach(c => userCache.set(c.id_user, c.username));
+  if (userId && username) userCache.set(userId, username);
+
+  if (Array.isArray(data.channels)) {
+    data.channels.forEach(ch => {
+      channelCache.set(ch.id_channel, ch);
+      ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+    });
+  }
+
+  if (Array.isArray(data.outgoing_invitations)) {
+    data.outgoing_invitations.forEach(ch => {
+      ch.participants = (ch.participants ?? []).filter(p => p.id_user !== userId);
+      outgoingCache.set(ch.id_channel, ch);
+      ch.participants.forEach(p => userCache.set(p.id_user, p.username));
+    });
+  }
+
+  renderChannelsSidebar();
+  renderContactsSidebar(data.contacts ?? []);
+  renderHomeContacts(data.contacts ?? []);
+  renderHomeInvitations(data.invitations ?? [], data.outgoing_invitations ?? []);
+
+  console.log(`[INIT] ${userCache.size} users, ${channelCache.size} channels, ${(data.invitations ?? []).length} incoming, ${outgoingCache.size} outgoing`);
+}
+
+// ==================== SIDEBAR RENDERING ====================
+function renderChannelsSidebar() {
+  const list = document.getElementById("channels-list");
+  list.innerHTML = "";
+
+  if (channelCache.size === 0) {
+    list.innerHTML = '<div class="empty-sidebar">No channels yet</div>';
+    return;
+  }
+
+  channelCache.forEach(ch => {
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+    item.dataset.id = ch.id_channel;
+
+    const iconChar = ch.is_group ? "⊞" : "◈";
+    const displayTitle = getChannelDisplayTitle(ch);
+    const preview = ch.last_message?.body ?? "";
+    const unread = ch.unread_count > 0 ? `<div class="unread-badge">${ch.unread_count}</div>` : "";
+
+    item.innerHTML = `
+      <div class="item-icon">${iconChar}</div>
+      <div class="item-info">
+        <div class="item-name">${escapeHtml(displayTitle)}</div>
+        <div class="item-preview">${escapeHtml(preview)}</div>
+      </div>
+      ${unread}
+    `;
+    item.addEventListener("click", () => selectChannel(ch.id_channel));
+    list.appendChild(item);
+  });
+}
+
+function renderContactsSidebar(contacts) {
+  const list = document.getElementById("contacts-list");
+  list.innerHTML = "";
+
+  if (contacts.length === 0) {
+    list.innerHTML = '<div class="empty-sidebar">No contacts yet</div>';
+    return;
+  }
+
+  contacts.forEach(c => {
+    const item = document.createElement("div");
+    item.className = "sidebar-item";
+    const initials = c.username.slice(0, 2).toUpperCase();
+    item.innerHTML = `
+      <div class="item-icon" style="border-radius:50%; font-size:11px; font-weight:700; color:var(--accent-bright)">${initials}</div>
+      <div class="item-info"><div class="item-name">${escapeHtml(c.username)}</div></div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+// ==================== HOME VIEW RENDERING ====================
+function renderHomeContacts(contacts) {
+  const grid = document.getElementById("home-contacts-list");
+  grid.innerHTML = "";
+
+  if (contacts.length === 0) {
+    grid.innerHTML = `<div class="empty-home"><div class="empty-home-icon">◈</div><div class="empty-home-text">No contacts yet</div></div>`;
+    return;
+  }
+
+  contacts.forEach(c => {
+    const card = document.createElement("div");
+    card.className = "contact-card";
+    const initials = c.username.slice(0, 2).toUpperCase();
+    card.innerHTML = `
+      <div class="contact-avatar">${initials}</div>
+      <div>
+        <div class="contact-name">${escapeHtml(c.username)}</div>
+        <div class="contact-sub">Click to open chat</div>
+      </div>
+    `;
+    card.addEventListener("click", () => {
+      const dmChannel = [...channelCache.values()].find(ch =>
+        !ch.is_group && ch.participants?.some(p => p.id_user === c.id_user)
+      );
+      if (dmChannel) selectChannel(dmChannel.id_channel);
+    });
+    grid.appendChild(card);
+  });
+}
+
+function renderHomeInvitations(incoming, outgoing) {
+  const container = document.getElementById("home-invitations-content");
+  container.innerHTML = "";
+
+  const hasIncoming = incoming.length > 0;
+  const hasOutgoing = outgoing.length > 0;
+
+  if (!hasIncoming && !hasOutgoing) {
+    container.innerHTML = `<div class="empty-home"><div class="empty-home-icon">✦</div><div class="empty-home-text">No pending invitations</div></div>`;
+    updateInvitationsBadge();
+    return;
+  }
+
+  if (hasIncoming) {
+    const title = document.createElement("div");
+    title.className = "inv-section-title";
+    title.dataset.section = "incoming";
+    title.textContent = "Incoming";
+    container.appendChild(title);
+
+    incoming.forEach(inv => {
+      const inviterName = userCache.get(inv.id_inviter) ?? `User ${inv.id_inviter}`;
+      const memberNames = (inv.other_participant_ids ?? []).map(p => p.username).join(", ");
+      const card = document.createElement("div");
+      card.className = "inv-card";
+      card.dataset.id = inv.id_channel;
+      card.innerHTML = `
+        <div class="inv-avatar">✉</div>
+        <div class="inv-info">
+          <div class="inv-title">${escapeHtml(inv.title)}</div>
+          <div class="inv-meta">From ${escapeHtml(inviterName)}${memberNames ? ` · ${escapeHtml(memberNames)}` : ""}</div>
+        </div>
+        <div class="inv-actions">
+          <button class="inv-btn accept-btn" data-id="${inv.id_channel}">Accept</button>
+          <button class="inv-btn reject-btn" data-id="${inv.id_channel}">Decline</button>
+        </div>
+      `;
+      card.querySelector(".accept-btn").addEventListener("click", () => acceptInvitation(inv.id_channel));
+      card.querySelector(".reject-btn").addEventListener("click", () => rejectInvitation(inv.id_channel));
+      container.appendChild(card);
+    });
+  }
+
+  if (hasOutgoing) {
+    outgoing.forEach(ch => appendOutgoingCard(container, ch));
+  }
+
+  updateInvitationsBadge();
+}
+
+function appendOutgoingCard(container, ch) {
+  let sentTitle = container.querySelector(".inv-section-title[data-section='sent']");
+  if (!sentTitle) {
+    sentTitle = document.createElement("div");
+    sentTitle.className = "inv-section-title";
+    sentTitle.dataset.section = "sent";
+    sentTitle.textContent = "Sent";
+    container.appendChild(sentTitle);
+  }
+
+  const waitingFor = (ch.participants ?? []).map(p => p.username).join(", ");
+  const card = document.createElement("div");
+  card.className = "inv-card outgoing";
+  card.dataset.id = ch.id_channel;
+  card.innerHTML = `
+    <div class="inv-avatar">⏳</div>
+    <div class="inv-info">
+      <div class="inv-title">${escapeHtml(ch.title)}</div>
+      <div class="inv-meta">Waiting for: ${escapeHtml(waitingFor || "...")}</div>
+    </div>
+    <button class="cancel-inv-btn" data-id="${ch.id_channel}">Cancel</button>
+  `;
+  card.querySelector(".cancel-inv-btn").addEventListener("click", () => cancelInvitation(ch.id_channel));
+  container.appendChild(card);
+}
+
+// ==================== INVITATION ACTIONS ====================
+async function acceptInvitation(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/invitations/${id_channel}/accept`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[ACCEPT] Error:", err.message);
+      return;
+    }
+    const data = await response.json();
+    handleInvitationAccepted(data);
+  } catch (err) {
+    console.error("[ACCEPT] Network error:", err.message);
+  }
+}
+
+async function rejectInvitation(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/invitations/${id_channel}/reject`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[REJECT] Error:", err.message);
+      return;
+    }
+    const data = await response.json();
+    handleInvitationRejected(data);
+  } catch (err) {
+    console.error("[REJECT] Network error:", err.message);
+  }
+}
+
+async function cancelInvitation(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/invitations/${id_channel}/cancel`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[CANCEL] Error:", err.message);
+      return;
+    }
+    const data = await response.json();
+    // Server sends CANCEL_INVITATION (22) to pending invitees via WS.
+    // For the initiator (us), we handle the HTTP response directly.
+    handleCancelInvitation(data);
+  } catch (err) {
+    console.error("[CANCEL] Network error:", err.message);
+  }
+}
+
+// ==================== CHANNEL SELECTION ====================
+function selectChannel(channelId) {
+  activeChannelId = channelId;
+  const ch = channelCache.get(channelId);
+
+  showChat(channelId);
+
+  document.querySelectorAll("#channels-list .sidebar-item").forEach(el => {
+    el.classList.toggle("active", el.dataset.id == channelId);
+  });
+
+  const displayTitle = ch ? getChannelDisplayTitle(ch) : `Channel ${channelId}`;
+  document.getElementById("chat-icon").textContent = ch?.is_group ? "⊞" : "◈";
+  document.getElementById("chat-title").textContent = displayTitle;
+  const participantCount = ch?.participants?.length ?? 0;
+  document.getElementById("chat-sub").textContent = participantCount > 0 ? `${participantCount} members` : "";
+
+  const sidebarItem = document.querySelector(`#channels-list .sidebar-item[data-id="${channelId}"]`);
+  if (sidebarItem) { const badge = sidebarItem.querySelector(".unread-badge"); if (badge) badge.remove(); }
+
+  // Auto mark-as-read via HTTP when opening a channel with unread messages
+  if (ch && ch.last_message?.id_message > 0 && ch.unread_count > 0) {
+    markAsRead(channelId, ch.last_message.id_message);
+  }
+
+  document.getElementById("messages-container").innerHTML = "";
+  requestChannelHistory(channelId, 0);
+}
+
+// ==================== MARK AS READ (HTTP) ====================
+async function markAsRead(id_channel, last_id_message) {
+  try {
+    await fetch(`${SERVER_URL}/channels/${id_channel}/read`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+      body: JSON.stringify({ last_id_message })
+    });
+    // Update local cache optimistically
+    const ch = channelCache.get(id_channel);
+    if (ch) { ch.unread_count = 0; ch.last_read_id_message = last_id_message; }
+  } catch (err) {
+    console.error("[MARK_AS_READ] Network error:", err.message);
+  }
+}
+
+// Receive mark-as-read push from another device (type 16)
+function handleMarkAsReadPush(data) {
+  const ch = channelCache.get(data.id_channel);
+  if (!ch) return;
+  ch.unread_count = data.unread_count ?? 0;
+  ch.last_read_id_message = data.last_id_message;
+
+  // Update badge in sidebar
+  const item = document.querySelector(`#channels-list .sidebar-item[data-id="${data.id_channel}"]`);
+  if (item) {
+    const badge = item.querySelector(".unread-badge");
+    if (ch.unread_count === 0 && badge) badge.remove();
+    else if (ch.unread_count > 0) {
+      if (badge) badge.textContent = ch.unread_count;
+      else {
+        const b = document.createElement("div");
+        b.className = "unread-badge";
+        b.textContent = ch.unread_count;
+        item.appendChild(b);
+      }
+    }
+  }
+}
+
+// ==================== CHANNEL HISTORY ====================
+async function requestChannelHistory(channelId, beforeMessageId) {
+  const isPagination = beforeMessageId > 0;
+  try {
+    const url = isPagination
+      ? `${SERVER_URL}/channels/${channelId}/history?before_id=${beforeMessageId}&limit=50`
+      : `${SERVER_URL}/channels/${channelId}/history?limit=50`;
+
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "X-Auth-Token": token }
+    });
+
+    if (!response.ok) {
+      console.error("[HISTORY] Error:", response.status);
+      return;
+    }
+
+    const data = await response.json();
+    handleChannelHistory(data, isPagination);
+  } catch (err) {
+    console.error("[HISTORY] Network error:", err.message);
+  }
+}
+
+function handleChannelHistory(data, isPagination = false) {
+  if (data.id_channel !== activeChannelId) return;
+  const container = document.getElementById("messages-container");
+
+  if (!isPagination) {
+    // Initial load: clear and render all messages
+    container.innerHTML = "";
+
+    if (!data.messages || data.messages.length === 0) {
+      addSystemMessage("No messages yet. Say hello!");
+      return;
+    }
+
+    data.messages.forEach(msg => {
+      const isMe = msg.id_sender === userId;
+      const isSystem = msg.is_system;
+      const sender = isSystem ? "System" : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
+      if (isSystem) addSystemMessage(msg.body);
+      else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);
+      else addReceivedMessage(msg.body, sender, msg.timestamp);
+    });
+  } else {
+    // Pagination: prepend older messages above existing ones
+    if (!data.messages || data.messages.length === 0) return;
+
+    // Remove existing "load more" button if present
+    const oldLoadMore = container.querySelector(".load-more-sep");
+    if (oldLoadMore) oldLoadMore.remove();
+
+    // Record scroll position so we can restore it after prepend
+    const prevScrollHeight = container.scrollHeight;
+
+    const fragment = document.createDocumentFragment();
+    data.messages.forEach(msg => {
+      const isMe = msg.id_sender === userId;
+      const isSystem = msg.is_system;
+      const sender = isSystem ? "System" : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
+      const row = createMessageRow(msg.body, sender, msg.timestamp,
+        isSystem ? "system" : isMe ? "sent" : "received");
+      fragment.appendChild(row);
+    });
+    container.prepend(fragment);
+
+    // Restore scroll position so the user doesn't jump
+    container.scrollTop = container.scrollHeight - prevScrollHeight;
+  }
+
+  if (data.has_more) {
+    const loadMore = document.createElement("div");
+    loadMore.className = "date-sep load-more-sep";
+    loadMore.style.cursor = "pointer";
+    loadMore.style.color = "var(--accent)";
+    loadMore.textContent = "↑ Load older messages";
+    loadMore.addEventListener("click", () =>
+      requestChannelHistory(activeChannelId, data.messages[0]?.id_message ?? 0)
+    );
+    container.prepend(loadMore);
+  }
+}
+
+// ==================== SEND MESSAGE (HTTP) ====================
+async function sendMessage() {
+  const input = document.getElementById("messageInput");
+  const message = input.value.trim();
+  if (!message || !activeChannelId) return;
+
+  input.value = "";
+
+  try {
+    const response = await fetch(`${SERVER_URL}/channels/${activeChannelId}/messages`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+      body: JSON.stringify({ body: message })
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[SEND_MESSAGE] Error:", err.message);
+      addSystemMessage(`Failed to send: ${err.message ?? "unknown error"}`);
+      return;
+    }
+
+    const data = await response.json();
+    // The server returns the message and broadcasts to others.
+    // Render it for ourselves since WS broadcast skips our session.
+    if (data.message) {
+      const msg = data.message;
+      const sender = userCache.get(msg.id_sender) ?? username ?? `User ${msg.id_sender}`;
+      addSentMessage(msg.body, sender, msg.timestamp);
+
+      const ch = channelCache.get(data.id_channel);
+      if (ch) {
+        ch.last_message = msg;
+        const item = document.querySelector(`#channels-list .sidebar-item[data-id="${data.id_channel}"]`);
+        const preview = item?.querySelector(".item-preview");
+        if (preview) preview.textContent = msg.body;
+      }
+    }
+  } catch (err) {
+    console.error("[SEND_MESSAGE] Network error:", err.message);
+    addSystemMessage(`Connection error: ${err.message}`);
+  }
+}
+
+// ==================== NEW MESSAGE (WS push) ====================
+function handleNewMessage(data) {
+  if (!data.message) return;
+
+  const msg = data.message;
+  const isMe = msg.id_sender === userId;
+  const isSystem = msg.is_system;
+  const sender = isSystem ? "System" : (userCache.get(msg.id_sender) ?? `User ${msg.id_sender}`);
+
+  const chData = channelCache.get(data.id_channel);
+  if (chData) {
+    chData.last_message = msg;
+    const item = document.querySelector(`#channels-list .sidebar-item[data-id="${data.id_channel}"]`);
+    const preview = item?.querySelector(".item-preview");
+    if (preview) preview.textContent = msg.body;
+
+    if (data.id_channel !== activeChannelId) {
+      // Increment unread badge for inactive channel
+      chData.unread_count = (chData.unread_count ?? 0) + 1;
+      if (item) {
+        let badge = item.querySelector(".unread-badge");
+        if (!badge) { badge = document.createElement("div"); badge.className = "unread-badge"; item.appendChild(badge); }
+        badge.textContent = chData.unread_count;
+      }
+      return;
+    }
+  }
+
+  if (data.id_channel !== activeChannelId) return;
+
+  // Message arrived in the active channel: render and mark as read
+  if (isSystem) addSystemMessage(msg.body);
+  else if (isMe) addSentMessage(msg.body, sender, msg.timestamp);  // own message from another device
+  else addReceivedMessage(msg.body, sender, msg.timestamp);
+
+  // Auto mark-as-read for the active channel
+  markAsRead(data.id_channel, msg.id_message);
+}
+
+function handleTypingNotification(data) {
+  if (data.id_user === userId) return;
+  const name = userCache.get(data.id_user) ?? `User ${data.id_user}`;
+  console.log(data.is_typing ? `${name} is typing...` : `${name} stopped typing`);
+}
+
+// ==================== INVITATION HANDLERS ====================
+function handleInvitationAccepted(data) {
+  const ch = data.channel;
+  channelCache.set(ch.id_channel, ch);
+  ch.participants?.forEach(p => userCache.set(p.id_user, p.username));
+
+  // Remove the card from both possible locations
+  const card = document.querySelector(`#home-invitations-content .inv-card[data-id="${ch.id_channel}"]`);
+  if (card) card.remove();
+  cleanupEmptyInvSections();
+  updateInvitationsBadge();
+
+  renderChannelsSidebar();
+  selectChannel(ch.id_channel);
+}
+
+function handleUserJoined(data) {
+  const contact = data.contact;
+  userCache.set(contact.id_user, contact.username);
+
+  if (outgoingCache.has(data.id_channel)) {
+    // One of our invitees accepted — move from outgoing to active channel
+    const ch = outgoingCache.get(data.id_channel);
+    ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
+    // If all invitees have now accepted, this channel is fully active
+    if (ch.participants.length === 0) {
+      outgoingCache.delete(data.id_channel);
+      const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${data.id_channel}"]`);
+      if (card) card.remove();
+      cleanupEmptyInvSections();
+      updateInvitationsBadge();
+    } else {
+      // Still waiting on others — update waiting list on card
+      const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${data.id_channel}"]`);
+      if (card) {
+        const meta = card.querySelector(".inv-meta");
+        if (meta) meta.textContent = `Waiting for: ${ch.participants.map(p => p.username).join(", ")}`;
+      }
+    }
+    ch.is_group = true; // at least 3 participants at this point
+    channelCache.set(data.id_channel, ch);
+    renderChannelsSidebar();
+  } else {
+    const ch = channelCache.get(data.id_channel);
+    if (ch) {
+      ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
+      ch.participants.push(contact);
+      ch.is_group = ch.participants.length > 2;
+    }
+  }
+}
+
+function handleInvitationRejected(data) {
+  const { id_channel, contact } = data;
+  const iAmRejecter = contact.id_user === userId;
+
+  if (iAmRejecter) {
+    const card = document.querySelector(`#home-invitations-content .inv-card:not(.outgoing)[data-id="${id_channel}"]`);
+    if (card) card.remove();
+  } else {
+    userCache.set(contact.id_user, contact.username);
+    const ch = outgoingCache.get(id_channel);
+    if (ch) {
+      ch.participants = ch.participants.filter(p => p.id_user !== contact.id_user);
+      const card = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
+      if (ch.participants.length === 0) {
+        outgoingCache.delete(id_channel);
+        if (card) card.remove();
+      } else {
+        if (card) {
+          const meta = card.querySelector(".inv-meta");
+          if (meta) meta.textContent = `Waiting for: ${ch.participants.map(p => p.username).join(", ")}`;
+        }
+      }
+    }
+  }
+
+  cleanupEmptyInvSections();
+  updateInvitationsBadge();
+}
+
+function handleCancelInvitation(data) {
+  // Received when someone else cancelled an invitation we were pending on,
+  // OR when we ourselves cancelled (HTTP response routed through this handler).
+  const { id_channel } = data;
+
+  // Remove outgoing card (if we were the creator)
+  outgoingCache.delete(id_channel);
+  const outCard = document.querySelector(`#home-invitations-content .inv-card.outgoing[data-id="${id_channel}"]`);
+  if (outCard) outCard.remove();
+
+  // Remove incoming card (if we were an invitee)
+  const inCard = document.querySelector(`#home-invitations-content .inv-card:not(.outgoing)[data-id="${id_channel}"]`);
+  if (inCard) inCard.remove();
+
+  cleanupEmptyInvSections();
+  updateInvitationsBadge();
+}
+
+function handleChannelCreated(data) {
+  const ch = data.channel;
+  // Keep only invitees (not self) for the outgoing pending list
+  ch.participants = (ch.participants ?? []).filter(p => p.id_user !== userId);
+  outgoingCache.set(ch.id_channel, ch);
+  ch.participants.forEach(p => userCache.set(p.id_user, p.username));
+
+  const container = document.getElementById("home-invitations-content");
+  const empty = container.querySelector(".empty-home");
+  if (empty) empty.remove();
+
+  appendOutgoingCard(container, ch);
+  updateInvitationsBadge();
+
+  switchTab("invitations");
+  closeCreateChannelModal();
+}
+
+function handleChannelInvitation(data) {
+  const inviterName = userCache.get(data.id_inviter) ?? `User ${data.id_inviter}`;
+  data.other_participant_ids?.forEach(p => userCache.set(p.id_user, p.username));
+
+  const container = document.getElementById("home-invitations-content");
+  const empty = container.querySelector(".empty-home");
+  if (empty) empty.remove();
+
+  let incomingTitle = container.querySelector(".inv-section-title[data-section='incoming']");
+  if (!incomingTitle) {
+    incomingTitle = document.createElement("div");
+    incomingTitle.className = "inv-section-title";
+    incomingTitle.dataset.section = "incoming";
+    incomingTitle.textContent = "Incoming";
+    container.prepend(incomingTitle);
+  }
+
+  const memberNames = (data.other_participant_ids ?? []).map(p => p.username).join(", ");
+  const card = document.createElement("div");
+  card.className = "inv-card";
+  card.dataset.id = data.id_channel;
+  card.innerHTML = `
+    <div class="inv-avatar">✉</div>
+    <div class="inv-info">
+      <div class="inv-title">${escapeHtml(data.title)}</div>
+      <div class="inv-meta">From ${escapeHtml(inviterName)}${memberNames ? ` · ${escapeHtml(memberNames)}` : ""}</div>
+    </div>
+    <div class="inv-actions">
+      <button class="inv-btn accept-btn" data-id="${data.id_channel}">Accept</button>
+      <button class="inv-btn reject-btn" data-id="${data.id_channel}">Decline</button>
+    </div>
+  `;
+  card.querySelector(".accept-btn").addEventListener("click", () => acceptInvitation(data.id_channel));
+  card.querySelector(".reject-btn").addEventListener("click", () => rejectInvitation(data.id_channel));
+
+  incomingTitle.insertAdjacentElement("afterend", card);
+  updateInvitationsBadge();
+  switchTab("invitations");
+}
+
+// Remove orphaned section titles when all their cards are gone
+function cleanupEmptyInvSections() {
+  const container = document.getElementById("home-invitations-content");
+
+  ["incoming", "sent"].forEach(section => {
+    const title = container.querySelector(`.inv-section-title[data-section='${section}']`);
+    if (!title) return;
+    const hasCards = section === "incoming"
+      ? container.querySelectorAll(".inv-card:not(.outgoing)").length > 0
+      : container.querySelectorAll(".inv-card.outgoing").length > 0;
+    if (!hasCards) title.remove();
+  });
+
+  const allCards = container.querySelectorAll(".inv-card");
+  const hasEmpty = container.querySelector(".empty-home");
+  if (allCards.length === 0 && !hasEmpty) {
+    container.innerHTML = `<div class="empty-home"><div class="empty-home-icon">✦</div><div class="empty-home-text">No pending invitations</div></div>`;
+  }
+}
+
+// ==================== LEAVE CHANNEL ====================
+async function leaveChannel(id_channel) {
+  try {
+    const response = await fetch(`${SERVER_URL}/channels/${id_channel}/leave`, {
+      method: "PATCH",
+      headers: { "X-Auth-Token": token }
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      console.error("[LEAVE] Error:", err.message);
+      return;
+    }
+
+    channelCache.delete(id_channel);
+    if (activeChannelId === id_channel) showHome();
+    renderChannelsSidebar();
+  } catch (err) {
+    console.error("[LEAVE] Network error:", err.message);
+  }
+}
+
+function handleUserLeft(data) {
+  const ch = channelCache.get(data.id_channel);
+  if (!ch) return;
+
+  ch.participants = ch.participants.filter(p => p.id_user !== data.id_user);
+  ch.is_group = ch.participants.length > 2;
+
+  if (activeChannelId === data.id_channel) {
+    const name = userCache.get(data.id_user) ?? `User ${data.id_user}`;
+    addSystemMessage(`${name} left the channel`);
+    document.getElementById("chat-sub").textContent = `${ch.participants.length} members`;
+  }
+
+  renderChannelsSidebar();
+}
+
+// ==================== CREATE CHANNEL ====================
+async function sendCreateChannel() {
+  const usernames = [...tagState.tags];
+  if (usernames.length === 0) return;
+
+  const title = document.getElementById("channelTitleInput").value.trim();
+
+  setModalError("");
+  document.getElementById("submitCreateChannelBtn").disabled = true;
+
+  try {
+    const response = await fetch(`${SERVER_URL}/channels`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Auth-Token": token },
+      body: JSON.stringify({ usernames, title })
+    });
+
+    if (response.status === 409) {
+      const data = await response.json();
+      if (channelCache.has(data.id_channel)) {
+        selectChannel(data.id_channel);
+      }
+      closeCreateChannelModal();
+      return;
+    }
+
+    if (!response.ok) {
+      const err = await response.json();
+      setModalError(err.message ?? err.error ?? "An error occurred");
+      document.getElementById("submitCreateChannelBtn").disabled = false;
+      return;
+    }
+
+    const data = await response.json();
+    handleChannelCreated(data);
+  } catch (err) {
+    setModalError(`Connection error: ${err.message}`);
+    document.getElementById("submitCreateChannelBtn").disabled = false;
+  }
+}
+
+// ==================== MESSAGE RENDERING ====================
+function createMessageRow(text, senderName, timestamp, type) {
+  const row = document.createElement("div");
+  row.className = `msg-row ${type}`;
+  if (type === "system") {
+    row.style.alignSelf = "center";
+    const resolved = resolveAtMentions(text);
+    const div = document.createElement("div");
+    div.className = "msg-bubble";
+    div.textContent = resolved;
+    row.appendChild(div);
+  } else {
+    row.innerHTML = `
+      <div class="msg-avatar">${escapeHtml(senderName.slice(0, 2).toUpperCase())}</div>
+      <div class="msg-bubble-wrap">
+        <div class="msg-sender">${escapeHtml(senderName)}</div>
+        <div class="msg-bubble">${escapeHtml(text)}</div>
+        <div class="msg-time">${formatTime(timestamp)}</div>
+      </div>
+    `;
+  }
+  return row;
+}
+
+function addSentMessage(text, senderName, timestamp) {
+  const container = document.getElementById("messages-container");
+  container.appendChild(createMessageRow(text, senderName, timestamp, "sent"));
+  scrollToBottom();
+}
+
+function addReceivedMessage(text, senderName, timestamp) {
+  const container = document.getElementById("messages-container");
+  container.appendChild(createMessageRow(text, senderName, timestamp, "received"));
+  scrollToBottom();
+}
+
+function addSystemMessage(text) {
+  const container = document.getElementById("messages-container");
+  container.appendChild(createMessageRow(text, "", null, "system"));
+  scrollToBottom();
+}
+
+function resolveAtMentions(text) {
+  return text.replace(/@(\d+)/g, (match, rawId) => {
+    const name = userCache.get(parseInt(rawId));
+    return name ? `@${name}` : match;
+  });
+}
+
+// ==================== MODAL (CREATE CHANNEL) ====================
+const tagState = { tags: new Set() };
+
+function openCreateChannelModal() {
+  tagState.tags.clear();
+  document.getElementById("tagInputWrap").querySelectorAll(".tag-pill").forEach(p => p.remove());
+  document.getElementById("tagTextInput").value = "";
+  document.getElementById("channelTitleInput").value = "";
+  setModalError("");
+  document.getElementById("submitCreateChannelBtn").disabled = true;
+  document.getElementById("createChannelModal").classList.add("open");
+  document.getElementById("tagTextInput").focus();
+}
+
+function closeCreateChannelModal() {
+  document.getElementById("createChannelModal").classList.remove("open");
+  document.getElementById("submitCreateChannelBtn").disabled = false;
+}
+
+function setModalError(msg) {
+  document.getElementById("createChannelError").textContent = msg;
+}
+
+function commitTag() {
+  const input = document.getElementById("tagTextInput");
+  const value = input.value.trim().replace(/^@/, "").replace(/,$/, "");
+  if (!value) return;
+
+  if (value === username) {
+    setModalError("You can't invite yourself.");
+    input.value = "";
+    return;
+  }
+
+  if (tagState.tags.has(value)) {
+    input.value = "";
+    return;
+  }
+
+  tagState.tags.add(value);
+
+  const pill = document.createElement("div");
+  pill.className = "tag-pill";
+  pill.dataset.username = value;
+  pill.innerHTML = `
+    <span>${escapeHtml(value)}</span>
+    <button class="tag-pill-remove" title="Remove">×</button>
+  `;
+  pill.querySelector(".tag-pill-remove").addEventListener("click", () => {
+    tagState.tags.delete(value);
+    pill.remove();
+    updateSubmitButton();
+  });
+
+  const wrap = document.getElementById("tagInputWrap");
+  wrap.insertBefore(pill, input);
+  input.value = "";
+  setModalError("");
+  updateSubmitButton();
+}
+
+function updateSubmitButton() {
+  document.getElementById("submitCreateChannelBtn").disabled = tagState.tags.size === 0;
+}
+
+// ==================== MODAL (DELETE ACCOUNT) ====================
+function openDeleteAccountModal() {
+  document.getElementById("deleteAccountError").textContent = "";
+  document.getElementById("confirmDeleteAccountBtn").disabled = false;
+  document.getElementById("confirmDeleteAccountBtn").textContent = "Delete forever";
+  document.getElementById("deleteAccountModal").classList.add("open");
+}
+
+function closeDeleteAccountModal() {
+  document.getElementById("deleteAccountModal").classList.remove("open");
+}
+
+// ==================== UTILS ====================
+function scrollToBottom() { const c = document.getElementById("messages-container"); c.scrollTop = c.scrollHeight; }
+function formatTime(ts) { if (!ts) return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); return new Date(ts).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+function escapeHtml(text) { const d = document.createElement("div"); d.textContent = text ?? ""; return d.innerHTML; }
+
+// ==================== EVENT LISTENERS ====================
+document.addEventListener("DOMContentLoaded", () => {
+  // Auth
+  document.getElementById("loginBtn").addEventListener("click", login);
+  document.getElementById("registerBtn").addEventListener("click", register);
+  document.getElementById("showRegisterLink").addEventListener("click", showRegisterForm);
+  document.getElementById("showLoginLink").addEventListener("click", showLoginForm);
+  document.getElementById("password").addEventListener("keypress", e => { if (e.key === "Enter") login(); });
+  document.getElementById("reg-password").addEventListener("keypress", e => { if (e.key === "Enter") register(); });
+
+  // App
+  document.getElementById("logoutBtn").addEventListener("click", logout);
+  document.getElementById("deleteAccountBtn").addEventListener("click", openDeleteAccountModal);
+  document.getElementById("confirmDeleteAccountBtn").addEventListener("click", deleteAccount);
+  document.getElementById("cancelDeleteAccountBtn").addEventListener("click", closeDeleteAccountModal);
+  document.getElementById("deleteAccountModal").addEventListener("click", e => {
+    if (e.target === document.getElementById("deleteAccountModal")) closeDeleteAccountModal();
+  });
+
+  document.getElementById("sendBtn").addEventListener("click", sendMessage);
+  document.getElementById("messageInput").addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
+
+  document.getElementById("user-pill").addEventListener("click", showHome);
+
+  document.querySelectorAll(".home-tab").forEach(tab => {
+    tab.addEventListener("click", () => switchTab(tab.dataset.tab));
+  });
+
+  document.getElementById("openCreateChannelBtn").addEventListener("click", openCreateChannelModal);
+  document.getElementById("cancelCreateChannelBtn").addEventListener("click", closeCreateChannelModal);
+  document.getElementById("submitCreateChannelBtn").addEventListener("click", sendCreateChannel);
+
+  document.getElementById("createChannelModal").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("createChannelModal")) closeCreateChannelModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") {
+      closeCreateChannelModal();
+      closeDeleteAccountModal();
+    }
+  });
+
+  document.getElementById("tagTextInput").addEventListener("keydown", (e) => {
+    if (e.key === " " || e.key === "," || e.key === "Enter") {
+      e.preventDefault();
+      commitTag();
+    }
+    if (e.key === "Backspace" && e.target.value === "") {
+      const lastTag = [...tagState.tags].at(-1);
+      if (lastTag) {
+        tagState.tags.delete(lastTag);
+        const wrap = document.getElementById("tagInputWrap");
+        const pill = wrap.querySelector(`.tag-pill[data-username="${CSS.escape(lastTag)}"]`);
+        if (pill) pill.remove();
+        updateSubmitButton();
+      }
+    }
+  });
+
+  document.getElementById("tagInputWrap").addEventListener("click", () => {
+    document.getElementById("tagTextInput").focus();
+  });
+
+  document.getElementById("leaveChannelBtn").addEventListener("click", () => {
+    if (activeChannelId) leaveChannel(activeChannelId);
+  });
+});

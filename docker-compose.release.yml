@@ -1,0 +1,53 @@
+# docker-compose.release.yml
+#
+# Used for release deployments — pulls the pre-built image from ghcr.io.
+# No source code needed on the host machine.
+#
+# Setup:
+#   cp .env.template .env    # fill in your values
+#   docker compose -f docker-compose.release.yml up -d
+
+services:
+  mysql-db:
+    image: mysql:9.6.0-oraclelinux9
+    container_name: wizzmania-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+    healthcheck:
+      # CMD-SHELL is required here (not CMD) so the shell expands $MYSQL_ROOT_PASSWORD.
+      # $$ escapes to a single $ in docker-compose variable interpolation.
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  server:
+    image: ghcr.io/AdelinePat/wizzmania-server:latest
+    container_name: wizzmania-server
+    environment:
+      DB_HOST: mysql-db
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      SERVER_PORT: ${SERVER_PORT}
+      SECRET_KEY: ${SECRET_KEY}
+    ports:
+      - "${SERVER_PORT}:${SERVER_PORT}"
+    depends_on:
+      mysql-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  mysql-data:

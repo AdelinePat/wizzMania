@@ -1,0 +1,67 @@
+services:
+  # ============================================
+  # MySQL Database
+  # ============================================
+  mysql-db:
+    image: mysql:9.6.0-oraclelinux9
+    container_name: wizzmania-db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      DB_HOST: mysql-db # service name!
+    ports:
+      - "${DB_PORT}:3306"
+    volumes:
+      - type: volume
+        source: mysql-data
+        target: /var/lib/mysql
+      - type: bind
+        source: ./init.sql
+        target: /docker-entrypoint-initdb.d/init.sql
+        read_only: true
+      - type: bind
+        source: ./queries.sql
+        target: /queries.sql
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    restart: unless-stopped
+
+  # ============================================
+  # C++ Server (Development)
+  # ============================================
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: wizzmania-server
+    environment:
+      # Database connection (service name = mysql-db)
+      DB_HOST: mysql-db
+      DB_PORT: 3306
+      DB_NAME: ${MYSQL_DATABASE}
+      DB_USER: ${MYSQL_USER}
+      DB_PASSWORD: ${MYSQL_PASSWORD}
+      # Server configuration
+      SERVER_PORT: ${SERVER_PORT}
+      SECRET_KEY: ${SECRET_KEY}
+    ports:
+      - "8888:8888"
+    volumes:
+      # Mount source code (rebuild on changes)
+      - type: bind
+        source: ./server
+        target: /app/server
+      - type: bind
+        source: ./common
+        target: /app/common
+      - type: bind
+        source: ./tests/server
+        target: /app/tests
+    depends_on:
+      - mysql-db
+    command: ["bash", "./server/build-server.sh"]
+    restart: unless-stopped
+
+volumes:
+  mysql-data:
