@@ -73,13 +73,14 @@ FROM ubuntu:22.04 AS runtime
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-# FIX: libmysqlcppconn9v5 does not exist in Ubuntu 22.04 repositories.
-# The correct runtime package name is libmysqlcppconn9.
+# libmysqlcppconn7v5 is the correct runtime package name on Ubuntu 22.04.
+# It is installed automatically as a dependency of libmysqlcppconn-dev in the
+# builder stage — that is how we confirmed the actual package name.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl3 \
     libboost-system1.74.0 \
     libmysqlclient21 \
-    libmysqlcppconn9 \
+    libmysqlcppconn7v5 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
