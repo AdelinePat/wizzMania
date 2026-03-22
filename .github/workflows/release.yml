@@ -27,6 +27,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # FIX: install MinGW via Chocolatey instead of relying on jurplel's tools
+      # parameter. Chocolatey is pre-installed on all GitHub Windows runners and
+      # puts MinGW at a known fixed path: C:\ProgramData\mingw64\mingw64\bin
+      - name: Install MinGW
+        shell: pwsh
+        run: |
+          choco install mingw --no-progress -y
+          # Chocolatey installs mingw to C:\ProgramData\mingw64\mingw64\bin
+          # Add it to PATH for all subsequent steps
+          echo "C:\ProgramData\mingw64\mingw64\bin" | `
+            Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -37,24 +49,12 @@ jobs:
           modules: 'qtwebsockets'
           cache: true
 
-      # jurplel adds Qt bin dir (windeployqt, qmake...) to PATH automatically.
-      # We also need the MinGW toolchain (gcc, g++, mingw32-make) in PATH.
-      # QT_ROOT_DIR is e.g. C:\Qt\6.10.2\mingw_64 — tools sit one level up.
-      - name: Add MinGW to PATH
+      - name: Verify tools
         shell: pwsh
         run: |
-          $qtParent = Split-Path "$env:QT_ROOT_DIR" -Parent
-          $qtRoot   = Split-Path $qtParent -Parent
-          $mingw = Get-ChildItem "$qtRoot\Tools" -Filter "mingw*_64" |
-                     Sort-Object Name -Descending |
-                     Select-Object -First 1
-          if (-not $mingw) {
-            Write-Error "MinGW toolchain not found under $qtRoot\Tools"
-            exit 1
-          }
-          $mingwBin = Join-Path $mingw.FullName "bin"
-          Write-Host "MinGW bin: $mingwBin"
-          echo "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "gcc: $(gcc --version | Select-Object -First 1)"
+          Write-Host "g++: $(g++ --version | Select-Object -First 1)"
+          Write-Host "mingw32-make: $(mingw32-make --version | Select-Object -First 1)"
 
       - name: Configure and build
         shell: pwsh
@@ -130,8 +130,6 @@ jobs:
               > AppDir/usr/share/icons/hicolor/256x256/apps/wizzmania.png
           fi
 
-      # .desktop must have no leading whitespace on any line.
-      # Written via python3 to avoid heredoc indentation issues inside YAML.
       - name: Write .desktop file
         run: |
           python3 -c "
@@ -153,10 +151,16 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
+      - name: Download AppImage runtime
+        run: |
+          wget -q -O runtime-x86_64 \
+            https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+
       - name: Build AppImage
         env:
           QMAKE: ${{ env.QT_ROOT_DIR }}/bin/qmake6
           OUTPUT: WizzMania-client-linux-${{ github.ref_name }}.AppImage
+          APPIMAGETOOL_ADDITIONAL_ARGS: --runtime-file runtime-x86_64
         run: |
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
@@ -196,6 +200,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -204,8 +211,9 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          # FIX: GHA cache is unreliable with some buildx configurations.
+          # Removed cache-from/cache-to — build is slower but always works.
+          # Can be re-added later if needed once the pipeline is stable.
 
       - name: Create server release bundle
         run: |
