@@ -147,21 +147,21 @@
          </spacer>
         </item>
 
+        <!-- Error label -->
+        <item>
+         <widget class="QLabel" name="errorLabel">
+          <property name="minimumSize"><size><width>0</width><height>0</height></size></property>
+          <property name="text"><string/></property>
+          <property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property>
+          <property name="wordWrap"><bool>true</bool></property>
+         </widget>
+        </item>
+
         <!-- Login button (primary) -->
         <item>
          <widget class="QPushButton" name="loginButton">
           <property name="minimumSize"><size><width>0</width><height>44</height></size></property>
           <property name="text"><string>Sign in</string></property>
-         </widget>
-        </item>
-
-        <!-- Error label -->
-        <item>
-         <widget class="QLabel" name="errorLabel">
-          <property name="minimumSize"><size><width>0</width><height>16</height></size></property>
-          <property name="text"><string/></property>
-          <property name="alignment"><set>Qt::AlignmentFlag::AlignCenter</set></property>
-          <property name="wordWrap"><bool>true</bool></property>
          </widget>
         </item>
 

@@ -7,9 +7,10 @@ LoginWidget::LoginWidget(QWidget* parent)
       ui(new Ui::LoginWidget),
       userController(new UserController(this)) {
   ui->setupUi(this);
-  ui->errorLabel->setText(" ");
+  ui->errorLabel->setText(QString());
   ui->errorLabel->setWordWrap(true);
   ui->errorLabel->setAlignment(Qt::AlignCenter);
+  ui->errorLabel->setMinimumHeight(20);
 
   // Connect login button
   connect(ui->loginButton, &QPushButton::clicked, this,
@@ -85,7 +86,7 @@ void LoginWidget::setStatusText(const QString& text, bool isError) {
 
   if (text.isEmpty()) {
     ui->errorLabel->setStyleSheet("color: transparent;");
-    ui->errorLabel->setText(" ");  // keeps space reserved, invisible
+    ui->errorLabel->setText(QString());
   } else if (isError) {
     ui->errorLabel->setStyleSheet("color: rgb(220,120,120);");
     ui->errorLabel->setText(text);

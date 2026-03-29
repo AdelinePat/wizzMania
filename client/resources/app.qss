@@ -527,7 +527,9 @@ QLabel#errorLabel {
   color: #c0899d;
   font-size: 12px;
   font-weight: 600;
-  font-weight: 600;
+  background: transparent;
+  padding-top: 6px;
+  padding-bottom: 2px;
   min-height: 20px;
 }
 
