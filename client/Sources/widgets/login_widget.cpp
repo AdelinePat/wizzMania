@@ -7,6 +7,9 @@ LoginWidget::LoginWidget(QWidget* parent)
       ui(new Ui::LoginWidget),
       userController(new UserController(this)) {
   ui->setupUi(this);
+  ui->errorLabel->setText(" ");
+  ui->errorLabel->setWordWrap(true);
+  ui->errorLabel->setAlignment(Qt::AlignCenter);
 
   // Connect login button
   connect(ui->loginButton, &QPushButton::clicked, this,
@@ -75,30 +78,30 @@ void LoginWidget::setSuccessText(const QString& text) {
 }
 
 void LoginWidget::setStatusText(const QString& text, bool isError) {
-  if (!ui || !ui->errorLabel) {
-    return;
-  }
+  if (!ui || !ui->errorLabel) return;
 
   ui->errorLabel->setWordWrap(true);
-  ui->errorLabel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+  ui->errorLabel->setAlignment(Qt::AlignCenter);
 
   if (text.isEmpty()) {
-    ui->errorLabel->setStyleSheet(QString());
-    ui->errorLabel->setMinimumHeight(0);
+    ui->errorLabel->setStyleSheet("color: transparent;");
+    ui->errorLabel->setText(" ");  // keeps space reserved, invisible
   } else if (isError) {
     ui->errorLabel->setStyleSheet("color: rgb(220,120,120);");
+    ui->errorLabel->setText(text);
   } else {
     ui->errorLabel->setStyleSheet("color: rgb(82,134,77);");
+    ui->errorLabel->setText(text);
   }
 
-  ui->errorLabel->setText(text);
-  if (!text.isEmpty()) {
-    const int availableWidth =
-        ui->errorLabel->width() > 0 ? ui->errorLabel->width() : 300;
-    const QRect bounds = ui->errorLabel->fontMetrics().boundingRect(
-        QRect(0, 0, availableWidth, 10000), Qt::TextWordWrap | Qt::AlignCenter,
-        text);
-    ui->errorLabel->setMinimumHeight(bounds.height() + 6);
-  }
-  ui->errorLabel->setVisible(!text.isEmpty());
+  // ui->errorLabel->setText(text);
+  // if (!text.isEmpty()) {
+  //   const int availableWidth =
+  //       ui->errorLabel->width() > 0 ? ui->errorLabel->width() : 300;
+  //   const QRect bounds = ui->errorLabel->fontMetrics().boundingRect(
+  //       QRect(0, 0, availableWidth, 10000), Qt::TextWordWrap |
+  //       Qt::AlignCenter, text);
+  //   ui->errorLabel->setMinimumHeight(bounds.height() + 6);
+  // }
+  // ui->errorLabel->setVisible(!text.isEmpty());
 }

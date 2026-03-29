@@ -523,6 +523,14 @@ QLabel#createChannelErrorLabel {
   background: transparent;
 }
 
+QLabel#errorLabel {
+  color: #c0899d;
+  font-size: 12px;
+  font-weight: 600;
+  font-weight: 600;
+  min-height: 20px;
+}
+
 /* ── BUTTONS — BASE ──────────────────────────────────────────────── */
 QPushButton {
   background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
