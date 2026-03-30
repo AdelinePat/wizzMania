@@ -14,9 +14,11 @@ int main(int argc, char** argv) {
   QApplication app(argc, argv);
 
   // Load centralized stylesheet if available (client/resources/app.qss)
-  const QString qssPath =
-      QCoreApplication::applicationDirPath() + "/../resources/app.qss";
-  QFile qssFile(qssPath);
+  // const QString qssPath =
+  //     QCoreApplication::applicationDirPath() + "/../resources/app.qss";
+  // QFile qssFile(qssPath);
+
+  QFile qssFile(":/app.qss");
   if (qssFile.open(QFile::ReadOnly | QFile::Text)) {
     qApp->setStyleSheet(qssFile.readAll());
   }

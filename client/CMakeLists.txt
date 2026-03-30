@@ -93,10 +93,10 @@ set(CLIENT_UI_FILES
     Forms/mainwindow.ui
     Forms/login_widget.ui
 )
-
+set(CMAKE_AUTORCC ON)
 # Collect resource files (.qrc for images, icons, etc.)
 set(CLIENT_RESOURCES
-    # resources.qrc
+    resources/resources.qrc
 )
 
 # Create executable

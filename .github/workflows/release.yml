@@ -262,39 +262,55 @@ jobs:
             WizzMania-server-*.zip
           body: |
             ## 💬 Client
-
+ 
             No installation required — Qt and all dependencies are bundled.
-
-            | Platform | File | How to run |
+ 
+            You need to tell the client where your server is by setting two environment variables before launching:
+ 
+            | Variable | Description | Example |
             |---|---|---|
-            | Windows | `WizzMania-client-windows-*.zip` | Unzip anywhere, double-click `wizzmania-client.exe` |
-            | Linux | `WizzMania-client-linux-*.AppImage` | `chmod +x WizzMania-client-linux-*.AppImage` then run it |
-
-            On first launch, enter the IP and port of the server you want to connect to.
-
+            | `SERVER_HOST` | IP address of the machine running the server | `127.0.0.1` or `localhost` for local |
+            | `SERVER_PORT` | Port you set as `SERVER_PORT` in your server `.env` | `8888` |
+ 
+            **Linux:**
+            ```
+            chmod +x WizzMania-client-linux-*.AppImage
+            SERVER_HOST=127.0.0.1 SERVER_PORT=8888 ./WizzMania-client-linux-*.AppImage
+            ```
+ 
+            **Windows** (PowerShell):
+            ```
+            $env:SERVER_HOST="127.0.0.1"; $env:SERVER_PORT="8888"; .\wizzmania-client.exe
+            ```
+ 
+            **Windows** (CMD):
+            ```
+            set SERVER_HOST=127.0.0.1 && set SERVER_PORT=8888 && wizzmania-client.exe
+            ```
+ 
             ---
-
+ 
             ## 🖥️ Server
-
+ 
             Requires **Docker + Docker Compose** — nothing else.
-
+ 
             **1. Download and unzip** `WizzMania-server-*.zip`
-
+ 
             **2. Create your env file:**
             ```
             cp .env.template .env
             ```
             Open `.env` and fill in all values — passwords, `SECRET_KEY`, and ports.
             See the [full variable reference in the README](https://github.com/AdelinePat/WizzMania#environment-setup).
-
+ 
             **3. Start:**
             ```
             docker compose up -d
             ```
-
+ 
             The database initialises automatically from `init.sql` on first start.
             The server will be available on the port you set as `SERVER_PORT` (default: `8888`).
-
+ 
             **Troubleshooting:**
             - Server won't start → wait ~30s for the DB health check, then check `docker compose logs -f mysql-db`
             - Port conflict → change `DB_PORT` or `SERVER_PORT` in `.env`

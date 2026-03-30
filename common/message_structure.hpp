@@ -16,7 +16,7 @@ struct LoginRequest {
 };
 
 struct LoginResponse {
-  bool success;
+  bool success = false;
   std::string message;
   std::string token;
   int64_t id_user;
@@ -130,7 +130,7 @@ struct Message {
   // std::string sender_username; // client caches id_user <-> username ?
   std::string body;
   std::string timestamp;
-  bool is_system;
+  bool is_system = false;
 };
 
 struct SendMessageResponse {
@@ -161,7 +161,7 @@ struct ChannelInfo {
 struct CreateChannelResponse {
   WizzMania::MessageType type;  // CHANNEL_CREATED
   int64_t id_channel;
-  bool already_existed;
+  bool already_existed = false;
   ChannelInfo channel;
 };
 
@@ -228,7 +228,7 @@ struct TitleUpdatedNotification {
 struct UserStatusNotification {
   WizzMania::MessageType type;  // USER_STATUS
   int64_t id_user;
-  bool is_online;
+  bool is_online = false;
 };
 
 struct UserTypingNotification {
@@ -236,7 +236,7 @@ struct UserTypingNotification {
   int64_t id_channel;
   int64_t id_user;
   std::string username;
-  bool is_typing;
+  bool is_typing = false;
 };
 
 struct InitialDataResponse {
@@ -251,7 +251,7 @@ struct ChannelHistoryResponse {
   WizzMania::MessageType type;  // CHANNEL_HISTORY
   int64_t id_channel;
   std::vector<Message> messages;
-  bool has_more;
+  bool has_more = false;
 };
 
 struct ErrorResponse {
