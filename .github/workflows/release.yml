@@ -27,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install Qt
+      - name: Install Qt + MinGW toolchain
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.10.2'
@@ -35,26 +35,36 @@ jobs:
           target: 'desktop'
           arch: 'win64_mingw'
           modules: 'qtwebsockets'
+          # tools_mingw1310 installs MinGW 13.1.0 alongside Qt,
+          # the exact version Qt 6.10.2 was compiled with.
+          tools: 'tools_mingw1310'
           cache: true
 
-      # jurplel adds Qt bin dir (windeployqt, qmake...) to PATH automatically.
-      # We also need the MinGW toolchain (gcc, g++, mingw32-make) in PATH.
-      # QT_ROOT_DIR is e.g. C:\Qt\6.10.2\mingw_64 — tools sit one level up.
+      # jurplel installs tools to {Qt base}/Tools/mingw1310_64/
+      # QT_ROOT_DIR is e.g. D:\a\wizzMania\Qt\6.10.2\mingw_64
+      # So Qt base = two levels up = D:\a\wizzMania\Qt
       - name: Add MinGW to PATH
         shell: pwsh
         run: |
-          $qtParent = Split-Path "$env:QT_ROOT_DIR" -Parent
-          $qtRoot   = Split-Path $qtParent -Parent
-          $mingw = Get-ChildItem "$qtRoot\Tools" -Filter "mingw*_64" |
-                     Sort-Object Name -Descending |
-                     Select-Object -First 1
-          if (-not $mingw) {
-            Write-Error "MinGW toolchain not found under $qtRoot\Tools"
+          $qtBase = Split-Path (Split-Path "$env:QT_ROOT_DIR" -Parent) -Parent
+          $mingwBin = "$qtBase\Tools\mingw1310_64\bin"
+          Write-Host "Qt base: $qtBase"
+          Write-Host "Expected MinGW bin: $mingwBin"
+          if (-not (Test-Path $mingwBin)) {
+            Write-Host "--- Contents of $qtBase ---"
+            Get-ChildItem $qtBase -Depth 2 | Select-Object FullName
+            Write-Error "MinGW not found at $mingwBin"
             exit 1
           }
-          $mingwBin = Join-Path $mingw.FullName "bin"
-          Write-Host "MinGW bin: $mingwBin"
+          Write-Host "Found MinGW — adding to PATH"
           echo "$mingwBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Verify compiler
+        shell: pwsh
+        run: |
+          gcc --version
+          g++ --version
+          mingw32-make --version
 
       - name: Configure and build
         shell: pwsh
@@ -130,8 +140,6 @@ jobs:
               > AppDir/usr/share/icons/hicolor/256x256/apps/wizzmania.png
           fi
 
-      # .desktop must have no leading whitespace on any line.
-      # Written via python3 to avoid heredoc indentation issues inside YAML.
       - name: Write .desktop file
         run: |
           python3 -c "
@@ -153,10 +161,16 @@ jobs:
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy-x86_64.AppImage linuxdeploy-plugin-qt-x86_64.AppImage
 
+      - name: Download AppImage runtime
+        run: |
+          wget -q -O runtime-x86_64 \
+            https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64
+
       - name: Build AppImage
         env:
           QMAKE: ${{ env.QT_ROOT_DIR }}/bin/qmake6
           OUTPUT: WizzMania-client-linux-${{ github.ref_name }}.AppImage
+          APPIMAGETOOL_ADDITIONAL_ARGS: --runtime-file runtime-x86_64
         run: |
           ./linuxdeploy-x86_64.AppImage \
             --appdir AppDir \
@@ -196,6 +210,9 @@ jobs:
             type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
@@ -204,8 +221,6 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Create server release bundle
         run: |
@@ -232,6 +247,9 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
+          # Explicitly list only our artifacts — avoids downloading the internal
+          # Docker buildx artifact which is created automatically and fails to extract.
+          pattern: '{client-windows,client-linux,server-release}'
           merge-multiple: true
 
       - name: Create release
@@ -244,39 +262,55 @@ jobs:
             WizzMania-server-*.zip
           body: |
             ## 💬 Client
-
+ 
             No installation required — Qt and all dependencies are bundled.
-
-            | Platform | File | How to run |
+ 
+            You need to tell the client where your server is by setting two environment variables before launching:
+ 
+            | Variable | Description | Example |
             |---|---|---|
-            | Windows | `WizzMania-client-windows-*.zip` | Unzip anywhere, double-click `wizzmania-client.exe` |
-            | Linux | `WizzMania-client-linux-*.AppImage` | `chmod +x WizzMania-client-linux-*.AppImage` then run it |
-
-            On first launch, enter the IP and port of the server you want to connect to.
-
+            | `SERVER_HOST` | IP address of the machine running the server | `127.0.0.1` or `localhost` for local |
+            | `SERVER_PORT` | Port you set as `SERVER_PORT` in your server `.env` | `8888` |
+ 
+            **Linux:**
+            ```
+            chmod +x WizzMania-client-linux-*.AppImage
+            SERVER_HOST=127.0.0.1 SERVER_PORT=8888 ./WizzMania-client-linux-*.AppImage
+            ```
+ 
+            **Windows** (PowerShell):
+            ```
+            $env:SERVER_HOST="127.0.0.1"; $env:SERVER_PORT="8888"; .\wizzmania-client.exe
+            ```
+ 
+            **Windows** (CMD):
+            ```
+            set SERVER_HOST=127.0.0.1 && set SERVER_PORT=8888 && wizzmania-client.exe
+            ```
+ 
             ---
-
+ 
             ## 🖥️ Server
-
+ 
             Requires **Docker + Docker Compose** — nothing else.
-
+ 
             **1. Download and unzip** `WizzMania-server-*.zip`
-
+ 
             **2. Create your env file:**
             ```
             cp .env.template .env
             ```
             Open `.env` and fill in all values — passwords, `SECRET_KEY`, and ports.
             See the [full variable reference in the README](https://github.com/AdelinePat/WizzMania#environment-setup).
-
+ 
             **3. Start:**
             ```
             docker compose up -d
             ```
-
+ 
             The database initialises automatically from `init.sql` on first start.
             The server will be available on the port you set as `SERVER_PORT` (default: `8888`).
-
+ 
             **Troubleshooting:**
             - Server won't start → wait ~30s for the DB health check, then check `docker compose logs -f mysql-db`
             - Port conflict → change `DB_PORT` or `SERVER_PORT` in `.env`

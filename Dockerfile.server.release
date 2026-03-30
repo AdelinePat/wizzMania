@@ -2,56 +2,70 @@
 #
 # Multi-stage build for the WizzMania release image.
 #
-# KEY difference from Dockerfile.server (the dev version):
-#   Dev:     mounts source at runtime, runs build-server.sh on startup
-#   Release: compiles the binary at IMAGE BUILD TIME, ships only the binary
+# The builder stage mirrors Dockerfile.server (dev) exactly for the build
+# environment — same packages, same install approach for each library.
+# The only difference is the CMD: instead of running build-server.sh at
+# container startup, we compile at IMAGE BUILD TIME and ship only the binary.
 
 # ════════════════════════════════════════════════════════════
 # Stage 1 — builder
-# Everything needed to compile. Discarded after this stage.
+# Mirrors the dev Dockerfile environment exactly.
 # ════════════════════════════════════════════════════════════
 FROM ubuntu:22.04 AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential cmake git pkg-config \
-    libssl-dev libboost-system-dev \
-    libmysqlclient-dev libmysqlcppconn-dev \
-    nlohmann-json3-dev wget ca-certificates \
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    g++ \
+    cmake \
+    make \
+    git \
+    wget \
+    pkg-config \
+    libmysqlclient-dev \
+    libmysqlcppconn-dev \
+    nlohmann-json3-dev \
+    libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# libbcrypt — pin to the exact commit used in development (see README)
-RUN git clone https://github.com/trusch/libbcrypt.git /tmp/libbcrypt \
+# Boost — libboost-all-dev matches the dev Dockerfile exactly
+RUN apt-get update && apt-get install -y \
+    libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# libbcrypt — pinned to the same commit as dev (no official releases)
+RUN git clone --depth 1 https://github.com/trusch/libbcrypt.git /tmp/libbcrypt \
     && cd /tmp/libbcrypt \
     && git checkout d6523c370de6e724ce4ec703e2449b5b028ea3b1 \
-    && cmake -B build -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build && cmake --install build \
+    && mkdir build && cd build \
+    && cmake .. && make && make install \
+    && ldconfig \
     && rm -rf /tmp/libbcrypt
 
-# jwt-cpp (header-only)
-RUN git clone --depth 1 --branch v0.7.0 \
-    https://github.com/Thalhammer/jwt-cpp.git /tmp/jwt-cpp \
-    && cmake -S /tmp/jwt-cpp -B /tmp/jwt-cpp/build \
-       -DJWT_BUILD_EXAMPLES=OFF -DJWT_BUILD_TESTS=OFF \
-    && cmake --install /tmp/jwt-cpp/build \
-    && rm -rf /tmp/jwt-cpp
-
-# Crow (header-only)
+# Crow v1.3.0 — header-only, copy headers directly (no cmake needed)
 RUN git clone --depth 1 --branch v1.3.0 \
     https://github.com/CrowCpp/Crow.git /tmp/crow \
-    && cmake -S /tmp/crow -B /tmp/crow/build \
-       -DCROW_BUILD_EXAMPLES=OFF -DCROW_BUILD_TESTS=OFF \
-    && cmake --install /tmp/crow/build \
+    && mkdir -p /usr/local/include \
+    && cp -r /tmp/crow/include/* /usr/local/include/ \
     && rm -rf /tmp/crow
+
+# jwt-cpp v0.7.0 — header-only, copy headers directly
+RUN cd /tmp \
+    && git clone --depth 1 --branch v0.7.0 \
+       https://github.com/Thalhammer/jwt-cpp.git \
+    && cp -r jwt-cpp/include/jwt-cpp /usr/local/include/ \
+    && rm -rf /tmp/jwt-cpp
+
+# GTest — needed to compile and run tests
+RUN apt-get update && apt-get install -y \
+    libgtest-dev \
+    libgmock-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY server/        ./server/
 COPY common/        ./common/
-# Mirror the dev docker-compose.yml volume mount:
-#   source: ./tests/server  →  target: /app/tests
-# The server's CMakeLists.txt references tests as ../tests/ (relative to /app/server)
-# which resolves to /app/tests — so only tests/server/ goes here, not all of tests/
 COPY tests/server/  ./tests/
 
 # Run tests first — abort the image build if any fail
@@ -76,8 +90,10 @@ FROM ubuntu:22.04 AS runtime
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libssl3 libboost-system1.74.0 \
-    libmysqlclient21 libmysqlcppconn9v5 \
+    libssl3 \
+    libboost-system1.74.0 \
+    libmysqlclient21 \
+    libmysqlcppconn7v5 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
